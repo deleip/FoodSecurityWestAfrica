@@ -37,4 +37,4 @@ The core of the project is the stochastic optimization model. This is implemente
 **Functions_StochasticOptimization.py**, and is run by **StochasticOptimization.py** to analyze the behavior 
 of the model and the influence of the parameters that can be varied. **StochasticOptimization.py** also 
 includes visualization of this analysis. The github repository provides all data necessary to run the model for 
-_K = 1,\,2,\,3_ or _7_ clusters in the folder **IntermediateResults**.
+_K = 1, 2, 3_ or _7_ clusters in the folder **IntermediateResults**.
