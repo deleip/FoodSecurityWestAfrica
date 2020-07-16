@@ -9,24 +9,15 @@ Created on Sat May  2 13:14:55 2020
 
 # %% IMPORTING NECESSARY PACKAGES 
 
-import netCDF4
 import numpy as np
-import numpy.ma as np_ma
-from os import chdir
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
-import matplotlib.animation as animation
-import math
 from scipy import stats
 import pickle
 import random
 from scipy.spatial import distance
 import matplotlib.cm as cm
-from statsmodels.tsa.ar_model import AR
 import statsmodels.api as sm
-import pandas  as pd
-from sklearn.decomposition import PCA as sklearnPCA
-from sklearn.cluster import KMeans
 import datetime as dt
 
 
@@ -106,10 +97,10 @@ def CalcPearson(data_in, mask, title, tw_start = None, tw_end = None,
     # saving results
     if DistType == "Pearson":
         with open("IntermediateResults/Clustering/Distances/" + \
-                                  "PearsonCorr_" + title + "_p2.txt", "wb") as fp:    
+                            "PearsonCorr_" + title + "_p2.txt", "wb") as fp:    
             pickle.dump(corr, fp, protocol = 2)    
     with open("IntermediateResults/Clustering/Distances/" + \
-                                                  title + "_p2.txt", "wb") as fp:    
+                             title + "_p2.txt", "wb") as fp:    
         pickle.dump(dist, fp, protocol = 2)    
     return()    
 

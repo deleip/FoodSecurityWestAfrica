@@ -10,10 +10,6 @@ from os import chdir
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
-import time as tm 
-import pandas as pd
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.lines import Line2D
 
 chdir('/home/debbora/IIASA/FinalVersion')
 #chdir("H:\FinalVersion")
@@ -165,7 +161,7 @@ pop_scenario = "fixed"
 # what should the risk level be? (one in how-many-years event)
 risk = 20
 # how many realizations should be used
-N_c = 5000
+N_c = 3500
 # what should the maximum number of years the simulation runs be?
 T_max = 25
 # what seed should be used for the yield realizations?
@@ -338,8 +334,9 @@ labels = ["Rice", "Maize"]
 fig = plt.figure(figsize = figsize)
 ax = fig.add_subplot(1, 1, 1)
 for i in [0, 1]:
-    plt.plot(range(yield_year, yield_year + T_max), crop_allocs_means[:, i, 0], \
-             color = cols[i], label = labels[i], linewidth = 2)
+    plt.plot(range(yield_year, yield_year + T_max), \
+             crop_allocs_means[:, i, 0], color = cols[i], \
+             label = labels[i], linewidth = 2)
     plt.fill_between(range(yield_year, yield_year + T_max), \
                      crop_allocs_means[:, i, 0] + crop_allocs_stds[:, i, 0] , \
                      crop_allocs_means[:, i, 0] - crop_allocs_stds[:, i, 0] , \
@@ -435,7 +432,6 @@ for idx, rhoS in enumerate(rhoSs):
     
     
 # repeat with higher sample size
-# HERE
 np.warnings.filterwarnings('ignore')
 
 settings  = OF.DefaultSettingsExcept(N_c = 10000)
@@ -451,8 +447,8 @@ for rhoS in rhoSs:
     crop_alloc, meta_sol, duration = OF.OptimizeMultipleYears(x_ini, \
                                         const, args, meta_cobyla, rhoF, rhoS) 
     print("rhoS: " + str(rhoS) + ", duration: " + str(duration))
-    with open("StoOptMultipleYears/Penalties/" + \
-              "rhoF" + str(rhoF) + "rhoS" + str(rhoS) + "_Nc10000.txt", "wb") as fp: 
+    with open("StoOptMultipleYears/Penalties/rhoF" + str(rhoF) + \
+                          "rhoS" + str(rhoS) + "_Nc10000.txt", "wb") as fp: 
         pickle.dump(["crop_alloc", "meta_sol", "rhoF", "rhoS", "settings"], fp)
         pickle.dump(crop_alloc, fp)
         pickle.dump(meta_sol, fp)   
@@ -460,44 +456,6 @@ for rhoS in rhoSs:
         pickle.dump(rhoS, fp)
         pickle.dump(settings, fp)        
     print(meta_sol["prob_staying_solvent"])
-    
-    
-# - we repeat some with higer sample size as in the later years it become less 
-#   accurate as for rhoF = 0 only the catastrophic years are important and 
-#   those get rare in the end...
-#np.warnings.filterwarnings('ignore')
-#
-#settings  = OF.DefaultSettingsExcept(N_c = 25000)
-#x_ini, const, args, meta_cobyla, other= OF.SetParameters(settings)
-#
-#rhoF = 0
-#rhoSs = np.array([5, 10, 20, 30, 35, 40, 45, 50, \
-#         75, 100, 150, 200, 250, \
-#         300, 400, 500, 1000, 2000, \
-#         3000, 5000, 10000, 30000])
-##which_rhoS = [False, False, False, False, False, False, True, True, \
-##              True, True, True, True, True, True, True, True, True, \
-##              True, True, False, False, False]
-#which_rhoS = [False, False, False, True, False, False, False, True, \
-#              True, True, False, True, False, True, False, True, True, \
-#              True, False, False, False, False]
-#
-#for idx, rhoS in enumerate(rhoSs):
-#    if which_rhoS[idx]:
-#        crop_alloc, meta_sol, duration = OF.OptimizeMultipleYears(x_ini, \
-#                                            const, args, meta_cobyla, rhoF, rhoS) 
-#        print("rhoS: " + str(rhoS) + ", duration: " + str(duration))
-#        with open("StoOptMultipleYears/Penalties/" + \
-#                  "rhoF" + str(rhoF) + "rhoS" + str(rhoS) + \
-#                  "Nc25000.txt", "wb") as fp: 
-#            pickle.dump(["crop_alloc", "meta_sol", "rhoF", "rhoS", "settings"], fp)
-#            pickle.dump(crop_alloc, fp)
-#            pickle.dump(meta_sol, fp)   
-#            pickle.dump(rhoF, fp)    
-#            pickle.dump(rhoS, fp)
-#            pickle.dump(settings, fp)        
-#        print(meta_sol["prob_staying_solvent"])
-    
     
     
 # %% a.3) Run default settings for  both penalties != 0
@@ -517,11 +475,13 @@ rhoSs = [30, 50, 75, \
 for rhoF in rhoFs:
     for rhoS in rhoSs:
         crop_alloc, meta_sol, duration = OF.OptimizeMultipleYears(x_ini, \
-                                            const, args, meta_cobyla, rhoF, rhoS) 
-        print("rhoS: " + str(rhoS) + ", rhoF: " + str(rhoF) + ", duration: " + str(duration))
-        with open("StoOptMultipleYears/Penalties/" + \
-                  "rhoF" + str(rhoF) + "rhoS" + str(rhoS) + ".txt", "wb") as fp: 
-            pickle.dump(["crop_alloc", "meta_sol", "rhoF", "rhoS", "settings"], fp)
+                                     const, args, meta_cobyla, rhoF, rhoS) 
+        print("rhoS: " + str(rhoS) + ", rhoF: " + str(rhoF) + \
+                      ", duration: " + str(duration))
+        with open("StoOptMultipleYears/Penalties/rhoF" + str(rhoF) + \
+                                  "rhoS" + str(rhoS) + ".txt", "wb") as fp: 
+            pickle.dump(["crop_alloc", "meta_sol", "rhoF", \
+                                                 "rhoS", "settings"], fp)
             pickle.dump(crop_alloc, fp)
             pickle.dump(meta_sol, fp)   
             pickle.dump(rhoF, fp)    
@@ -532,17 +492,16 @@ for rhoF in rhoFs:
         
 for rhoF in rhoFs:
     for rhoS in rhoSs:
-        with open("StoOptMultipleYears/Penalties/" + \
-                  "rhoF" + str(rhoF) + "rhoS" + str(rhoS) + ".txt", "rb") as fp: 
+        with open("StoOptMultipleYears/Penalties/rhoF" + str(rhoF) + \
+                                  "rhoS" + str(rhoS) + ".txt", "rb") as fp: 
             meta = pickle.load(fp)
             crop_alloc = pickle.load(fp)
             meta_sol = pickle.load(fp)
             print("rhoS: " + "{:.1e}".format(rhoS)  + \
-                  ", rhoF " + "{:.1e}".format(rhoF) + ": " + \
-                  "alphaS " + \
-                  "{:.1e}".format(np.round(meta_sol["prob_staying_solvent"], 2)) + \
-                  ", alphaF " + \
-                  "{:.1e}".format(np.round(meta_sol["prob_food_security"], 2)))  
+              ", rhoF " + "{:.1e}".format(rhoF) + ": " + "alphaS " + \
+              "{:.1e}".format(np.round(meta_sol["prob_staying_solvent"], 2)) \
+              + ", alphaF " + \
+              "{:.1e}".format(np.round(meta_sol["prob_food_security"], 2)))  
             
 # repeat with higher sample size
 # HERE
@@ -559,11 +518,13 @@ rhoSs = [0]
 for rhoF in rhoFs:
     for rhoS in rhoSs:
         crop_alloc, meta_sol, duration = OF.OptimizeMultipleYears(x_ini, \
-                                            const, args, meta_cobyla, rhoF, rhoS) 
-        print("rhoS: " + str(rhoS) + ", rhoF: " + str(rhoF) + ", duration: " + str(duration))
-        with open("StoOptMultipleYears/Penalties/" + \
-                  "rhoF" + str(rhoF) + "rhoS" + str(rhoS) + "_Nc10000.txt", "wb") as fp: 
-            pickle.dump(["crop_alloc", "meta_sol", "rhoF", "rhoS", "settings"], fp)
+                                         const, args, meta_cobyla, rhoF, rhoS) 
+        print("rhoS: " + str(rhoS) + ", rhoF: " + str(rhoF) + \
+                                      ", duration: " + str(duration))
+        with open("StoOptMultipleYears/Penalties/rhoF" + str(rhoF) + \
+                          "rhoS" + str(rhoS) + "_Nc10000.txt", "wb") as fp: 
+            pickle.dump(["crop_alloc", "meta_sol", "rhoF", \
+                         "rhoS", "settings"], fp)
             pickle.dump(crop_alloc, fp)
             pickle.dump(meta_sol, fp)   
             pickle.dump(rhoF, fp)    
@@ -628,7 +589,6 @@ for idx, rhoF in enumerate(rhoFs):
         meta_sol = pickle.load(fp)
     S = meta_sol["S"]
     S[S>0] = 1
-#    avg_fd_costs[idx] = np.nanmean(np.nansum(meta_sol["fd_penalty"], axis = 1))
     tot_costs1[idx] = meta_sol["exp_tot_costs"]
     avg_fd_costs[idx] = np.nansum(np.nanmean(meta_sol["fd_penalty"], axis = 0))
     fix_costs1[idx] = np.nanmean(meta_sol["fix_costs"])
@@ -644,7 +604,6 @@ for idx, rhoF in enumerate(rhoFs):
         plt.plot(years, crop_alloc[:,1,0], \
           color = cmap(np.sum(which_rhoF[:idx])/np.sum(which_rhoF)), \
           label = "{:.1e}".format(rhoF), linewidth = 2)
-#plt.plot(years, np.repeat(args["max_areas"], settings["T_max"]), color = "k")
 plt.legend(title = r"Penalty $\rho_F$:", loc = 3, bbox_to_anchor=(0.015, 0.07), fontsize = 18, \
                fancybox = True, title_fontsize = "20", ncol = 2)
 ax.xaxis.set_tick_params(labelsize=20)
@@ -659,8 +618,6 @@ plt.ylim([-5e6, 7e7])
 ax = fig1.add_subplot(1, 2, 2)
 
 # - plot crop allocations over time for all penalties (rhoF = 0)
-
-
 rhoF = 0    
 crop_allocs2 = np.empty([len(rhoSs), settings["num_crops"]])
 prob_sol2 = np.empty(len(rhoSs))
@@ -673,14 +630,14 @@ tot_costs2 = np.empty(len(rhoSs))
 cmap = plt.cm.get_cmap('Spectral')
 for idx, rhoS in enumerate(rhoSs):
     if rhoS == 30:
-        with open("StoOptMultipleYears/Penalties/" + \
-              "rhoF" + str(rhoF) + "rhoS" + str(rhoS) + "_Nc100000.txt", "rb") as fp: 
+        with open("StoOptMultipleYears/Penalties/rhoF" + str(rhoF) + \
+                          "rhoS" + str(rhoS) + "_Nc100000.txt", "rb") as fp: 
             meta = pickle.load(fp)
             crop_alloc = pickle.load(fp)
             meta_sol = pickle.load(fp)        
     else:
-        with open("StoOptMultipleYears/Penalties/" + \
-              "rhoF" + str(rhoF) + "rhoS" + str(rhoS) + "_Nc10000.txt", "rb") as fp: 
+        with open("StoOptMultipleYears/Penalties/rhoF" + str(rhoF) + \
+                           "rhoS" + str(rhoS) + "_Nc10000.txt", "rb") as fp: 
             meta = pickle.load(fp)
             crop_alloc = pickle.load(fp)
             meta_sol = pickle.load(fp)    
@@ -703,9 +660,9 @@ for idx, rhoS in enumerate(rhoSs):
         plt.plot(years, crop_alloc[:,1,0], \
            color = cmap(np.sum(which_rhoS[:idx])/np.sum(which_rhoS)), \
            label = "{:.1e}".format(rhoS), linewidth = 2)
-#plt.plot(years, np.repeat(args["max_areas"], settings["T_max"]), color = "k")
-plt.legend(title = r"Penalty $\rho_S$:", loc = 3, bbox_to_anchor=(0.015, 0.07), fontsize = 18, \
-               fancybox = True, title_fontsize = "20", ncol = 2)
+plt.legend(title = r"Penalty $\rho_S$:", loc = 3, \
+           bbox_to_anchor=(0.015, 0.07), fontsize = 18, \
+           fancybox = True, title_fontsize = "20", ncol = 2)
 ax.xaxis.set_tick_params(labelsize=20)
 ax.yaxis.set_tick_params(labelsize=20)
 ax.yaxis.offsetText.set_fontsize(20)
@@ -829,8 +786,9 @@ for i in range(0, len(rhoFs)):
         plt.plot(years, 1 - prob_fd_yearly1[i,:], \
                  color = cmap(np.sum(which_rhoF[:i])/np.sum(which_rhoF)),
                  label = "{:.1e}".format(rhoFs[i]), linewidth = 2)
-plt.legend(title = r"Penalty $\rho_F$:", loc = 4, bbox_to_anchor=(0.99, 0.02), fontsize = 18, \
-               fancybox = True, title_fontsize = "20", ncol = 2)
+plt.legend(title = r"Penalty $\rho_F$:", loc = 4, \
+           bbox_to_anchor=(0.99, 0.02), fontsize = 18, \
+           fancybox = True, title_fontsize = "20", ncol = 2)
 ax.xaxis.set_tick_params(labelsize=20)
 ax.yaxis.set_tick_params(labelsize=20)
 ax.yaxis.offsetText.set_fontsize(20)
@@ -847,8 +805,9 @@ for i in range(0, len(rhoSs)):
         plt.plot(years, 1 - prob_fd_yearly2[i,:], \
                  color = cmap(np.sum(which_rhoS[:i])/np.sum(which_rhoS)),
                  label = "{:.1e}".format(rhoSs[i]), linewidth = 2)
-plt.legend(title = r"Penalty $\rho_S$:", loc = 4, bbox_to_anchor=(0.99, 0.02), fontsize = 18, \
-               fancybox = True, title_fontsize = "20", ncol = 2)
+plt.legend(title = r"Penalty $\rho_S$:", loc = 4, \
+           bbox_to_anchor=(0.99, 0.02), fontsize = 18, \
+           fancybox = True, title_fontsize = "20", ncol = 2)
 ax.xaxis.set_tick_params(labelsize=20)
 ax.yaxis.set_tick_params(labelsize=20)
 ax.yaxis.offsetText.set_fontsize(20)
@@ -860,99 +819,6 @@ plt.title("B", fontsize = 28)
 fig.savefig("Figures/StoOpt/Penalties/YearlyFoodSecurity_SinglePenalty.png", \
             bbox_inches = "tight", pad_inches = 0.5)  
 
-
-# - plot probability of food security over the different years when rhoF = 1e-3
-#   but rhoS != 0
-#fig = plt.figure()
-#rhoF = 1e-3
-#for i in range(0, len(rhoSs)):
-#    if which_rhoS[i]:
-#        with open("StoOptMultipleYears/Penalties/" + \
-#                  "rhoF" + str(rhoF) + "rhoS" + str(rhoSs[i]) + ".txt", "rb") as fp: 
-#            meta = pickle.load(fp)
-#            crop_alloc = pickle.load(fp)
-#            meta_sol = pickle.load(fp)
-#        S = meta_sol["S"]
-#        S[S>0] = 1
-#        prob_fd_yearly = np.nanmean(S, axis = 0)
-#        plt.plot(years, 1 - prob_fd_yearly, \
-#                 color = cmap(np.sum(which_rhoS[:i])/np.sum(which_rhoS)),
-#                 label = "{:.1e}".format(rhoSs[i]), linewidth = 2)
-#plt.legend(title = r"Penalty $\rho_S$:", loc = 3, fontsize = 18, \
-#               fancybox = True, title_fontsize = "20", ncol = 2)
-#ax.xaxis.set_tick_params(labelsize=20)
-#ax.yaxis.set_tick_params(labelsize=20)
-#ax.yaxis.offsetText.set_fontsize(20)
-#plt.ylim([-0.01,1.02])
-#plt.xlabel("Years", fontsize = 26)
-#plt.ylabel(r"Probability $\alpha_F$", fontsize = 26)
-
-# %% b.4) For very high penalties, there is an interesting behavior: 
-#          in the later years, the used crop will decrese and the unused crop
-#          will start being used. This probably is an effect of decresed actual
-#          sample size in the later years compared to the earlier ones, as some 
-#          realizations already had the catastrophe?
-#
-#np.warnings.filterwarnings('ignore')
-#settings  = OF.DefaultSettingsExcept(N_c = 25000)
-#x_ini, const, args, meta_cobyla, other= OF.SetParameters(settings)
-#rhoFs_Nc25000 = [5e-2]
-#rhoS = 0
-#for rhoF in rhoFs_Nc25000:
-#    crop_alloc, meta_sol, duration = OF.OptimizeMultipleYears(x_ini, \
-#                                        const, args, meta_cobyla, rhoF, rhoS) 
-#    print("rhoF: " + str(rhoF) + ", duration: " + str(duration))
-#    with open("StoOptMultipleYears/Penalties/" + \
-#        "rhoF" + str(rhoF) + "rhoS" + str(rhoS) + "_Nc25000.txt", "wb") as fp: 
-#        pickle.dump(["crop_alloc", "meta_sol", "rhoF", "rhoS", "settings"], fp)
-#        pickle.dump(crop_alloc, fp)
-#        pickle.dump(meta_sol, fp)   
-#        pickle.dump(rhoF, fp)    
-#        pickle.dump(rhoS, fp)
-#        pickle.dump(settings, fp)        
-#    print(meta_sol["prob_food_security"])
-#
-## compare to earlier version
-#rhoFs_Nc25000 = [5e-2]
-#fig = plt.figure(figsize = figsize)
-#fig.subplots_adjust(bottom=0.4, top=0.9, left=0.5, right=0.8,
-#                wspace=0.3, hspace=0.3)
-#ls = ["-", "--"]
-#for idx, rhoF in enumerate(rhoFs_Nc25000):
-#    crop_allocs_Nc =[]
-#    with open("StoOptMultipleYears/Penalties/rhoF" + str(rhoF) + \
-#                                      "rhoS0_Nc25000.txt", "rb") as fp: 
-#        meta = pickle.load(fp)
-#        crop_allocs_Nc.append(pickle.load(fp))   
-#    with open("StoOptMultipleYears/Penalties/rhoF" + str(rhoF) + \
-#                                      "rhoS0.txt", "rb") as fp: 
-#        meta = pickle.load(fp)
-#        crop_allocs_Nc.append(pickle.load(fp))
-#        
-#    ax = fig.add_subplot(1, 1, 1)
-#    for idx2, N in enumerate([25000, 5000]):
-#        plt.plot(range(settings["yield_year"], \
-#                       settings["yield_year"] + settings["T_max"]), \
-#                       crop_allocs_Nc[idx2][:,0,0], color = cols[0], \
-#                       label = "Rice, " + str(N), linestyle = ls[idx2], \
-#                       linewidth = 2)
-#        plt.plot(range(settings["yield_year"], \
-#                       settings["yield_year"] + settings["T_max"]), \
-#                       crop_allocs_Nc[idx2][:,1,0], color = cols[1], \
-#                       label = "Maize, " + str(N), linestyle = ls[idx2], \
-#                       linewidth = 2)
-#    ax.xaxis.set_tick_params(labelsize=20)
-#    ax.yaxis.set_tick_params(labelsize=20)
-#    ax.yaxis.offsetText.set_fontsize(20)
-#    plt.xlabel(r"Year", fontsize = 26)
-#    plt.ylabel("Crop area in [ha]", fontsize = 26)
-#    plt.legend(title = "Crop and sample size:", fontsize = 18, \
-#               fancybox = True, title_fontsize = "20")
-#    # => effect is much reduced
-#
-#
-#fig.savefig("Figures/StoOpt/Penalties/DynamicLastYears_HigherNc.png", \
-#            bbox_inches = "tight", pad_inches = 0.5)  
 
 # %% b.5) Visualize of interaction of penalties != 0
 
@@ -977,8 +843,8 @@ for idxF, rhoF in enumerate(rhoFs):
             probsF[idxS, idxF] = 0
             probsS[idxS, idxF] = 0
         else:
-            with open("StoOptMultipleYears/Penalties/" + \
-                      "rhoF" + str(rhoF) + "rhoS" + str(rhoS) + ".txt", "rb") as fp: 
+            with open("StoOptMultipleYears/Penalties/rhoF" + str(rhoF) + \
+                                      "rhoS" + str(rhoS) + ".txt", "rb") as fp: 
                 meta = pickle.load(fp)
                 crop_alloc = pickle.load(fp)
                 meta_sol = pickle.load(fp)
@@ -1064,8 +930,8 @@ fig.subplots_adjust(bottom=0.2, top=0.7, left=0.2, right=0.9,
                 wspace=0.3, hspace=0.3) 
 ax = fig.add_subplot(1, 2, 2)
 for idx, rhoS in enumerate(rhoSs):
-    with open("StoOptMultipleYears/Penalties/" + \
-              "rhoF" + str(rhoF) + "rhoS" + str(rhoS) + "_Nc10000.txt", "rb") as fp: 
+    with open("StoOptMultipleYears/Penalties/rhoF" + str(rhoF) + \
+                          "rhoS" + str(rhoS) + "_Nc10000.txt", "rb") as fp: 
         meta = pickle.load(fp)
         crop_alloc = pickle.load(fp)
         meta_sol = pickle.load(fp)
@@ -1080,7 +946,8 @@ for idx, rhoS in enumerate(rhoSs):
     ax.xaxis.set_tick_params(labelsize=20)
     ax.yaxis.set_tick_params(labelsize=20)
     plt.legend(title = r"Penalty $\rho_S$:", fontsize = 18, \
-               fancybox = True, loc = 3, bbox_to_anchor=(0.015, 0.07), title_fontsize = "20", ncol = 2)
+               fancybox = True, loc = 3, bbox_to_anchor=(0.015, 0.07), \
+               title_fontsize = "20", ncol = 2)
     plt.ylim([-5e6, 7e7])
     ax.yaxis.offsetText.set_fontsize(20)
     plt.title("B", fontsize = 28)
@@ -1112,7 +979,8 @@ for idx, rhoF in enumerate(rhoFs):
     ax.xaxis.set_tick_params(labelsize=20)
     ax.yaxis.set_tick_params(labelsize=20)
     plt.legend(title = r"Penalty $\rho_F$:", fontsize = 18, \
-               fancybox = True, loc = 3, bbox_to_anchor=(0.015, 0.07), title_fontsize = "20", ncol = 2)
+               fancybox = True, loc = 3, bbox_to_anchor=(0.015, 0.07), \
+               title_fontsize = "20", ncol = 2)
     plt.ylim([-5e6, 7e7])
     ax.yaxis.offsetText.set_fontsize(20)
     plt.title("A", fontsize = 28)
@@ -1260,7 +1128,8 @@ for idx, y_s in enumerate(yield_scenarios):
     ax.xaxis.set_tick_params(labelsize=20)
     ax.yaxis.set_tick_params(labelsize=20)
     plt.legend(title = "Population:", fontsize = 18, \
-               fancybox = True, loc = 3, bbox_to_anchor=(0.015, 0.07), title_fontsize = "20")
+               fancybox = True, loc = 3, bbox_to_anchor=(0.015, 0.07), \
+               title_fontsize = "20")
     plt.ylim([-5e6, 7e7])
     plt.title(titles[idx], fontsize = 28)
     ax.yaxis.offsetText.set_fontsize(20)
@@ -1436,7 +1305,8 @@ plt.ylabel("Crop area in [ha]", fontsize = 26)
 ax.xaxis.set_tick_params(labelsize=20)
 ax.yaxis.set_tick_params(labelsize=20)
 lg = plt.legend(title = r"Risk level $r$:", fontsize = 18, \
-           fancybox = True, loc = 3, bbox_to_anchor=(0.015, 0.07), title_fontsize = "20")
+           fancybox = True, loc = 3, bbox_to_anchor=(0.015, 0.07), \
+           title_fontsize = "20")
 renderer = fig.canvas.get_renderer()
 shift = max([t.get_window_extent(renderer).width for t in lg.get_texts()])
 for t in lg.get_texts():
@@ -1462,8 +1332,8 @@ for idx, perc_guaranteed in enumerate(np.flip(perc_guaranteeds)):
         [probF, probS] = pickle.load(fp)
         crop_alloc = pickle.load(fp)
         meta_sol = pickle.load(fp)
-    plt.plot(years, crop_alloc[:,1,0], label = str(100*perc_guaranteed) + " %", \
-                 color = col[idx], linewidth = 2)
+    plt.plot(years, crop_alloc[:,1,0],  color = col[idx], \
+             label = str(100*perc_guaranteed) + " %", linewidth = 2)
     plt.plot(years, crop_alloc[:,0,0], \
                  color = col[idx], \
                  linestyle = "--", linewidth = 2)
@@ -1472,7 +1342,8 @@ plt.ylabel("Crop area in [ha]", fontsize = 26)
 ax.xaxis.set_tick_params(labelsize=20)
 ax.yaxis.set_tick_params(labelsize=20)
 plt.legend(title = r"Share $S_\mathrm{gov}$:", fontsize = 18, \
-           fancybox = True, loc = 3, bbox_to_anchor=(0.015, 0.07), title_fontsize = "20")
+           fancybox = True, loc = 3, bbox_to_anchor=(0.015, 0.07), \
+           title_fontsize = "20")
 plt.ylim([-5e6, 7e7])
 plt.title("B", fontsize = 28)
 ax.yaxis.offsetText.set_fontsize(20)
@@ -1503,7 +1374,8 @@ plt.ylabel("Crop area in [ha]", fontsize = 26)
 ax.xaxis.set_tick_params(labelsize=20)
 ax.yaxis.set_tick_params(labelsize=20)
 plt.legend(title = r"Tax rate $\tau$:", fontsize = 18, \
-           fancybox = True, loc = 3, bbox_to_anchor=(0.015, 0.07),  title_fontsize = "20")
+           fancybox = True, loc = 3, bbox_to_anchor=(0.015, 0.07), \
+           title_fontsize = "20")
 plt.ylim([-5e6, 7e7])
 plt.title("A", fontsize = 28)
 ax.yaxis.offsetText.set_fontsize(20)
@@ -1511,39 +1383,6 @@ ax.yaxis.offsetText.set_fontsize(20)
 
 fig.savefig("Figures/StoOpt/OtherParameters/CropAllocations.png", \
             bbox_inches = "tight", pad_inches = 0.5)     
-
-# %% b.2) Distribution of payouts for different risk levels
-
-#cmap = plt.cm.get_cmap('Spectral')
-#
-#probF = 0.95
-#probS = 0.85
-#
-#risks = [10, 20, 40]
-#
-#fig = plt.figure(figsize = figsize)
-#fig.subplots_adjust(bottom=0.3, top=0.7, left=0.1, right=0.9,
-#                wspace=0.3, hspace=0.3) 
-#
-#ax = fig.add_subplot(1, 1, 1)
-#for idx, risk in enumerate(risks):
-#    if risk == 20:
-#        file = "Default"
-#    else:
-#        file = "risk" + str(risk)
-#    with open("StoOptMultipleYears/OtherParameters/" + file + \
-#              "_probF" + str(probF) + "probS" + str(probS) + \
-#              ".txt", "rb") as fp: 
-#        meta = pickle.load(fp)
-#        settings = pickle.load(fp)
-#        [rhoF, rhoS] = pickle.load(fp)
-#        [probF, probS] = pickle.load(fp)
-#        crop_alloc = pickle.load(fp)
-#        meta_sol = pickle.load(fp)
-#        payouts = pickle.load(fp)    
-#    plt.hist(payouts[payouts > 0].flatten(), bins = 100, alpha = 0.6, label = str(risk))
-#    print("Risk " + str(risk) + ": average payouts " + "{:.1e}".format(np.mean(payouts[payouts > 0])))
-#plt.legend()
 
 
 # %% b.2) Visualize final fund distributions
@@ -1583,8 +1422,10 @@ for idx, risk in enumerate(risks):
         crop_alloc = pickle.load(fp)
         meta_sol = pickle.load(fp)
     print("Average payouts (risk level " + str(risk) + "): " + \
-          "{:.1e}".format(np.nanmean(meta_sol["payouts"][meta_sol["payouts"]>0])))
-    print("Prob staying solven (risk level " + str(risk) + "): " + "{:.3e}".format(meta_sol["prob_staying_solvent"]))
+          "{:.1e}".format(np.nanmean(meta_sol["payouts"]\
+           [meta_sol["payouts"]>0])))
+    print("Prob staying solven (risk level " + str(risk) + "): " + \
+          "{:.3e}".format(meta_sol["prob_staying_solvent"]))
     plt.hist(meta_sol["final_fund"], \
              label = str(100* (1/risk)) + " %", \
              color = col[idx], alpha = a, density = True, \
@@ -1629,9 +1470,11 @@ for idx, perc_guaranteed in enumerate(np.flip(perc_guaranteeds)):
         [probF, probS] = pickle.load(fp)
         crop_alloc = pickle.load(fp)
         meta_sol = pickle.load(fp)
-    print("Average payouts (perc guaranteed " + str(perc_guaranteed) + "): " + \
-          "{:.1e}".format(np.nanmean(meta_sol["payouts"][meta_sol["payouts"]>0])))
-    print("Prob staying solven (perc guaranteed " + str(perc_guaranteed) + "): " + "{:.3e}".format(meta_sol["prob_staying_solvent"]))
+    print("Average payouts (perc guaranteed " + str(perc_guaranteed) + \
+          "): " + "{:.1e}".format(np.nanmean(meta_sol["payouts"]\
+           [meta_sol["payouts"]>0])))
+    print("Prob staying solven (perc guaranteed " + str(perc_guaranteed) + \
+          "): " + "{:.3e}".format(meta_sol["prob_staying_solvent"]))
     plt.hist(meta_sol["final_fund"], \
              label = str(100*perc_guaranteed) + " %", \
              color = col[idx], alpha = a, density = True, \
@@ -1672,8 +1515,10 @@ for idx, tax in enumerate(taxes):
         crop_alloc = pickle.load(fp)
         meta_sol = pickle.load(fp)
     print("Average payouts (tax rate " + str(tax) + "): " + \
-          "{:.1e}".format(np.nanmean(meta_sol["payouts"][meta_sol["payouts"]>0])))
-    print("Prob staying solven (tax rate " + str(tax) + "): " + "{:.3e}".format(meta_sol["prob_staying_solvent"]))
+          "{:.1e}".format(np.nanmean(meta_sol["payouts"]\
+           [meta_sol["payouts"]>0])))
+    print("Prob staying solven (tax rate " + str(tax) + "): " + \
+          "{:.3e}".format(meta_sol["prob_staying_solvent"]))
     plt.hist(meta_sol["final_fund"], \
              label = str(100*tax) + " %", \
              color = col[idx], alpha = a, density = True, \
@@ -1733,15 +1578,53 @@ for [k, num_cl_cat] in cluster_combinations:
                 pickle.dump([probF, probS], fp) 
                 pickle.dump(crop_alloc, fp)
                 pickle.dump(meta_sol, fp)    
-                
+ 
+# %% rerunning with higher sample size
+
+runs = ["k2kPrime1_probF0.95probS0.85", \
+        "k2kPrime2_probF0.95probS0.85_LowerTaxHigherIncome", \
+        "k2kPrime1_probF0.95probS0.75_LowerTaxHigherIncome", \
+        "k2kPrime2_probF0.95probS0.85"]
+    
+for run in [runs[0]]:
+    with open("StoOptMultipleYears/Clusters/" + run + ".txt", "rb") as fp: 
+        meta = pickle.load(fp)
+        settings = pickle.load(fp)
+        [rhoF, rhoS] = pickle.load(fp)
+        [probF, probS] = pickle.load(fp)
+        crop_alloc = pickle.load(fp)
+        meta_sol = pickle.load(fp)
+                      
+    settings["N_c"] = 80000
+    print("Get Parameters", flush = True)
+    x_ini, const, args, meta_cobyla, other= OF.SetParameters(settings)
+    
+    print("Start optimization", flush = True)
+    crop_alloc, meta_sol, duration = \
+            OF.OptimizeMultipleYears(crop_alloc.flatten(), const, args, \
+                                     meta_cobyla, rhoF, rhoS) 
+    print(duration, flush = True)
+    with open("StoOptMultipleYears/Clusters/" +  \
+               run + "_Nc80000.txt", "wb") as fp: 
+        pickle.dump(["settings", "penalties", "probs", \
+                     "crop_alloc", "meta_sol"], fp)
+        pickle.dump(settings, fp)
+        pickle.dump([rhoF, rhoS], fp)   
+        pickle.dump([probF, probS], fp) 
+        pickle.dump(crop_alloc, fp)
+        pickle.dump(meta_sol, fp)    
+               
                 
 # %% b) Get data for visualization
                 
-runs = ["k2kPrime1_probF0.95probS0.85new", \
-        "k2kPrime1_probF0.95probS0.85new_LowerTaxHighIncome", \
-        "k2kPrime2_probF0.95probS0.85new_LowerTaxHighIncome", \
-        "k7kPrime1_probF0.95probS0.85new", \
-        "k7kPrime2_probF0.95probS0.85new_LowerTaxHighIncome"]
+runs = ["k2kPrime2_probF0.95probS0.85_LowerTaxHigherIncome", \
+        "k2kPrime2_probF0.95probS0.85_LowerTaxHigherIncome_Nc20000", \
+        "k2kPrime2_probF0.95probS0.85_LowerTaxHigherIncome_Nc40000", \
+        "k2kPrime1_probF0.95probS0.85", \
+        "k2kPrime1_probF0.95probS0.85_Nc20000", \
+        "k2kPrime1_probF0.95probS0.85_Nc40000", \
+        "k2kPrime2_probF0.95probS0.85", \
+        "k2kPrime1_probF0.95probS0.75_LowerTaxHigherIncome"]
                 
 meta_l = []
 settings_l = []
@@ -1768,7 +1651,8 @@ for run in runs:
     rhoS_l.append(rhoS)
     probF_l.append(probF)
     probS_l.append(probS)
-    x_ini, constraints, args, meta, other = OF.SetParameters(settings_l[-1], wo_yields = True)
+    x_ini, constraints, args, meta, other = OF.SetParameters(settings_l[-1], \
+                                                             wo_yields = True)
     prob_cat_year_l.append(other["prob_cat_year"])
     terminal_years_l.append(args["terminal_years"])
     cat_clusters_l.append(args["cat_clusters"])
@@ -1778,21 +1662,20 @@ for run in runs:
    
 cols_b = ["#1ad1ff", "#ff3399"]
 
-titles = ["Default, K' = 1", \
-          "LowerTaxHighIncome, K' = 1", \
-          "LowerTaxHighIncome, K' = 2"]
+titles = ["LowerTaxHighIncome, K' = 2", \
+          "Default, K' = 1"]
           
 fig = plt.figure()
-for i in [0,1,2]:
-    fig.add_subplot(1,3,i+1)
+for i in [4, 5]:
+    fig.add_subplot(1,2,i-3)
     for cl in range(0,2):
         plt.plot(years, np.repeat(max_areas_l[i][cl], len(years)), \
                  color = cols_b[cl], lw = 5, label = "Max area Cl " + str(cl))
         plt.plot(years, crop_alloc_l[i][:,0,cl], color = cols[cl], \
                  label = "Cr 0, Cl " + str(cl), lw = 2)
         plt.plot(years, crop_alloc_l[i][:,1,cl], color = cols[cl], \
-                 linestyle = "--", label = "Cr 0, Cl " + str(cl), lw = 2)   
-        plt.title(titles[i])
+                 linestyle = "--", label = "Cr 1, Cl " + str(cl), lw = 2)   
+        plt.title(titles[i-4])
         plt.legend()
 plt.show()        
 
@@ -1838,10 +1721,12 @@ for probF in probFs:
 
 # %% ################################ &. VSS ##################################
 
-crop_alloc_ev, meta_sol_ev, exp_ylds, rhoF, rhoS, args = OF.GetSolutionEV(probF = 0.95, probS = 0.85)
+crop_alloc_ev, meta_sol_ev, exp_ylds, rhoF, rhoS, args = \
+                                OF.GetSolutionEV(probF = 0.95, probS = 0.85)
 
 
-with open("StoOptMultipleYears/Scenarios/fixedYldsfixedPop_probF0.95probS0.85.txt", "rb") as fp: 
+with open("StoOptMultipleYears/Scenarios/" + \
+               "fixedYldsfixedPop_probF0.95probS0.85.txt", "rb") as fp: 
     meta = pickle.load(fp)
     settings = pickle.load(fp)
     [rhoF, rhoS] = pickle.load(fp)
@@ -1850,9 +1735,11 @@ with open("StoOptMultipleYears/Scenarios/fixedYldsfixedPop_probF0.95probS0.85.tx
     meta_sol = pickle.load(fp)
 
 plt.figure()
-plt.plot(years, crop_alloc_ev[:,1,0], color  = cols[0], label = "EV: " + "{:.1e}".format(meta_sol_ev["exp_tot_costs"]))
+plt.plot(years, crop_alloc_ev[:,1,0], color  = cols[0], \
+         label = "EV: " + "{:.1e}".format(meta_sol_ev["exp_tot_costs"]))
 plt.plot(years, crop_alloc_ev[:,0,0], color  = cols[0], linestyle = "--")
-plt.plot(years, crop_alloc[:,1,0], color  = cols[1], label = "RS: " + "{:.1e}".format(meta_sol["exp_tot_costs"]))
+plt.plot(years, crop_alloc[:,1,0], color  = cols[1], \
+         label = "RS: " + "{:.1e}".format(meta_sol["exp_tot_costs"]))
 plt.plot(years, crop_alloc[:,0,0], color  = cols[1], linestyle = "--")
 plt.legend()
 plt.show()

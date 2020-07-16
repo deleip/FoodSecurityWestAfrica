@@ -258,8 +258,8 @@ def ReadAndSave_CropCalendar(crop, lon_min, lon_max, lat_min, lat_max):
     return()
     
 
-# TODO doesn't work on my laptop as array is too big... is it necessary (just
-# used for one of the many discarded regression tries)    
+# TODO doesn't work on my laptop as array is too big... Therefore not included
+# in final data analysis code (but was run in an earlier version)
 def ReadAndAgg_AgMERRA(var, year, lon_min, lon_max, lat_min, lat_max):
 
     f = netCDF4.Dataset("Data/AgMERRA/" + var + "/AgMERRA_" + \

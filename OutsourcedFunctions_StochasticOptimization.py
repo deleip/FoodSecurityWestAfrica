@@ -141,8 +141,7 @@ def DefaultSettingsExcept(k = 1,
                           seed = 150620,
                           tax = 0.03,
                           perc_guaranteed = 0.75,
-                          exp_income = None, 
-                          version = "new"):      # changed prob fpor cat yields
+                          exp_income = None):      # changed prob fpor cat yields
 # input are all settings, which are eplained in StochasticOptimization.py
 # for any setting that is not given when the function is called, the default
 # value will be used.
@@ -166,6 +165,9 @@ def DefaultSettingsExcept(k = 1,
      
     # not all settings affect the expected income (as no governmetn is 
     # included)
+    # For k = 1 it is not different because it is actually influenced by more
+    # settings, but because I ran this while the model was still slightly
+    # different, which however didn't effect k = 1, only runs with k > 1
     if k == 1:
         SettingsAffectingGuaranteedIncome = "k" + str(settings["k"]) + \
                          "num_cl_cat" + str(settings["num_cl_cat"]) + \
@@ -257,6 +259,10 @@ def SetParameters(settings, x_ini = None, wo_yields = False):
 #           settings are eplained in StochasticOptimization.py
 # x_ini: initial guess for the optimizer If not given a first guess will be 
 #        calculated by this function
+# wo_yields: if this is run to get information like the terminal years, but 
+#            yields are not needed as the optimizer is not called, wo_yields
+#            can be set to True to exclude generation of yields (which takes 
+#            by far the most time in this function, especially for high N_c)
     
     # extract settings from dictionary
     k = settings["k"]
@@ -522,9 +528,11 @@ def SetParameters(settings, x_ini = None, wo_yields = False):
         # agricultural area per cluster)
         constraints = DefineConstraints(k, num_crops, max_areas, T_max)
 
+    # everything except yields if wo_yields == True
     if wo_yields:
         prob_cat_year = RiskForCatastrophe(risk, k, num_cl_cat)
-        cat_clusters, terminal_years = CatastrophicYears(risk, N_c, T_max, k, num_cl_cat)
+        cat_clusters, terminal_years = CatastrophicYears(risk, N_c, T_max, \
+                                                         k, num_cl_cat)
         
         args = {"k": k,
                 "num_crops": num_crops,
@@ -595,13 +603,12 @@ def SetParameters(settings, x_ini = None, wo_yields = False):
     return(x_ini, constraints, args, meta, other)
     
 
-# we chose a probability for a catastrophic year (1:onein_catyear). But if we 
-# have multiple cluster it makes sense to only define a year as catastrophic 
-# if at least a certain number of clusters have catastrophic yields. In that
-# case probability of catastrophic year does no longer translate directly to 
-# quantile of yield distribution. Here we calculate the corresponding quantile
+# we chose a probability for a catastrophic yields (1:risk). But if we 
+# have multiple cluster the probability for a catastrophic year is different, 
+# depending on the number of clusters and the number of clusters that have to
+# be catastrophic for the year to be general
 def RiskForCatastrophe(risk, num_clusters, num_cl_cat):
-# onein_catyear: risk level for a catastrophic year (1 : onein_catyear)
+# risk: risk level for a catastrophic yields (1 : risk)
 # num_clusters: number of clusters
 # num_cl_cat: number of clusters that have to have catastrophic yields for a 
 #             catastrophic year
@@ -626,7 +633,7 @@ def YieldRealisations(yld_slopes, yld_constants, resid_std, year, N_c,
 # year: either year to use for yield generations for all years, or year to 
 #       start with if using the trend
 # N_c: number of realisations to generate
-# onein_catyear: risk level for a catastrophic year (1 : onein_catyear)
+# risk: risk level for a catastrophic yields (1 : risk)
 # onein_singlecluster: risk for catastrophe in a single cluster that 
 #                      corresponds to overall risk onein_catyear   
 # T_max: maximum number of years covered by the model. If no catastrophe 
@@ -639,6 +646,7 @@ def YieldRealisations(yld_slopes, yld_constants, resid_std, year, N_c,
 #                   distribution should be use for every year, or "trend" if
 #                   the mean of the yield distribution should follow the linear
 #                   trend
+    
     # generating catastrophes 
     cat_clusters, terminal_years = CatastrophicYears(risk, \
                                     N_c, T_max, num_clusters, num_cl_cat)
@@ -655,6 +663,7 @@ def YieldRealisations(yld_slopes, yld_constants, resid_std, year, N_c,
 def CatastrophicYears(risk, N_c, T_max, num_clusters, \
                       num_cl_cat):
 # for parameters see YieldRealisations
+    
     # generating uniform random variables between 0 and 1 to define years
     # with catastrophic cluster (catastrohic if over threshold)
     threshold = 1 - (1/risk)
@@ -984,7 +993,8 @@ def OptimizeMultipleYears(x_ini, constraints, args, meta, rhoF, rhoS):
     return(crop_alloc, meta_sol, duration) 
     
 # finds correct penalty rhoF for a probability probF (while rhoS = 0)
-def GetRhoF(settings, probF, rhoFini, x_ini = None, meta = False, accuracy = 2):
+def GetRhoF(settings, probF, rhoFini, x_ini = None, \
+            meta = False, accuracy = 2):
 # settings: dictionary of all settings given by DefaultSettingsExcept()
 #           settings are eplained in StochasticOptimization.py
 # probF: demanded probability of keeping the food demand constraint
@@ -1241,12 +1251,15 @@ def GetPenalties(settings, probF, probS, rhoFini = 1e-3, rhoSini = 100):
             with open("StoOptMultipleYears/ProbToPenalty/rhoFs/" + \
                                   SettingsAffectingRhoF + ".txt", "wb") as fp:    
                 pickle.dump(rhoFs, fp)
-            # add settings to list of settings for which rhoFs have been calculated
-            # (reload list in case other server changed something in the meantime!)
-            with open("StoOptMultipleYears/ProbToPenalty/ListRhoF.txt","rb") as fp:    
+            # add settings to list of settings for which rhoFs have been 
+            # calculated (reload list in case other server changed something
+            # in the meantime!)
+            with open("StoOptMultipleYears/ProbToPenalty/" + \
+                                                  "ListRhoF.txt","rb") as fp:    
                 list_rhoFs = pickle.load(fp)
             list_rhoFs.append(SettingsAffectingRhoF)
-            with open("StoOptMultipleYears/ProbToPenalty/ListRhoF.txt","wb") as fp:    
+            with open("StoOptMultipleYears/ProbToPenalty/" + \
+                                                  "ListRhoF.txt","wb") as fp:    
                 pickle.dump(list_rhoFs, fp)   
                 
     if probS == 0:
@@ -1277,10 +1290,12 @@ def GetPenalties(settings, probF, probS, rhoFini = 1e-3, rhoSini = 100):
                                   SettingsAffectingRhoS + ".txt", "wb") as fp:    
                 pickle.dump(rhoSs, fp)
                 
-            with open("StoOptMultipleYears/ProbToPenalty/ListRhoS.txt","rb") as fp:    
+            with open("StoOptMultipleYears/ProbToPenalty/" + \
+                                                  "ListRhoS.txt","rb") as fp:    
                 list_rhoSs = pickle.load(fp)
             list_rhoSs.append(SettingsAffectingRhoS)
-            with open("StoOptMultipleYears/ProbToPenalty/ListRhoS.txt","wb") as fp:    
+            with open("StoOptMultipleYears/ProbToPenalty/" + \
+                                                  "ListRhoS.txt","wb") as fp:    
                 pickle.dump(list_rhoSs, fp)   
                 
     return(rhoF, rhoS)
@@ -1323,35 +1338,12 @@ def OptimizeFoodSecurityProblem(probF, probS, rhoFini = 1e-3, rhoSini = 100, \
     print("Time: " + str(np.round(duration, 2)), flush=True)
     return(crop_alloc, meta_sol, rhoF, rhoS, settings, args)            
                   
-# as I fogot to include payouts in the meta information, this is a function 
-# that calls the objective function again given the settings and the final 
-# crop allocation and returns the government payouts.
-def GovernmentPayouts(settings, crop_alloc, rhoF, rhoS):
-    x_ini, const, args, meta_cobyla, other= SetParameters(settings)
-    pay, fund = ObjectiveFunctionMultipleYears(crop_alloc, 
-                                     args["k"],
-                                     args["num_crops"],
-                                     args["N_c"], 
-                                     args["cat_clusters"], 
-                                     args["terminal_years"],
-                                     args["ylds"], 
-                                     args["costs"], 
-                                     args["demand"],
-                                     args["ini_fund"],
-                                     args["tax"],
-                                     args["prices"],
-                                     args["T_max"],
-                                     args["guaranteed_income"],
-                                     args["crop_cal"], 
-                                     rhoF, 
-                                     rhoS, 
-                                     meta = True,
-                                     meta_payouts = True)  
-    return(pay, fund)
     
     
 # %% #################### VALUE OF THE STOCHASTIC SOLUTION ####################            
             
+# function to calculate a scenario based solution for caomparison to quantify
+# the performance of the stochastic optimization model
 def GetSolutionEV(probF, probS, **kwargs):
     # create dictionary of all settings (includes calculating or loading the
     # correct expected income)

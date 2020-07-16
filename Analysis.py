@@ -11,7 +11,6 @@ import numpy as np
 from os import chdir
 import pickle
 import matplotlib.pyplot as plt
-from scipy import stats
 import statsmodels.api as sm
 from scipy.stats import shapiro
 import matplotlib.cm as cm
@@ -122,20 +121,8 @@ with open("IntermediateResults/Clustering/Distances/" + \
     dist = pickle.load(fp)    
 for k in [4, 8, 12]:
     OF.kMedoids(k, dist, mask_wd03, DistFiles[-1])
-
-# %% 3) Running k-Mediods for different seeds (PearsonDist_spei03)
-
-#with open("IntermediateResults/PreparedData/DroughtIndicators/" + \
-#                                          "mask_spei03_WA.txt", "rb") as fp:    
-#    mask_spei03 = pickle.load(fp)  
-#with open("IntermediateResults/Clustering/Distances/" + \
-#                                  "PearsonDist_spei03.txt", "rb") as fp:    
-#    dist = pickle.load(fp)  
-#
-#for s in range(0, 4):
-#    OF.kMedoids(8, dist, mask_spei03, "PearsonDist_spei03", seed = s)
     
-# %% 4) Running k-Mediods for a bigger number of k (PearsonDist_spei03)
+# %% 3) Running k-Mediods for a bigger number of k (PearsonDist_spei03)
 #       (and with different seeds to then choose best version)
     
 with open("IntermediateResults/PreparedData/DroughtIndicators/" + \
@@ -151,42 +138,6 @@ for k in [19, 18, 17, 16, 15, 14, 13, 11, 10, 9, 7, 6, 5, 3, 2, 1]:
     print("k = " + str(k))
     OF.kMedoids(k, dist, mask_spei03, "PearsonDist_spei03")
     
-#ks = list(range(1, 21)); ks.remove(8)
-#for k in ks:
-#    print("k = " + str(k))
-#    for s in range(0, 4):
-#        print("seed = " + str(s))
-#        OF.kMedoids(k, dist, mask_spei03, "PearsonDist_spei03", seed = s)
-   
-## saving best version as optimal clustering
-#for k in range(1, 21):
-#    with open("IntermediateResults/Clustering/Clusters/kMediods" + str(k) + \
-#                                  "_PearsonDist_spei03.txt", "rb") as fp:  
-#        clusters = pickle.load(fp)
-#        costs = pickle.load(fp)
-#        medoids = pickle.load(fp)
-#    min_costs = costs[-1]
-#    with open("IntermediateResults/Clustering/Clusters/kMediods" + str(k) + \
-#                               "opt_PearsonDist_spei03.txt", "wb") as fp:  
-#        pickle.dump(clusters, fp)
-#        pickle.dump(costs, fp)
-#        pickle.dump(medoids, fp)
-#        pickle.dump(3052020, fp)
-#    for s in range(0, 4):
-#        with open("IntermediateResults/Clustering/Clusters/kMediods" + \
-#                             str(k) + "_PearsonDist_spei03_seed" + \
-#                                                  str(s) + ".txt", "rb") as fp:  
-#            clusters = pickle.load(fp)
-#            costs = pickle.load(fp)
-#            medoids = pickle.load(fp)
-#        if costs[-1] < min_costs:
-#            min_costs = costs[-1]
-#            with open("IntermediateResults/Clustering/Clusters/kMediods" + \
-#                        str(k) + "opt_PearsonDist_spei03.txt", "wb") as fp:  
-#                pickle.dump(clusters, fp)
-#                pickle.dump(costs, fp)
-#                pickle.dump(medoids, fp)
-#                pickle.dump(s, fp)
     
 # %% 4) Analysis of clustering
                 
@@ -338,35 +289,6 @@ for f in range(0, len(Dists)):
 # use the detrended version, as we want correlation to focus on the drought 
 # patterns and not a linear trend present in both cells.
     
-# - Visualizing influence of seeds
-#    
-#fig = plt.figure(figsize=figsize)
-#fig.subplots_adjust(bottom=0.03, top=0.97, left=0.1, right=0.9,
-#                wspace=0.25, hspace=-0.2)
-#k = 8
-#for s in range(0,4):
-#    with open("IntermediateResults/Clustering/Clusters/kMediods" + str(k) + \
-#             "_PearsonDist_spei03_seed" + str(s) + ".txt", "rb") as fp:    
-#        clusters = pickle.load(fp)
-#        costs = pickle.load(fp)
-#        medoids = pickle.load(fp)
-#    fig.add_subplot(2, 2, s+1)
-#    c = OF.VisualizeFinalCluster(clusters, medoids, lats_WA, lons_WA, \
-#                                             "Seed " + str(s))   
-#cb_ax = fig.add_axes([0.93, 0.2, 0.02, 0.6])
-#cbar = fig.colorbar(c, cax = cb_ax)       
-#cbar.set_ticks(range(1, k + 1))
-#cbar.set_ticklabels(range(1, k + 1))
-#plt.suptitle("Clusters for k = 8, PearsonDist_spei03 " + \
-#                                 "with different seeds", fontsize = 24)
-#fig.savefig("Figures/Clustering/kMediods_Seeds.png",
-#                        bbox_inches = "tight", pad_inches = 0.5)    
-
-# Depending on the randomly chosen initial medoids, the final clusters can 
-# vary. In order to save computational time, we first worked with just one run
-# of k-Medoids, but after deciding on PearsonDist_spei03detr as distance and 
-# these cases were rerun with several different seeds and the version with
-# lowest final costs was chosen as clustering
 
 # %% 5) Optimal number of clusters
 
@@ -1135,65 +1057,8 @@ for cr in range(0, len(crops)):
 # use uncorrelated areas to implement insurance schemes, we need a big area.
     
 
+# TODO: 4) Bayesian and frequentist approach
     
-# 4) Bayesian and frequentist approach
-    
-
-    
-    
-# TODO Normality of data not necessary after all, normality of errors is 
-#      needed for hypothesis test (e.g. p-values)
-## - are yield model outputs from AgMIP normally distributed?
-##       * using timeseries of all cells 
-##       * using timeseries of cluster averages
-#        
-#models = ["epic-iiasa_agmerra_default", \
-#         "epic-boku_grasp_default", \
-#         "gepic_pgfv2_default", \
-#         "papsim_agmerra_default"]
-#crop_scenarios = ["_yield_whe_noirr", "_yield_mai_noirr", \
-#         "_yield_soy_noirr", "_yield_ric_noirr"]
-#crops = ["wheat", "maize", "soy", "rice"]
-#
-#yield_data = []  # yield_data[model][crop]
-#for m in range(0, len(models)):
-#    yield_data_tmp = []
-#    for cr in range(0, len(crop_scenarios)):
-#        if (m == 3) & (cr == 3):    # papsim does not have data for rice
-#            continue
-#        with open("IntermediateResults/PreparedData/AgMIP/" + \
-#                       models[m] + crop_scenarios[cr] + ".txt", "rb") as fp: 
-#            yields = pickle.load(fp)
-#            yield_data_tmp.append(yields)  
-#    yield_data.append(yield_data_tmp)
-#        
-## Histogramms
-#for m in range(0, len(models)):
-#    fig = plt.figure(figsize=figsize)
-#    if m < 3:
-#        for cr in range(0, len(crops)):
-#            fig.add_subplot(2, 2, cr + 1)
-#            plt.hist(yield_data[m][cr].flatten(), bins = 100, \
-#                            density = True, alpha = 0.7)
-#            plt.xlabel("Yield of " + crops[cr] + " in t/ha")
-#            plt.ylabel("Density")
-#            sk, pvals = stats.normaltest(yield_data[m][cr] \
-#                                 [~np.isnan(yield_data[m][cr])].flatten())
-#            plt.title(str(np.round(pvals)))
-#        plt.suptitle("Model " + models[m] + " (no irrigation)")
-#    else:
-#        for cr in range(0, len(crops) - 1):
-#            fig.add_subplot(1, 3, cr + 1)
-#            plt.hist(yield_data[m][cr].flatten(), bins = 100, \
-#                            density = True,  alpha = 0.7)
-#            plt.xlabel("Yield of " + crops[cr] + " in t/ha")
-#            plt.ylabel("Density")
-#            sk, pvals = stats.normaltest(yield_data[m][cr] \
-#                                  [~np.isnan(yield_data[m][cr])].flatten())
-#            plt.title(str(np.round(pvals)))
-#        plt.suptitle("Model " + models[m] + " (no irrigation)")
-            
-        
  
 ###############################################################################
 # %% Analysis of trends in GDHY data
@@ -1238,7 +1103,8 @@ for k in range(5, 10):
         costs = pickle.load(fp)
         medoids = pickle.load(fp)
     plt.figure()
-    OF.VisualizeFinalCluster(clusters, medoids, lats_WA, lons_WA, "new" + str(k))
+    OF.VisualizeFinalCluster(clusters, medoids, lats_WA, \
+                             lons_WA, "new" + str(k))
     
 for k in range(5, 10):
     with open("IntermediateResults/Clustering/Clusters/old/GDHYkMediods" + \
@@ -1247,36 +1113,9 @@ for k in range(5, 10):
         costs = pickle.load(fp)
         medoids = pickle.load(fp)
     plt.figure()
-    OF.VisualizeFinalCluster(clusters, medoids, lats_WA, lons_WA, "old" + str(k))   
-    
-# saving best version as optimal clustering
-#for k in range(1, 21):
-#    with open("IntermediateResults/Clustering/Clusters/GDHYkMediods" + \
-#                          str(k) + "_PearsonDist_spei03.txt", "rb") as fp:  
-#        clusters = pickle.load(fp)
-#        costs = pickle.load(fp)
-#        medoids = pickle.load(fp)
-#    min_costs = costs[-1]
-#    with open("IntermediateResults/Clustering/Clusters/GDHYkMediods" + \
-#                      str(k) + "opt_PearsonDist_spei03.txt", "wb") as fp:  
-#        pickle.dump(clusters, fp)
-#        pickle.dump(costs, fp)
-#        pickle.dump(medoids, fp)
-#        pickle.dump(3052020, fp)
-#    for s in range(0, 4):
-#        with open("IntermediateResults/Clustering/Clusters/GDHYkMediods" + \
-#            str(k) + "_PearsonDist_spei03_seed" + str(s) + ".txt", "rb") as fp:  
-#            clusters = pickle.load(fp)
-#            costs = pickle.load(fp)
-#            medoids = pickle.load(fp)
-#        if costs[-1] < min_costs:
-#            min_costs = costs[-1]
-#            with open("IntermediateResults/Clustering/Clusters/GDHYkMediods" \
-#                          + str(k) + "opt_PearsonDist_spei03.txt", "wb") as fp:  
-#                pickle.dump(clusters, fp)
-#                pickle.dump(costs, fp)
-#                pickle.dump(medoids, fp)
-#                pickle.dump(s, fp)
+    OF.VisualizeFinalCluster(clusters, medoids, lats_WA, \
+                             lons_WA, "old" + str(k))   
+
           
 # optimal number of clusters
 
@@ -2062,7 +1901,8 @@ for cl in range(0, k):
     for cr in [0, 1]:
         sns.regplot(x = np.array(range(year_start_GDHY, \
               year_start_GDHY + len_ts)), y = yields_avg[:, cr, cl], \
-              color = cols[cr], ax = ax, marker = ".", truncate = True, scatter_kws={'s':42})
+              color = cols[cr], ax = ax, marker = ".", \
+              truncate = True, scatter_kws={'s':42})
     plt.xlabel("Years", fontsize = 20)
     plt.ylabel("Yield in t/ha", fontsize = 20)
     plt.title(title[cl], fontsize = 22)
