@@ -18,7 +18,7 @@ import seaborn as sns
 
 chdir('/home/debbora/IIASA/FinalVersion')
 
-import OutsourcedFunctions_Analysis as OF
+import Functions_Analysis as OF
         
 # setting which plots should be shown
 visualize = "AllPlots"

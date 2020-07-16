@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 chdir('/home/debbora/IIASA/FinalVersion')
 #chdir("H:\FinalVersion")
 
-import OutsourcedFunctions_StochasticOptimization as OF
+import Functions_StochasticOptimization as OF
 
 
 figsize = (24, 13.5)
