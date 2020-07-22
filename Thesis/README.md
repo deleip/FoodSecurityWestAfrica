@@ -52,7 +52,7 @@ Modifiable model settings with their default values are:
 | risk level (given as frequency) | *risk* | 20 |
 | sample size | *N_c* | 3500 |
 | number of covered years | *T_max* | 25 |
-| seed for reproducable yield realizations | *seed* | 150620 |
+| seed for reproducible yield realizations | *seed* | 150620 |
 | tax rate | *tax* | 0.03 |
 | percentage of expected income that will be covered by government in case of catastrophes | *perc_guaranteed* | 0.75 |
 
