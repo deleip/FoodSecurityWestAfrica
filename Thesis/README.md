@@ -74,12 +74,15 @@ will determine the correct penalties *rhoF* and *rhoS* for the given probabiliti
 
     x_ini, const, args, meta_cobyla, other = SetParameters(settings)
     
-will prepare all model inputs depending on the settings. The array *x_ini* is an initial guess for the crop allocation, *const* defines the model constraints (i.e. crop areas need to be positive and respect the available arable area), all arguments that need to be passed to the objective function by the optimizer except the crop areas as a dictionary *args* (i.e. yield realizations, food demand, terminal years, cultivation costs etc.), technical information for the solver as a dictionary *meta_cobyla* and some additional information on the parameters for potential analysis in the dictionary *other*. Finally, the solver is called within
+will prepare all model inputs depending on the settings. The array *x_ini* is an initial guess for the crop allocation, *const* defines the model constraints (i.e. crop areas need to be positive and respect the available arable area), all arguments that need to be passed to the objective function by the optimizer except the crop areas as a dictionary *args* (i.e. yield realizations, food demand, terminal years, cultivation costs etc.), technical information for the solver as a dictionary *meta_cobyla* and some additional information on the parameters for potential analysis in the dictionary *other*. Finally, the solver **scipy.optimize.fmin_cobyla** is called within the function
 
     crop_alloc, meta_sol, duration = OptimizeMultipleYears(x_ini, const, args, meta_cobyla, rhoF, rhoS)
-    
-The function **OptimizeFoodSecurityProblem** finally returns the optimal crop allocation *crop_alloc*, meta information *meta_sol* on the solution (e.g. the minimized value of
-the objective function, the final fund for all realizations, or the yearly shortcomings from the food demand for each realization), the penalties *rhoF* and *rhoS* corresponding to the input probabilities *probF* and *probS*, the dictionary *settings* of all settings, and the dictionary *args* of all additional arguments that are passed to the objective function.
+
+This returns the optimal crop allocation *crop_alloc*, meta information *meta_sol* about the solution (e.g. the 
+minimized value of the objective function, the final fund for all realizations, or the yearly shortcomings from the food 
+demand for each realization), and the time the solver took to find the solution as *duration*.
+
+The main function **OptimizeFoodSecurityProblem** finally returns the optimal crop allocation *crop_alloc*, the meta information *meta_sol*, the penalties *rhoF* and *rhoS* corresponding to the input probabilities *probF* and *probS*, the dictionary *settings* of all settings, and the dictionary *args* of all additional arguments that are passed to the objective function.
 
 The model can be called for specific penalties *rhoF* and *rhoS* instead of given probabilities by the following combination:
 
