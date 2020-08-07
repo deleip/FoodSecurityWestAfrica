@@ -44,6 +44,7 @@ with open("IntermediateResults/PreparedData/DroughtIndicators/" + \
 
 # %% 1) Calculate distances on which to base the clustering
 
+# load different data sets used for the distances
 with open("IntermediateResults/PreparedData/DroughtIndicators/" + \
                                          "spei03_WA_detrend.txt", "rb") as fp:
     spei03detr = pickle.load(fp)    
@@ -87,8 +88,8 @@ OF.CalcPearson(spei03, mask_spei03, "spei03", DistType = "Jaccard", \
 OF.CalcPearson(spei03, mask_spei03, "spei03", DistType = "Dice", \
                                                    cut = -1, boolean = True)     
 
-# %% 2) Running k-Mediods for different distances
-# for k = 4, 8, 12 
+# %% 2) Running k-Mediods for k = 4, 8, 12 for different distances to analyze
+#       which distance to use 
 
 DistFiles = ["PearsonDist_spei03",
              "PearsonDist_spei03detr", 
@@ -102,17 +103,20 @@ DistFiles = ["PearsonDist_spei03",
              "JaccardDist_spei03_Boolean_CutNeg1",
              "PearsonDist_wd03"]
 
+# load mask
 with open("IntermediateResults/PreparedData/DroughtIndicators/" + \
                                           "mask_spei03_WA.txt", "rb") as fp:    
     mask_spei03 = pickle.load(fp)  
-    
+
+# for each distance, run model for k = 4, 8, 12
 for file in range(0, len(DistFiles)-1):
     with open("IntermediateResults/Clustering/Distances/" + \
                                       DistFiles[file] + ".txt", "rb") as fp:    
         dist = pickle.load(fp)    
     for k in [4, 8, 12]:
         OF.kMedoids(k, dist, mask_spei03, DistFiles[file])
-   
+
+# water deficit needs different mask and ist therefore run separately
 with open("IntermediateResults/PreparedData/CRU/" + \
                                      "mask_WaterDeficit_WA.txt", "rb") as fp:    
     mask_wd03 = pickle.load(fp)      
@@ -122,8 +126,9 @@ with open("IntermediateResults/Clustering/Distances/" + \
 for k in [4, 8, 12]:
     OF.kMedoids(k, dist, mask_wd03, DistFiles[-1])
     
+# In the analysis PearsonDist_spei03 was chosen    
+    
 # %% 3) Running k-Mediods for a bigger number of k (PearsonDist_spei03)
-#       (and with different seeds to then choose best version)
     
 with open("IntermediateResults/PreparedData/DroughtIndicators/" + \
                                           "mask_spei03_WA.txt", "rb") as fp:    
@@ -134,7 +139,7 @@ with open("IntermediateResults/Clustering/Distances/" + \
     
 
 ks = list(range(1, 21)); ks.remove(4); ks.remove(8); ks.remove(12)
-for k in [19, 18, 17, 16, 15, 14, 13, 11, 10, 9, 7, 6, 5, 3, 2, 1]:
+for k in ks:
     print("k = " + str(k))
     OF.kMedoids(k, dist, mask_spei03, "PearsonDist_spei03")
     
@@ -264,24 +269,24 @@ for f in range(0, len(Dists)):
 # Different distances to see how clusters can be influenced. Reducing datasets
 # to extreme events to see if the pattern is very different. Looking at past
 # 30 years to see if pattern changes over time.
-# However, SPEI seems the most fitting data (compared to water deficit) as it
+# SPEI seems the most fitting data (compared to water deficit) as it
 # takes into account the "normal" climate at a location, and is one of the
 # "standard" drought indices. Clusters are supposed to reflect the correlation
 # of extreme events, for which SPEI is more fitting. For yield regressions 
 # (which don't focus on extreme events) wd-clusters could be working better. 
 # An idea for the future would be to subcluster the SPEI-clusters (which are 
 # needed for the dependence structure) according to wd data, and each of these
-# subclusters gets its onw regression. For now we only use the SPEI clusters.
-#  Even though we see a slight change when reducing
-# the dataset to the last 30 years, using the all years gives a much bigger
-# dataset to calculate the distances from, and also we will not change clusters
-# in our projection over time, so it makes sense to use an "average" clustering
-# over time. Boolean datasets (for Pearson distance as well as for both the
-# boolean-specific distances Jaccard and Dice) give more information about
-# tail dependence, but discard data about the strength of drouhgts and make 
-# less sense keeping in mind that out model asumes full dependence within 
-# (by using average yield values) and independence between different clusters 
-# both for extreme events and normal years. 
+# subclusters gets its own regression. For now we only use the SPEI clusters.
+# Even though we see a slight change when reducing the dataset to the last 30 
+# years, using the all years gives a much bigger dataset to calculate the 
+# distances from, and also we will not change clusters in our projection over 
+# time, so it makes sense to use an "average" clustering over time. Boolean 
+# datasets (for Pearson distance as well as for both the boolean-specific 
+# distances Jaccard and Dice) give more information about tail dependence, 
+# but discard data about the strength of drouhgts and make less sense keeping 
+# in mind that out model asumes full dependence within (by using average yield 
+# values) and independence between different clusters both for extreme events
+# and normal years. 
 # Our main interest is therefore to have high dependence within a cluster and 
 # low dependennce between different cluster, which we analyze by looking at the
 # Pearson Correlation Coeffieient.
@@ -295,7 +300,6 @@ for f in range(0, len(Dists)):
 with open("IntermediateResults/Clustering/Distances/" + \
                                 "PearsonDist_spei03.txt", "rb") as fp:    
     dist = pickle.load(fp) 
-
 
 # a) Elbow-Method using Davies-Bouldin-Index: 
 #    The elbow method tried to find the number of clusters after which the 
@@ -375,7 +379,9 @@ dists_within = [within_cluster, within_cluster]
 title = ["Comparison using all clusters for raw SPEI", \
          "Comparison using closest clusters for raw SPEI"]
 
-# plot distances
+# plot distances as scatter of dist within cluster vs. dist between cluster 
+# for the different K, and plot performance of different K by euclidean 
+# distance of point on scatter plot to reference plot
 version = ["All", "Closest"]
 for i in range(0,2):
     fig = plt.figure(figsize=figsize)
@@ -405,77 +411,8 @@ for i in range(0,2):
                  version[i] + ".png", bbox_inches = "tight", pad_inches = 0.5)    
 
 # for between_all the best k are the heighest k
-# for between_closest the best k are: 2, 3, 8
-        
-
-# Problem: for few clusters they seem far apart, as the medoid is further away
-#         because it is in the middle of the cluster. But there are still many 
-#         close cells. Therefore we should do something depending on the cells!
-
-# Idea: As distance between different clusters use dist of all cells of cluster 
-#       A to medoid B + dist of all cells of cluster B to medoid A, devided by
-#       the total amount of cells in cluster A and B (commented out as it 
-#       worked less well with the euclidean distance as metric)
-    
-    
-# c) Other idea: we want cells to behave similar within a cluster, i.e. small
-#   variance. Hence similarity within cluster could be measured by varaince, 
-#   and then compared to variance including cells of both cluster. As variance 
-#   over time does not make sese, we would calculate variance per year and then
-#   take the average over the timeseries to get a single value.
-with open("IntermediateResults/PreparedData/DroughtIndicators/" + \
-                                         "spei03_WA_filled.txt", "rb") as fp:
-    spei = pickle.load(fp)   
-
-between_all = []
-between_closest = []
-within_cluster = []
-kmax = 20
-
-# save distances
-for k in range(2, kmax + 1):
-    with open("IntermediateResults/Clustering/Clusters/kMediods" + \
-                      str(k) + "_PearsonDist_spei03.txt", "rb") as fp:  
-        clusters = pickle.load(fp)
-        costs = pickle.load(fp)
-        medoids = pickle.load(fp)
-
-    m_within, m_closest, m_all = OF.ClusterMetricVariance(spei, clusters)
-    between_all.append(np.nanmean(m_all))
-    between_closest.append(np.nanmean(m_closest))
-    within_cluster.append(np.nanmean(m_within))   
-
-dists_between = [between_all, between_closest]
-dists_within = [within_cluster, within_cluster]
-title = ["Comparison using all clusters for raw SPEI", \
-         "Comparison using closest clusters for raw SPEI"]
-
-# plot distances
-version = ["All", "Closest"]
-for i in range(0,2):
-    fig = plt.figure(figsize=figsize)
-    ax = fig.add_subplot(1,2,1) 
-    ax.scatter(dists_within[i], dists_between[i],  c=range(2, kmax + 1))
-    plt.title(title[i])
-#    plt.xlim([0, 0.3])
-#    plt.ylim([0.4, 0.7])
-    plt.xlabel("Average distance within clusters")
-    plt.ylabel("Average distance between clusters")
-    for t, txt in enumerate(range(2, kmax + 1)):
-        ax.annotate(txt, (dists_within[i][t] + 0.0013, \
-                          dists_between[i][t] - 0.001)) 
-    fig.add_subplot(1,2,2) 
-    metric, cl_order = OF.MetricClustering(dists_within[i], dists_between[i], \
-                                                               w0 = 1, w1 = 1) 
-    plt.scatter(cl_order, metric)
-    plt.xticks(range(2, 21))
-    plt.title("Quantification of tradeoff")
-    plt.xlabel("Number of clusters")
-    plt.ylabel("Euclidean distance to (0, 0.7) on scatter plot of distances")
-    plt.suptitle("Tradeoff of distances within and between cluster", \
-                                                             fontsize = 24)
-    
-# doesn't work, gives linear plot...
+# for between_closest the best k are: 8, 10, 3 
+ 
     
 # %% Analysis of relation between drought index and yield data
 
@@ -893,6 +830,15 @@ for cr in range(0, len(crops)):
 #    can't use their model, but hoped that this migth help to select variables
 #    for linear regression    
     
+# The AgMERRA data set was used when using the most relevant variables as given 
+# by the meta model for regression analysis. When the code was revised, this 
+# section couldn't be rerun, as my laptop runs out of memory when loading the 
+# AgMERRA data set. As the regression using AgMERRA data is not relevant for 
+# the final stochastic optimization model, it was then left out in the revised 
+# version of the code. The function to read and aggregate the AgMERRA data is 
+# still included in Functions_Data.py, and the sections using this data for 
+# analysis are kept in an earlier version of this code and can be obtained on 
+# request.
 
 # 3) Different dataset: Global dataset on historic yields (GDHY)
 #    also uses models to create full dataset, but tries to recreate historic
@@ -1056,9 +1002,6 @@ for cr in range(0, len(crops)):
 # This approach could be use if we use a reduced area, but as our goal is to 
 # use uncorrelated areas to implement insurance schemes, we need a big area.
     
-
-# TODO: 4) Bayesian and frequentist approach
-    
  
 ###############################################################################
 # %% Analysis of trends in GDHY data
@@ -1117,7 +1060,7 @@ for k in range(5, 10):
                              lons_WA, "old" + str(k))   
 
           
-# optimal number of clusters
+# repeating optimal number of clusters analysis
 
 between_all = []
 between_closest = []
@@ -1148,8 +1091,6 @@ for i in range(0,2):
     ax = fig.add_subplot(1,2,1) 
     ax.scatter(dists_within[i], dists_between[i],  c=range(2, kmax + 1))
     plt.title(title[i])
-#    plt.xlim([0, 0.3])
-#    plt.ylim([0.4, 0.7])
     plt.xlabel("Average distance within clusters")
     plt.ylabel("Average distance between clusters")
     for t, txt in enumerate(range(2, kmax + 1)):
@@ -1799,7 +1740,7 @@ for k in [8]:
 fig.savefig("Figures/Clustering/thesis_kMediods" + str(k) + ".png",
                         bbox_inches = "tight", pad_inches = 0.5)    
 
-# Optimal number of clusters
+# - Optimal number of clusters
 
 with open("IntermediateResults/Clustering/Distances/" + \
                                 "PearsonDist_spei03.txt", "rb") as fp:    
@@ -1864,9 +1805,9 @@ for i in range(0,2):
     metric, cl_order = OF.MetricClustering(dists_within[i], dists_between[i], \
                                         refX = 0, refY = max(dists_between[i])) 
     ax.scatter(cl_order, metric, s =40)
-    ax.set_xticks(range(2, 21))
-    ax.xaxis.set_tick_params(labelsize=15)
-    ax.yaxis.set_tick_params(labelsize=15)
+    ax.set_xticks(np.arange(2, 21, 2))
+    ax.xaxis.set_tick_params(labelsize=16)
+    ax.yaxis.set_tick_params(labelsize=16)
     ax.set_title(title[i], fontsize = 22)
     ax.set_xlabel("Number of clusters", fontsize = 20)
     ax.set_ylabel("Euclidean distance to (0, "+ \
@@ -1879,7 +1820,7 @@ fig2.savefig("Figures/Clustering/thesis_RankingOfK.png", \
             bbox_inches = "tight", pad_inches = 0.5)      
 
   
-# GDHY detrend averages and visualize trend
+# - GDHY detrend averages and visualize trend
 cols = ["royalblue", "darkred"]
 k = 2
 version = ""

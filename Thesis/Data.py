@@ -11,7 +11,7 @@ import numpy as np
 from os import chdir
 import pickle
 import pandas as pd
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 chdir('/home/debbora/IIASA/FinalVersion')
 
@@ -38,7 +38,7 @@ lat_max = 18.5
 # Gridded monthly data in 1° resolution from Jan. 1949 to Dec. 2012
 
 # SPEI:
-# he Standardized Precipitation-Evapotranspiration Index (SPEI) was proposed 
+# The Standardized Precipitation-Evapotranspiration Index (SPEI) was proposed 
 # to overcome problems of the SPI (mainly not considering temperature) and the 
 # sc-PDSI (mainly having only one timescale).
 # The SPEIbase covers the period from January 1901 to December 2018 with 
@@ -238,7 +238,8 @@ for v_name in var_names:
         
 # %% 3) Preparing data from crop calender
         
-# Crop Calendar of 2000, downloaded from https://nelson.wisc.edu/sage/data-and
+# Crop Calendar of 2000
+# Downloaded from https://nelson.wisc.edu/sage/data-and
 # -models/crop-calendar-dataset/netCDF0-5degree.php
 # Global gridded data (resolution 0.5°) on planting date, start of planting,
 # end of planting, range of planting dates, harvest date, start of harvest, 
@@ -257,12 +258,17 @@ for i in range(0, len(crops)):
 
 # %% Preparing AgMERRA data
 
-# TODO do I need it? If so, what to do about too big arrays??
-    
+# The AgMERRA data set was used when using the most relevant variables as given 
+# by the meta model for regression analysis. When the code was revised, this 
+# section couldn't be rerun, as my laptop runs out of memory when loading the 
+# AgMERRA data set. As the regression using AgMERRA data is not relevant for 
+# the final stochastic optimization model, it was then left out in the revised 
+# version of the code. The function to read and aggregate the AgMERRA data is 
+# still included in Functions_Data.py, and the sections using this data for 
+# analysis are kept in an earlier version of this code and can be obtained on 
+# request.
  
 # %% Preparing CRU data (for absolute water deficit)
-
-# TODO take out diurnal temperature range because not used?
 
 # The CRU (Climatic Research Unit) data is saved with CEDA (Centre for Environ-
 # mental Data Analysis).
@@ -275,14 +281,16 @@ for i in range(0, len(crops)):
 # frequency, cloud cover, wet day frequency, diurnal temperature range, vapour 
 # pressure, near-surface temperature minimum
     
-# reading data of existing variables
-variables = ["Precipitation", "PET", "DiurnalTemp"]  
-variables_abbrv = ["pre", "pet" , "dtr"]
+# prepare data of existing CRU variables
+variables = ["Precipitation", "PET"]  
+variables_abbrv = ["pre", "pet"]
 for v in range(0, len(variables)):
     OF.ReadAndAgg_CRU(variables[v], variables_abbrv[v])
     
-# creations water deficit data as difference between precipitation and 
-# potential evapotranspiration (PET)   
+# calculating water deficit data as difference between precipitation and 
+# potential evapotranspiration (PET):
+    
+# load data
 with open("IntermediateResults/PreparedData/CRU/" + \
                                           "Precipitation_WA.txt", "rb") as fp:    
     pre = pickle.load(fp)
@@ -290,13 +298,18 @@ with open("IntermediateResults/PreparedData/CRU/" + \
                                                   "PET_WA.txt", "rb") as fp:    
     PET = pickle.load(fp)
 
+# calculate water deficit
 WaterDeficit = pre-PET
 WaterDeficit03 = np.zeros(WaterDeficit.shape)
+
+# get 3 month averages
 [n_t, n_lat, n_lon] = WaterDeficit03.shape
 for i in range(0, n_lat):
     for j in range(0, n_lon):
         WaterDeficit03[:, i, j] = np.array(pd.DataFrame(WaterDeficit[:, i, j])\
                            .rolling(window=3, center = False).mean()).flatten()
+        
+# save data
 with open("IntermediateResults/PreparedData/CRU/" + \
                                            "WaterDeficit_WA.txt", "wb") as fp:    
     pickle.dump(WaterDeficit, fp)
@@ -304,20 +317,24 @@ with open("IntermediateResults/PreparedData/CRU/" + \
                                           "WaterDeficit03_WA.txt", "wb") as fp:    
     pickle.dump(WaterDeficit03, fp)
 
-
+# get mask for water deficit data
 mask_WaterDeficit = np.zeros([n_lat, n_lon])
 for t in range(0, n_t):
    for i in range(0, n_lat):
        for j in range(0, n_lon):        
            if ~(np.isnan(WaterDeficit[t, i, j])): 
                mask_WaterDeficit[i,j] = 1
+
+# save mask
 with open("IntermediateResults/PreparedData/CRU/" + \
                                       "mask_WaterDeficit_WA.txt", "wb") as fp:    
      pickle.dump(mask_WaterDeficit, fp)    
 
+# detrend 3 month water deficit data
 WaterDeficit03_detrend, p_val_slopes, slopes, intercepts = \
                   OF.DetrendDataLinear(WaterDeficit03, mask_WaterDeficit)        
      
+# save detrended data
 with open("IntermediateResults/PreparedData/CRU/" + \
                                  "WaterDeficit03_WA_detrend.txt", "wb") as fp:    
     pickle.dump(WaterDeficit03_detrend, fp)    
@@ -379,18 +396,24 @@ past_estimates = np.zeros(71)
 for t in range(1950, 2021):
     past_estimates[t-1950] = PopData_reg.loc[(PopData_reg.VarID==2) & \
                                     (PopData_reg.Time==t), WhichValues].values
-
+                  
+# initiating array of population scenarios                  
 total_pop = np.zeros([len(scenarios), 2101-1950])
+
+# including past estimates for every scenario
 for scen in range(0, len(scenarios)):
     total_pop[scen, 0:(2021-1950)] = past_estimates
-    
+
+# including predictions of every scenario    
 for s in range(2, 11):
     for t in range(2021, 2101):
         total_pop[s-2, t-1950] = PopData_reg.loc[(PopData_reg.VarID == s) \
                                   & (PopData_reg.Time==t), WhichValues].values
-        
-total_pop = total_pop * 1000 # to have actual numbers
+                 
+# change to actual numbers        
+total_pop = total_pop * 1000 
     
+# save data
 with open("IntermediateResults/PreparedData/Population/UN_" + \
           WhichValues + "_Prospects_" + WhichRegion_save + ".txt", "wb") as fp:    
     pickle.dump(total_pop, fp)
@@ -422,6 +445,7 @@ OF.ReadAndReduce_GPW(lat_min, lon_min, lat_max, lon_max)
 # the farm-gate). Annual data are provided from 1991, while mothly data from 
 # January 2010 for 180 country and 212 product."
 
+# load data on farm-gate prices
 prices_raw = pd.read_csv("Data/Prices/FAOSTAT_data_6-11-2020.csv")
 prices_raw = prices_raw[["Area","Item", "Year","Value"]]
 countries = np.array(prices_raw["Area"])
@@ -430,28 +454,30 @@ items = np.array(prices_raw["Item"])
 items = items[sorted(np.unique(items, return_index = True)[1])]
 years = np.array(prices_raw["Year"])
 years = years[sorted(np.unique(years, return_index = True)[1])]
-col = ["indianred", "navy"]
-fig = plt.figure(figsize = (24, 13.5))
-fig.subplots_adjust(wspace=0.25, hspace=0.5)
-for c, country in enumerate(countries):
-    fig.add_subplot(4,4,c+1)
-    for idx, item in enumerate(items):
-        plt.plot(prices_raw.loc[(prices_raw.Area==country) & \
-                                (prices_raw.Item==item)]["Year"],
-                 prices_raw.loc[(prices_raw.Area==country) & \
-                           (prices_raw.Item==item)]["Value"], color = col[idx])
-        plt.xlim([1990, 2020])
-        if (c%4) == 0:
-            plt.ylabel("Price in USD/t")
-        if c >= len(countries) - 4:
-            plt.xlabel("Years")
-        plt.title(country)
-plt.show()
-plt.suptitle("Farm-gate prices in USD per tonne for maize (red)" + \
-                                     " and rice (blue)") 
-fig.savefig("Figures/StoOpt/prices_ts.png", \
-                            bbox_inches = "tight", pad_inches = 0.5)
 
+#col = ["indianred", "navy"]
+#fig = plt.figure(figsize = (24, 13.5))
+#fig.subplots_adjust(wspace=0.25, hspace=0.5)
+#for c, country in enumerate(countries):
+#    fig.add_subplot(4,4,c+1)
+#    for idx, item in enumerate(items):
+#        plt.plot(prices_raw.loc[(prices_raw.Area==country) & \
+#                                (prices_raw.Item==item)]["Year"],
+#                 prices_raw.loc[(prices_raw.Area==country) & \
+#                           (prices_raw.Item==item)]["Value"], color = col[idx])
+#        plt.xlim([1990, 2020])
+#        if (c%4) == 0:
+#            plt.ylabel("Price in USD/t")
+#        if c >= len(countries) - 4:
+#            plt.xlabel("Years")
+#        plt.title(country)
+#plt.show()
+#plt.suptitle("Farm-gate prices in USD per tonne for maize (red)" + \
+#                                     " and rice (blue)") 
+#fig.savefig("Figures/StoOpt/prices_ts.png", \
+#                            bbox_inches = "tight", pad_inches = 0.5)
+
+# change format to an 3 dimensional array
 prices = np.empty([len(years), len(countries), len(items)])
 prices.fill(np.nan)
 for idx_c, country in enumerate(countries):
@@ -464,32 +490,35 @@ for idx_c, country in enumerate(countries):
                     prices_raw.loc[(prices_raw.Area==country) & \
                                    (prices_raw.Item==item) & \
                                    (prices_raw.Year==year)]["Value"].values[0]
-        
+
+# calculate average over all years for each country and crop
 prices = np.nanmean(prices, axis = 0)
 
-x = np.arange(len(countries))  # the label locations
-width = 0.35  # the width of the bars
+#x = np.arange(len(countries))  # the label locations
+#width = 0.35  # the width of the bars
+#
+#fig, ax = plt.subplots(figsize = (24, 13.5))
+#rects1 = ax.bar(x - width/2, prices[:,0], width, label='Maize', \
+#                                        color = col[0], alpha = 0.5)
+#rects2 = ax.bar(x + width/2, prices[:,1], width, label='Rice', \
+#                                        color = col[1],  alpha = 0.5)
+#
+## Add some text for labels, title and custom x-axis tick labels, etc.
+#ax.set_ylabel('Average farm-gate prices in USD/t')
+#ax.set_title('Average farm-gate prices per country and crop')
+#ax.set_xticks(x)
+#ax.set_xticklabels(countries)
+#ax.legend()
+#plt.show()
+#fig.savefig("Figures/StoOpt/prices_CountryAvg.png", \
+#                            bbox_inches = "tight", pad_inches = 0.5)
 
-fig, ax = plt.subplots(figsize = (24, 13.5))
-rects1 = ax.bar(x - width/2, prices[:,0], width, label='Maize', \
-                                        color = col[0], alpha = 0.5)
-rects2 = ax.bar(x + width/2, prices[:,1], width, label='Rice', \
-                                        color = col[1],  alpha = 0.5)
-
-# Add some text for labels, title and custom x-axis tick labels, etc.
-ax.set_ylabel('Average farm-gate prices in USD/t')
-ax.set_title('Average farm-gate prices per country and crop')
-ax.set_xticks(x)
-ax.set_xticklabels(countries)
-ax.legend()
-plt.show()
-fig.savefig("Figures/StoOpt/prices_CountryAvg.png", \
-                            bbox_inches = "tight", pad_inches = 0.5)
-
+# change format to data frame, include countrynames and name columns
 prices = pd.DataFrame(prices)
 prices.insert(0, 'Countries', countries)
 prices.columns = ["Countries", "Maize", "Rice"]
 
+# save data
 with open("IntermediateResults/PreparedData/Prices/" + \
                               "CountryAvgFarmGatePrices.txt", "wb") as fp:    
     pickle.dump(prices, fp)

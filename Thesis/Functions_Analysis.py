@@ -32,6 +32,7 @@ import datetime as dt
 def CalcPearson(data_in, mask, title, tw_start = None, tw_end = None, 
                 DistType = "Pearson", cut = None, boolean = False):
     data = data_in.copy()
+    # setting name to save distances
     title = DistType + "Dist" + "_" + title
     if boolean:        # just looking at pattern of extreme events
         data[data <= cut] = -np.inf   
@@ -73,7 +74,8 @@ def CalcPearson(data_in, mask, title, tw_start = None, tw_end = None,
                         use1 = np.logical_and(~np.isnan(X), ~np.isnan(Y)) 
                         use2 = np.logical_or(X < cut, Y < cut)
                         use = np.logical_and(use1, use2)
-                    if np.sum(use) > 1:
+                    if np.sum(use) > 1: # if at least 2 points are available
+                                        # the distance is calculated
                         if DistType == "Pearson":
                             corr_tmp[lat2,lon2] = stats.pearsonr(X[use], \
                                                                      Y[use])[0]
@@ -89,6 +91,7 @@ def CalcPearson(data_in, mask, title, tw_start = None, tw_end = None,
             dist_lon.append(dist_tmp)
         corr.append(corr_lon)    
         dist.append(dist_lon)
+    # adding to name to save distances
     if cut != None:
         if cut < 0:
             title = title + "_CutNeg" + str(abs(cut))
@@ -108,8 +111,8 @@ def CalcPearson(data_in, mask, title, tw_start = None, tw_end = None,
 
 
 # Definition of the k-Medoids algorithm:
-# Step 1. k different objects are randomly chosen as initial medoids 
-#         (instead of using a greedy algo)
+# Step 1. k different objects are chosen as initial medoids by a greedy 
+#         algorithm 
 # Step 2. Each remaining object is associated with the medoid that is closest. 
 #         The total costs are calculated as the sum over all squared distances 
 #         between object and respective medoid.
@@ -128,26 +131,13 @@ def kMedoids(k, dist, mask, file, version = "", start_medoids = None, \
     [num_lats, num_lons] = mask.shape
     terminated = False
     step = 0
-    # Normally, the initial medoids are chosen randomly, but if we wish to 
-    # continue a run that had not yet terminated or for some other reason want 
-    # to start with specific medoids these can be given to the function and 
-    # will be used
+    # Normally, the initial medoids are chosen thorugh a greedy algorithm, 
+    # but if we wish to continue a run that had not yet terminated or for 
+    # some other reason want to start with specific medoids these can be 
+    # given to the function and will be used
     random.seed(seed) 
     if start_medoids == None:
         medoids = GetInitialMedoids(k, dist, mask, num_lats, num_lons)
-#        medoids = []
-#        count = 0
-#        while count < k:
-#            lat_tmp = random.randrange(0, num_lats)
-#            lon_tmp = random.randrange(0, num_lons)
-#            # checking that it's not ocean
-#            if mask[lat_tmp, lon_tmp] == 0:
-#                continue
-#            # and that we didn't chose it already
-#            if (lat_tmp, lon_tmp) in medoids:
-#                continue
-#            medoids.append((lat_tmp, lon_tmp))
-#            count += 1
     else:
         medoids = start_medoids
     # get best cluster for these medoids and save the results of this step
@@ -179,6 +169,7 @@ def kMedoids(k, dist, mask, file, version = "", start_medoids = None, \
         # corresponding message and terminate the algorithm
         print("No improvement found")
         terminated = True
+    # save results
     if seed == 3052020:
         title_seed = ""
     else:
@@ -194,23 +185,30 @@ def kMedoids(k, dist, mask, file, version = "", start_medoids = None, \
 # 1) Greedy algorithm for initial medoids
 def GetInitialMedoids(k, dist, mask, num_lats, num_lons):
     medoids = []
+    # for each medoid take the cell the is the is the best choice at this point
+    # given the other mediods that are already chosen. 
     for l in range(1, k+1):
         best_cost = 0
+        # for each new medoid we check each possible cell 
         for i in range(0, num_lats):
             for j in range(0, num_lons):
                 # ocean is not considered in the clustering
                 if (mask[i, j] == 0) or ((i,j) in medoids):
                     continue
+                # temporarily add this cell to medoids
                 medoids_tmp = medoids.copy()
                 medoids_tmp.append((i,j))
+                # get new costs
                 cluster, cost = \
                     GetCluster(l, dist, num_lats, num_lons, medoids_tmp, mask)
+                # if best choice so far (or first cell checked) remember 
                 if best_cost == 0:
                     best_cost = cost
                     best_medoid = (i,j)
                 elif cost < best_cost:
                     best_cost = cost
                     best_medoid = (i,j)
+        # add best choice to medoids
         medoids.append(best_medoid)
     return(medoids)
 
@@ -495,6 +493,7 @@ def MedoidMedoidDistd(medoids, dist):
     k = len(medoids)
     res = np.empty([k,k])
     res.fill(np.nan)
+    # get distance to all medoids
     for i in range(0, k):
         for j in range(0, k):
             if i == j:
@@ -502,94 +501,28 @@ def MedoidMedoidDistd(medoids, dist):
             res[i, j] = dist[medoids[i][0]][medoids[i][1]] \
                                                 [medoids[j][0], medoids[j][1]]
     res_closest = np.zeros(k)
+    # find closest medoid
     for i in range(0, k):
         res_closest[i] = np.nanmin(res[i])
     return(res, res_closest)
-    
 
-# 4) For each cluster find minimum/average of average distance of all its 
-#    clusters to another medoid
-    
-def CellsMedoidsDist(medoids, dist, cluster): 
-    k = len(medoids[-1])
-    res = np.empty([k,k])
-    res.fill(np.nan)
-    for i in range(0, k):
-        dist_tmp = GetDistToMedoid(cluster, medoids, dist, medoid_num = i+1)
-        for j in range(0, k):
-            res[j, i] = np.nansum(dist_tmp[cluster[-1] == j])
-    res_diag = np.diag(res).copy()
-    np.fill_diagonal(res, np.nan)
-    res_closest = np.zeros(k)
-    for j in range(0, k):
-        res_closest[j] = np.nanmin(res[j,:])
-    return(res, res_diag, res_closest)
-
-# distances as average between all cells of cluster A to medoid + all cells
-# of cluster B to medoid A
-def DistBetweenCluster(medoids, dist, cluster):
-    k = len(medoids[-1])
-    cm, cm_diag, cm_closest = CellsMedoidsDist(medoids, dist, cluster)
-    cm_tr = np.transpose(cm)
-    res = cm + cm_tr
-    num_comb = DistanceCombinations(cluster)
-    res = res/num_comb
-    res_diag = np.diag(res).copy()
-    np.fill_diagonal(res, np.nan)
-    res_closest = np.zeros(k)
-    for j in range(0, k):
-        res_closest[j] = np.nanmin(res[j,:])
-    return(res, res_diag, res_closest)
-    
-def DistanceCombinations(clusters):
-    cluster = clusters[-1]
-    k = int(np.nanmax(cluster))
-    num_comb = np.zeros([k, k])
-    for i in range(0, k):
-        for j in range(0, k):
-            num_comb = np.sum(cluster == (i+1)) + np.sum(cluster == (j+1))
-    return(num_comb)
-    
-#def RelSizeOfClusters(clusters):
-#    cluster = clusters[-1]
-#    k = int(np.nanmax(cluster))
-#    rel_areas = np.zeros(k)
-#    land_cells = np.sum(~np.isnan(cluster))
-#    for i in range(0, k):
-#        rel_areas[i] = np.sum(cluster == (i + 1))/land_cells
-#    return(rel_areas)
-        
-
+# 4) for values of average distances within cluster and between clusters for 
+#    different numbers of clusters and a reference point, calculate the 
+#    euclidean distance to "optimal clustering" and order the number of  
+#    clusters according to this metric
 def MetricClustering(dist_within, dist_between, refX = 0, refY = 1):
+    # euclidean distance
     m = np.sqrt(((np.array(dist_within)-refX)**2) + \
                 ((refY- np.array(dist_between))**2))
+    # orderdifferent K accordin to performance
     order = np.argsort(m)
+    # as the lowest number of clusters is 2 and ordering gives the index 
+    # (starting with 0) we need to shift values
     cl_order = order + 2
+    # sort results metric according to performance
     m = m[order]
     return(m, cl_order)
         
-
-def VarianceOfCluster(data, clusters):
-    len_ts = data.shape[0]
-    cluster = clusters[-1]
-    k = int(np.nanmax(cluster))
-    variance = np.empty([len_ts, k, k]); variance.fill(np.nan)
-    for cl1 in range(0, k):
-        for cl2 in range(0, k):
-            for t in range(0, len_ts):
-                variance[t, cl1, cl2] = np.nanvar(data[t, \
-                        ((cluster == (cl1 + 1)) + (cluster == (cl2 + 1)))])
-    return(variance)
-    
-def ClusterMetricVariance(data, clusters):
-    variance = VarianceOfCluster(data, clusters)
-    variance = np.nanmean(variance, 0)
-    m_within = np.diag(variance).copy()
-    np.fill_diagonal(variance, np.nan)
-    m_between_closest = np.nanmin(variance, 1)
-    m_between_all = np.nanmean(variance, 1)
-    return(m_within, m_between_closest, m_between_all)
-    
 
 # --------------------- preparing data for regression -------------------------
 
@@ -656,6 +589,7 @@ def RegressionDataAgMIP(model, climate, harm, irri, crop, var_names, \
 # 2) Helpfunction as AgMIP output gives planting time in days of year, but we 
 #    need to know the month, as SPEI and wd are monthly.
     
+# if each year has separate planting days
 def PltdayToPltmths(pltdays, year_start):
     pltmths = np.empty(pltdays.shape); pltmths.fill(np.nan)
     [n_t, n_lat, n_lon] = pltdays.shape
@@ -668,7 +602,8 @@ def PltdayToPltmths(pltdays, year_start):
                                      dt.timedelta(pltdays[t, i, j] - 1)).month
     return(pltmths)
     
-def PltdayToPltmthsSingle(pltdays, mask):# no different plantdays for each year
+# if there is only one planting day that we want to use for all years
+def PltdayToPltmthsSingle(pltdays, mask):
     pltmths = np.empty(pltdays.shape); pltmths.fill(np.nan)
     [n_lat, n_lon] = pltdays.shape
     for i in range(0, n_lat):
@@ -711,7 +646,9 @@ def DetrendDataLinear(data, mask):
     return(data_detrend, p_val_slopes, slopes, intercepts)    
 
 # 4) Get annual SPEI/wd data related to the AgMIP model output
-    
+# either using the the three month value corresponding to the growing season
+# (if relation_DI == "growing_season), or using the lowest three month value 
+# in that year (if relation_DI == "annual_lowest")
 def GetAnnual(data, pltmths, mask, year_start, relation_DI):
     [n_t, n_lat, n_lon] = pltmths.shape
     res = np.empty(pltmths.shape); res.fill(np.nan)
@@ -728,6 +665,8 @@ def GetAnnual(data, pltmths, mask, year_start, relation_DI):
                              int(12 * (year_start - 1901 + t + 1)), i, j].min()
     return(res)
     
+# same, but if we only have a single value for pltmths (i.e. planting month,
+# which we use to calculate the growing season), which we use for all years
 def GetAnnualSingle(data, pltmths, mask, year_start, relation_DI, yld): 
     [n_t, n_lat, n_lon] = yld.shape
     res = np.empty(yld.shape); res.fill(np.nan)
@@ -745,6 +684,8 @@ def GetAnnualSingle(data, pltmths, mask, year_start, relation_DI, yld):
     return(res)
    
 # ------------------------ visualizing data on map ----------------------------
+    
+# 1) map some kind of values per cell
     
 def MapValues(values, lats_rel, lons_rel, \
               title = "", vmin = None, vmax = None, ax = None):    
@@ -778,6 +719,8 @@ def MapValues(values, lats_rel, lons_rel, \
     plt.show()
     return(c)
     
+# 2) Map some kinp of values per cluster
+
 def MapValuesCluster(clusters, values, lats_rel, lons_rel, \
               title = "", vmin = None, vmax = None, ax = None):    
     # create values per cell
@@ -792,6 +735,9 @@ def MapValuesCluster(clusters, values, lats_rel, lons_rel, \
 
 # -------------------------- linear regressions -------------------------------
 
+# 1) Run linear regressions for each cell, with yields (yld) as dependent 
+#    variable and climate_var (a climate index) and other_vars (list of other 
+#    variables) as independent variabes. Time is included if time == True
 def LinearRegressionCells(yld, mask, climate_var, other_vars, time = False):
     [n_lat, n_lon] = mask.shape
     
@@ -841,6 +787,7 @@ def LinearRegressionCells(yld, mask, climate_var, other_vars, time = False):
             errors[:, i, j] = err    
     return(errors, pvals, fstat, preds, rsquared, yld)
  
+# 2) Run regressions but for cluster average values instead of per cell
 def LinearRegressionClusterAverage(yld, clusters, mask, climate_var, \
                                   other_vars, time = False):
     cluster = clusters[-1]
@@ -895,6 +842,18 @@ def LinearRegressionClusterAverage(yld, clusters, mask, climate_var, \
         errors[:, cl] = err    
     return(errors, pvals, fstat, preds, rsquared, yld_cl)
     
+# helpfunction to 2) to calculate cluster averages
+def ClusterAverage(data, cl, k, mask):
+    n_t = data.shape[0]
+    res = np.empty([n_t, k])
+    res.fill(np.nan)
+    for t in range(0, n_t):
+        for i in range(0, k):
+            res[t, i] = np.nanmean(data[t, (cl == (i + 1)) & (mask == 1)])
+    return(res) 
+    
+# 3) Run regression per cluster, but instead of using averages use timeseries
+#    of all cells oin same regression to increase sample size
 def LinearRegressionClusterSample(yld, clusters, mask, climate_var, \
                                   other_vars, time = False):
     cluster = clusters[-1]
@@ -944,6 +903,7 @@ def LinearRegressionClusterSample(yld, clusters, mask, climate_var, \
 
     return(errors, pvals, fstat, preds, rsquared, yld_stacked)
     
+# helpfunction to 3) to create cluster data using all cells
 def ClusterIncreaseSample(yld, climate_var, other_vars, cluster, k):
     cluster_sizes = []
     [n_t, n_lat, n_lon] = yld.shape
@@ -989,15 +949,149 @@ def ClusterIncreaseSample(yld, climate_var, other_vars, cluster, k):
     return(yld_stacked, const_stacked, time_stacked, \
            climate_stacked, other_vars_stacked)    
     
-def ClusterAverage(data, cl, k, mask):
-    n_t = data.shape[0]
-    res = np.empty([n_t, k])
-    res.fill(np.nan)
-    for t in range(0, n_t):
-        for i in range(0, k):
-            res[t, i] = np.nanmean(data[t, (cl == (i + 1)) & (mask == 1)])
-    return(res) 
+# 4) Function to reduce data according to a threshold (given by a quantile).
+#    Values above the threshold are set to NAN
+def ReduceData(data, mask, quantile):
+    res = data.copy()
+    [n_t, n_lat, n_lon] = data.shape
+    for lat in range(0, n_lat):
+        for lon in range(0, n_lon):
+            if mask[lat, lon] == 0:
+                continue
+            threshold = np.nanquantile(data[:, lat, lon], quantile)
+            res[data[:, lat, lon] > threshold, lat, lon] = np.nan
+    return(res)
+    
+# 5) Loading data used for regression with GDHY (except yield data itself)
+def VariablesGDHY(crops, masks_yield, ylds):
+    
+    variables = []
+    variables_detr = []
+    masks = []
+    
+    with open("IntermediateResults/PreparedData/DroughtIndicators/" +\
+                                 "spei03_WA_filled.txt", "rb") as fp:    
+        variables.append(pickle.load(fp))    
+    with open("IntermediateResults/PreparedData/DroughtIndicators/" +\
+                                 "spei03_WA_detrend.txt", "rb") as fp:    
+        variables_detr.append(pickle.load(fp))   
+    with open("IntermediateResults/PreparedData/DroughtIndicators/" +\
+                                 "mask_spei03_WA.txt", "rb") as fp:    
+        masks.append(pickle.load(fp))    
+        
+    for other in ["WaterDeficit", "Precipitation", "PET", "DiurnalTemp"]:
+        with open("IntermediateResults/PreparedData/CRU/" +\
+                                 other + "03_WA.txt", "rb") as fp:    
+            variables.append(pickle.load(fp))  
+        with open("IntermediateResults/PreparedData/CRU/" +\
+                                 other + "03_WA_detrend.txt", "rb") as fp:    
+            variables_detr.append(pickle.load(fp))   
+        with open("IntermediateResults/PreparedData/CRU/" +\
+                                "mask_" + other + "_WA.txt", "rb") as fp:    
+            masks.append(pickle.load(fp))
+            
+    variables_gs = []
+    variables_detr_gs = []
+    for cr in range(0, len(crops)):
+        variables_gs_cr = []
+        variables_detr_gs_cr = []
+        
+        with open("IntermediateResults/PreparedData/CropCalendar/" + \
+                                         crops[cr] + "_plant.txt", "rb") as fp:    
+            plant = pickle.load(fp)    
+        pltmths = PltdayToPltmthsSingle(plant, masks_yield[cr])
+        
+        for var in range(0, len(variables)):
+            variables_gs_cr.append(GetAnnualSingle(variables[var], pltmths, \
+                   masks_yield[cr], 1982, "growing_season", ylds[cr]))
+            variables_detr_gs_cr.append(GetAnnualSingle(variables_detr[var], \
+                   pltmths, masks_yield[cr], 1982, "growing_season", ylds[cr]))
+            
+        variables_gs.append(variables_gs_cr)    
+        variables_detr_gs.append(variables_detr_gs_cr)    
+            
+    return(variables_gs, variables_detr_gs, masks)
+          
+# 6) Detrend yield data
+def DetrendClusterAvgGDHY(yields_avg, k, crops):
+    len_ts = yields_avg.shape[0]
+    # initializing results 
+    avg_pred = np.empty([len_ts, len(crops), k]); avg_pred.fill(np.nan)
+    residuals = np.empty([len_ts, len(crops), k]); residuals.fill(np.nan)
+    residual_means = np.empty([len(crops), k]); residual_means.fill(np.nan)
+    residual_stds = np.empty([len(crops), k]); residual_stds.fill(np.nan)
+    fstat = np.empty([len(crops), k]); fstat.fill(np.nan)
+    slopes = np.empty([len(crops), k]); slopes.fill(np.nan)
+    constants = np.empty([len(crops), k]); constants.fill(np.nan)
+    # detrending per cluster and crop
+    for cr in range(0, len(crops)):
+        for cl in range(0, k):
+            # timeseries
+            X = np.arange(0, len_ts).reshape((-1, 1))
+            X = sm.add_constant(X)
+            Y = yields_avg[:,cr,cl]
+            if np.sum(~(np.isnan(Y))) > 0:
+                # regression
+                model = sm.OLS(Y, X, missing='drop')
+                result = model.fit()
+                # saving results
+                avg_pred[:,cr,cl] = result.predict(X)   
+                residuals[:,cr,cl] = Y - avg_pred[:,cr,cl]
+                residual_means[cr, cl] = np.nanmean(residuals[:,cr,cl])
+                residual_stds[cr, cl] = np.nanstd(residuals[:,cr,cl])
+                fstat[cr, cl] = result.f_pvalue
+                constants[cr, cl] = result.params[0]
+                slopes[cr, cl] = result.params[1] 
+    return(avg_pred, residuals, residual_means, residual_stds, fstat, \
+           constants, slopes)
+    
+# 7) Given the results of a regression, bootstrap the residuals:
+#    Randomly add residuals to the regression results, getting new set of 
+#    "raw" data. For a given number of this new timeseries, repeat the 
+#    regression, and save new regression results (getting an ensamble of 
+#    regression results)    
+def BootstrapResiduals(avg_pred, residuals, constants, slopes, num_bt, \
+                        k, crops):
+    len_ts = avg_pred.shape[0]
+    # initializing results
+    bt_residuals = np.empty([num_bt, len_ts, len(crops), k])
+    bt_residuals.fill(np.nan)
+    bt_slopes = np.empty([num_bt, len(crops), k]); bt_slopes.fill(np.nan)
+    bt_constants = np.empty([num_bt, len(crops), k]); bt_constants.fill(np.nan)
+    # saving original values as first sample
+    bt_residuals[0, :, :, :] = residuals
+    bt_slopes[0, :, :] = slopes
+    bt_constants[0, :, :] = constants
+    
+    # bootstrapping and regression per cluster and crop
+    for cr in range(0, len(crops)):
+        for cl in range(0, k):
+            for i in range(1, num_bt):
+                # bootstrapping
+                rand_resid = np.random.choice(residuals[:, cr, cl], len_ts)
+                # timeseries
+                Y_bt = avg_pred[:, cr, cl] + rand_resid
+                X = np.arange(0, len_ts).reshape((-1, 1))
+                X = sm.add_constant(X)
+                # regression
+                model = sm.OLS(Y_bt, X, missing='drop')
+                result = model.fit()
+                # saving results
+                bt_residuals[i, :, cr, cl] = Y_bt - result.predict(X)
+                bt_constants[i, cr, cl] = result.params[0]
+                bt_slopes[i, cr, cl] = result.params[1] 
+    
+    return(bt_residuals, bt_slopes, bt_constants)
 
+  
+# 4) Main function: runs regressions according to settings, and plots chosen 
+#    results:
+#    - scatter plot of real values and regression results
+#    - distribution of residuals
+#    - map of R squared values 
+#    - map of f statistics
+#    Plots are automatically saved
+    
 def PlotRegressionResults(regtype, yld, mask_crop, masks_di, indices, \
              other_vars, time, crop_name, other_vars_title, vars_filename, \
              subfolder, di_names, figsize, lats_WA, lons_WA, clusters = None, \
@@ -1122,133 +1216,4 @@ def PlotRegressionResults(regtype, yld, mask_crop, masks_di, indices, \
                "fstat_" + model + "_" +  crop_name + "_" + \
               vars_filename + ".png", bbox_inches = "tight", pad_inches = 0.5)  
     return()
-
-def ReduceData(data, mask, quantile):
-    res = data.copy()
-    [n_t, n_lat, n_lon] = data.shape
-    for lat in range(0, n_lat):
-        for lon in range(0, n_lon):
-            if mask[lat, lon] == 0:
-                continue
-            threshold = np.nanquantile(data[:, lat, lon], quantile)
-            res[data[:, lat, lon] > threshold, lat, lon] = np.nan
-    return(res)
-    
-def VariablesGDHY(crops, masks_yield, ylds):
-    
-    variables = []
-    variables_detr = []
-    masks = []
-    
-    with open("IntermediateResults/PreparedData/DroughtIndicators/" +\
-                                 "spei03_WA_filled.txt", "rb") as fp:    
-        variables.append(pickle.load(fp))    
-    with open("IntermediateResults/PreparedData/DroughtIndicators/" +\
-                                 "spei03_WA_detrend.txt", "rb") as fp:    
-        variables_detr.append(pickle.load(fp))   
-    with open("IntermediateResults/PreparedData/DroughtIndicators/" +\
-                                 "mask_spei03_WA.txt", "rb") as fp:    
-        masks.append(pickle.load(fp))    
-        
-    for other in ["WaterDeficit", "Precipitation", "PET", "DiurnalTemp"]:
-        with open("IntermediateResults/PreparedData/CRU/" +\
-                                 other + "03_WA.txt", "rb") as fp:    
-            variables.append(pickle.load(fp))  
-        with open("IntermediateResults/PreparedData/CRU/" +\
-                                 other + "03_WA_detrend.txt", "rb") as fp:    
-            variables_detr.append(pickle.load(fp))   
-        with open("IntermediateResults/PreparedData/CRU/" +\
-                                "mask_" + other + "_WA.txt", "rb") as fp:    
-            masks.append(pickle.load(fp))
-            
-    variables_gs = []
-    variables_detr_gs = []
-    for cr in range(0, len(crops)):
-        variables_gs_cr = []
-        variables_detr_gs_cr = []
-        
-        with open("IntermediateResults/PreparedData/CropCalendar/" + \
-                                         crops[cr] + "_plant.txt", "rb") as fp:    
-            plant = pickle.load(fp)    
-        pltmths = PltdayToPltmthsSingle(plant, masks_yield[cr])
-        
-        for var in range(0, len(variables)):
-            variables_gs_cr.append(GetAnnualSingle(variables[var], pltmths, \
-                   masks_yield[cr], 1982, "growing_season", ylds[cr]))
-            variables_detr_gs_cr.append(GetAnnualSingle(variables_detr[var], \
-                   pltmths, masks_yield[cr], 1982, "growing_season", ylds[cr]))
-            
-        variables_gs.append(variables_gs_cr)    
-        variables_detr_gs.append(variables_detr_gs_cr)    
-            
-    return(variables_gs, variables_detr_gs, masks)
-          
-
-def DetrendClusterAvgGDHY(yields_avg, k, crops):
-    len_ts = yields_avg.shape[0]
-    # initializing results 
-    avg_pred = np.empty([len_ts, len(crops), k]); avg_pred.fill(np.nan)
-    residuals = np.empty([len_ts, len(crops), k]); residuals.fill(np.nan)
-    residual_means = np.empty([len(crops), k]); residual_means.fill(np.nan)
-    residual_stds = np.empty([len(crops), k]); residual_stds.fill(np.nan)
-    fstat = np.empty([len(crops), k]); fstat.fill(np.nan)
-    slopes = np.empty([len(crops), k]); slopes.fill(np.nan)
-    constants = np.empty([len(crops), k]); constants.fill(np.nan)
-    # detrending per cluster and crop
-    for cr in range(0, len(crops)):
-        for cl in range(0, k):
-            # timeseries
-            X = np.arange(0, len_ts).reshape((-1, 1))
-            X = sm.add_constant(X)
-            Y = yields_avg[:,cr,cl]
-            if np.sum(~(np.isnan(Y))) > 0:
-                # regression
-                model = sm.OLS(Y, X, missing='drop')
-                result = model.fit()
-                # saving results
-                avg_pred[:,cr,cl] = result.predict(X)   
-                residuals[:,cr,cl] = Y - avg_pred[:,cr,cl]
-                residual_means[cr, cl] = np.nanmean(residuals[:,cr,cl])
-                residual_stds[cr, cl] = np.nanstd(residuals[:,cr,cl])
-                fstat[cr, cl] = result.f_pvalue
-                constants[cr, cl] = result.params[0]
-                slopes[cr, cl] = result.params[1] 
-    return(avg_pred, residuals, residual_means, residual_stds, fstat, \
-           constants, slopes)
-    
-    
-def BootstrapResiduals(avg_pred, residuals, constants, slopes, num_bt, \
-                        k, crops):
-    len_ts = avg_pred.shape[0]
-    # initializing results
-    bt_residuals = np.empty([num_bt, len_ts, len(crops), k])
-    bt_residuals.fill(np.nan)
-    bt_slopes = np.empty([num_bt, len(crops), k]); bt_slopes.fill(np.nan)
-    bt_constants = np.empty([num_bt, len(crops), k]); bt_constants.fill(np.nan)
-    # saving original values as first sample
-    bt_residuals[0, :, :, :] = residuals
-    bt_slopes[0, :, :] = slopes
-    bt_constants[0, :, :] = constants
-    
-    # bootstrapping and regression per cluster and crop
-    for cr in range(0, len(crops)):
-        for cl in range(0, k):
-            for i in range(1, num_bt):
-                # bootstrapping
-                rand_resid = np.random.choice(residuals[:, cr, cl], len_ts)
-                # timeseries
-                Y_bt = avg_pred[:, cr, cl] + rand_resid
-                X = np.arange(0, len_ts).reshape((-1, 1))
-                X = sm.add_constant(X)
-                # regression
-                model = sm.OLS(Y_bt, X, missing='drop')
-                result = model.fit()
-                # saving results
-                bt_residuals[i, :, cr, cl] = Y_bt - result.predict(X)
-                bt_constants[i, cr, cl] = result.params[0]
-                bt_slopes[i, cr, cl] = result.params[1] 
-    
-    return(bt_residuals, bt_slopes, bt_constants)
-
-  
     

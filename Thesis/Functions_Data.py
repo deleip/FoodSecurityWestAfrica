@@ -14,7 +14,6 @@ import pickle
 import netCDF4
 import pandas as pd
 
-
 # %% DEFINING FUNCTIONS
 
 # 1) A function to read SPEI or SPI and save them in a format useable for the
@@ -200,8 +199,8 @@ def Read_GDHY(var, year, lon_min, lon_max, lat_min, lat_max):
     
     return(var_rel_filled, mask_rel, lats_WA, lons_WA)
     
-# 5) A function to read data from crop calender and change to format useable 
-# for the later following analysis     
+# 5) A function to read data from crop calender and save them in a format 
+# useable for the later following analysis     
 def ReadAndSave_CropCalendar(crop, lon_min, lon_max, lat_min, lat_max):   
  
     f = netCDF4.Dataset("Data/CropCalendar/" + crop + ".crop.calendar.fill.nc")
@@ -220,13 +219,15 @@ def ReadAndSave_CropCalendar(crop, lon_min, lon_max, lat_min, lat_max):
     lats_WA = lats[(lats>=lat_min) & (lats<=lat_max)]
     
     # reduce to region of West Africa
-    plant_rel = plant_flipped[((lats>=(lat_min+0.5)) & (lats<=(lat_max+0.5))).data,:] \
-                                   [:,((lons>=lon_min+0.5) & (lons<=lon_max+0.5)).data]   
-    harvest_rel = harvest_flipped[((lats>=(lat_min+0.5)) & (lats<=(lat_max+0.5))).\
-                            data,:][:,((lons>=lon_min+0.5) & (lons<=lon_max+0.5)).data]   
+    plant_rel = plant_flipped[((lats>=(lat_min+0.5)) & \
+                         (lats<=(lat_max+0.5))).data,:] \
+                         [:,((lons>=lon_min+0.5) & (lons<=lon_max+0.5)).data]   
+    harvest_rel = harvest_flipped[((lats>=(lat_min+0.5)) & \
+                           (lats<=(lat_max+0.5))).data,:] \
+                           [:,((lons>=lon_min+0.5) & \
+                           (lons<=lon_max+0.5)).data]   
     mask_plant = plant_rel.mask
     mask_harvest = harvest_rel.mask
-    
     
     plant_rel.set_fill_value(value = np.nan)
     plant_rel_filled = plant_rel.filled()    
@@ -257,9 +258,8 @@ def ReadAndSave_CropCalendar(crop, lon_min, lon_max, lat_min, lat_max):
         
     return()
     
-
-# TODO doesn't work on my laptop as array is too big... Therefore not included
-# in final data analysis code (but was run in an earlier version)
+# 5) A function to read and aggregate data from AgMERRA and change to format 
+# useable for the later following analysis     
 def ReadAndAgg_AgMERRA(var, year, lon_min, lon_max, lat_min, lat_max):
 
     f = netCDF4.Dataset("Data/AgMERRA/" + var + "/AgMERRA_" + \
@@ -306,15 +306,18 @@ def ReadAndAgg_CRU(var, var_abbrv):
     lons = f.variables['lon'][:]    # degrees east (59)
     data = f.variables[var_abbrv][:]     # (1416, 31, 59)  
     f.close()
-    data.set_fill_value(value = np.nan)
-    data_filled = data.filled()  
+    
+    data.set_fill_value(value = np.nan) 
+    data_filled = data.filled()  # fill missing values with NAN
+    
+    # save data
     with open("IntermediateResults/PreparedData/CRU/" + \
                                           var + "_WA.txt", "wb") as fp:    
         pickle.dump(data_filled, fp)
         pickle.dump(lats, fp)
         pickle.dump(lons, fp)
     
-    # creating and savgin mask
+    # creating and saving mask
     mask_data = np.zeros([len(lats),len(lons)])
     [n_t, n_lat, n_lon] = data.shape
     for t in range(0, n_t):
@@ -342,7 +345,7 @@ def ReadAndAgg_CRU(var, var_abbrv):
         pickle.dump(lats, fp)
         pickle.dump(lons, fp)
     
-    # detrendind 3 month averages
+    # detrendind and saving 3 month averages
     data_detrend, p_val_slopes, slopes, intercepts = \
                                         DetrendDataLinear(data03_WA, mask_data)
     with open("IntermediateResults/PreparedData/CRU/" + \
@@ -405,7 +408,7 @@ def ReadAndReduce_GPW(lat_min, lon_min, lat_max, lon_max):
     country_codes_filled = country_codes.filled()
     country_codes_filled[country_codes_filled == 32767] = np.nan
     
-    
+    # save data
     with open("IntermediateResults/PreparedData/Population/" + \
                                           "GPW_WA.txt", "wb") as fp:    
         pickle.dump(data_rel_filled, fp)

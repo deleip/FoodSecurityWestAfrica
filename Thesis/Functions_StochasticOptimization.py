@@ -129,7 +129,7 @@ def ObjectiveFunctionSingleYear(crop_areas, num_realisations, ylds, max_areas,
 # get all settings using the default except stated otherwise
 # if not given otherwise, the expected income will be calculated
 def DefaultSettingsExcept(k = 1,                        
-                          num_cl_cat = 1,
+                          num_cl_cat = 1,               # is not varied 
                           num_crops = 2,                # is not varied
                           yield_projection = "fixed",   
                           yield_year = 2017,            # is not varied
@@ -141,7 +141,9 @@ def DefaultSettingsExcept(k = 1,
                           seed = 150620,
                           tax = 0.03,
                           perc_guaranteed = 0.75,
-                          exp_income = None):      # changed prob fpor cat yields
+                          exp_income = None):     # will be calculated 
+                                                  # if not given
+                                                  
 # input are all settings, which are eplained in StochasticOptimization.py
 # for any setting that is not given when the function is called, the default
 # value will be used.
@@ -254,7 +256,8 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome):
     return(meta_sol["exp_incomes"])
 
 # set other parameters depending on settings
-def SetParameters(settings, x_ini = None, wo_yields = False):
+def SetParameters(settings, x_ini = None, wo_yields = False, \
+                  returnyieldmean = False):
 # settings: dictionary of all settings given by DefaultSettingsExcept()
 #           settings are eplained in StochasticOptimization.py
 # x_ini: initial guess for the optimizer If not given a first guess will be 
@@ -560,6 +563,14 @@ def SetParameters(settings, x_ini = None, wo_yields = False):
         
         return(x_ini, constraints, args, meta, other)
     
+    if returnyieldmean == True:
+        prob_cat_year = RiskForCatastrophe(risk, k, num_cl_cat)
+        yld_means = \
+              YieldRealisations(slopes, constants, residual_stds, yield_year, 
+                               N_c, risk, T_max, k, 
+                               num_cl_cat, num_crops, yield_projection, \
+                               returnyieldmean)
+        return(yld_means)
 
     # get yield realizations:
     # what is the probability of a catastrophic year for given settings?
@@ -624,9 +635,9 @@ def RiskForCatastrophe(risk, num_clusters, num_cl_cat):
 
 # given risk level and parameters for yield distributions, generates the 
 # catastrophes and corresponding yields
-def YieldRealisations(yld_slopes, yld_constants, resid_std, year, N_c, 
-                      risk, T_max, num_clusters, 
-                      num_cl_cat, num_crops, yield_projection):  
+def YieldRealisations(yld_slopes, yld_constants, resid_std, year, N_c, \
+                      risk, T_max, num_clusters, num_cl_cat, num_crops, \
+                      yield_projection, returnyieldmean = False):  
 # yld_slopes, yld_constants: slope and constant of linear trend in yield 
 #                            averages, per crop & cluster  
 # resid_std: standard deviation of residuals of yield trend per crop & cluster
@@ -646,6 +657,7 @@ def YieldRealisations(yld_slopes, yld_constants, resid_std, year, N_c,
 #                   distribution should be use for every year, or "trend" if
 #                   the mean of the yield distribution should follow the linear
 #                   trend
+# returnyieldmean: as needed for VSS, if True only the yield means are returned
     
     # generating catastrophes 
     cat_clusters, terminal_years = CatastrophicYears(risk, \
@@ -654,7 +666,11 @@ def YieldRealisations(yld_slopes, yld_constants, resid_std, year, N_c,
     # generating yields according to catastrophes
     ylds = ProjectYields(yld_slopes, yld_constants, resid_std, year, N_c, \
                          cat_clusters, terminal_years, T_max, risk, \
-                         num_clusters, num_crops, yield_projection)
+                         num_clusters, num_crops, yield_projection, \
+                         returnyieldmean)
+    if returnyieldmean:
+        return(ylds)
+        
     ylds[ylds<0] = 0
     
     return(cat_clusters, terminal_years, ylds)
@@ -689,7 +705,8 @@ def CatastrophicYears(risk, N_c, T_max, num_clusters, \
 # generate yield realizations according to the occurence of catastrophes
 def ProjectYields(yld_slopes, yld_constants, resid_std, start_year, \
                   N_c, cat_clusters, terminal_years, T_max, onein_catyear, \
-                  num_clusters, num_crops, yield_projection):
+                  num_clusters, num_crops, yield_projection, \
+                  returnyieldmean = False):
 # cat_clusters: matrix of fromat [N_c, T_max, num_clusters] indicating whether 
 #               a cluster in a certain year for a certain realization has 
 #               catastrophic yields (1) or not (0)    
@@ -711,6 +728,10 @@ def ProjectYields(yld_slopes, yld_constants, resid_std, start_year, \
         years = np.transpose(np.tile(np.array(range(year_rel, year_rel + \
                                         T_max)), (num_clusters, num_crops, 1)))
         yld_means = yld_constants + years * yld_slopes
+    
+    # needed for VSS
+    if returnyieldmean == True:
+        return(yld_means)
     
     # initializing yield array
     ylds = np.empty([N_c, T_max, num_crops, num_clusters])
@@ -766,7 +787,7 @@ def ObjectiveFunctionMultipleYears(x, num_clusters, num_crops, N_c, \
 #                   of demand that is not covered by the production
 # rhoS:             solvency penalty. Has to be paied adter final year per 
 #                   negative dollar of final fund after payouts
-# demand:           total food demand (for all clusters) given in kcal
+# A:                total food demand (for all clusters) given in kcal
 # ini_fund:         initial fund size
 # tax:              tax rate farmers have to pay on profits if their cluster
 #                   does not have catastrophic yields
@@ -844,14 +865,14 @@ def ObjectiveFunctionMultipleYears(x, num_clusters, num_crops, N_c, \
                P, # profits
                np.nanmean(S, axis = 0) , # yearly avg shortcoming (T_max)
                rhoF * S, # yearly food demand penalty (N_c x T_max)
-               np.nanmean(rhoF * S, axis = 0) , # yearly avg fd penalty (T_max)
+               np.nanmean(rhoF * S, axis = 0), # yearly avg fd penalty (T_max)
                rhoS * (- ff), # solvency penalty (N_c)
                ini_fund + tax * np.nansum(P, axis = (1,2)) - \
                  np.nansum(payouts, axis = (1,2)), # final fund per realization
-               payouts # government payouts (N_c, T_max, k)
+               payouts, # government payouts (N_c, T_max, k)
+               np.nansum(fixed_costs, axis = (2,3)), #  fixcosts (N_c, T_max)
                )
-        
-    
+
     return(exp_tot_costs)    
 
 # to get metainformation for final crop allocation after running model
@@ -865,8 +886,8 @@ def GetMetaMultipleYears(crop_alloc, args, rhoF, rhoS):
     # running the objective function with option meta = True to get 
     # intermediate results of the calculation
     exp_tot_costs, fix_costs, S, exp_incomes, P, exp_shortcomings, \
-        fd_penalty, avg_fd_penalty, sol_penalty, final_fund, \
-        payouts = ObjectiveFunctionMultipleYears(crop_alloc, 
+    fd_penalty, avg_fd_penalty, sol_penalty, final_fund, payouts, \
+    yearly_fixed_costs = ObjectiveFunctionMultipleYears(crop_alloc, 
                                            args["k"], 
                                            args["num_crops"],
                                            args["N_c"], 
@@ -886,7 +907,7 @@ def GetMetaMultipleYears(crop_alloc, args, rhoF, rhoS):
                                            meta = True)
     
     # calculationg additional quantities
-    prob_staying_solvent = np.sum(final_fund > 0) /  args["N_c"]
+    prob_staying_solvent = np.sum(final_fund >= 0) /  args["N_c"]
     tmp = np.copy(S)
     tmp[tmp > 0] = 1
     prob_food_security = 1 - np.nanmean(tmp)
@@ -904,7 +925,8 @@ def GetMetaMultipleYears(crop_alloc, args, rhoF, rhoS):
                 "final_fund": final_fund,
                 "prob_staying_solvent": prob_staying_solvent,
                 "prob_food_security": prob_food_security,
-                "payouts": payouts}
+                "payouts": payouts,
+                "yearly_fixed_costs": yearly_fixed_costs}
     
     # reshae crop_alloc from a single vector to a matrix with time, crops and 
     # clusters as dimensions
@@ -982,7 +1004,8 @@ def OptimizeMultipleYears(x_ini, constraints, args, meta, rhoF, rhoS):
                                  consargs = (), \
                                  rhobeg = meta["rhobeg_cobyla"], \
                                  rhoend = meta["rhoend_cobyla"], \
-                                 maxfun = 50000)
+                                 maxfun = 70000,
+                                 disp = 3)
     
     # get meta information for final crop allocation
     crop_alloc, meta_sol = GetMetaMultipleYears(crop_alloc, args, rhoF, rhoS)
@@ -1344,7 +1367,62 @@ def OptimizeFoodSecurityProblem(probF, probS, rhoFini = 1e-3, rhoSini = 100, \
             
 # function to calculate a scenario based solution for caomparison to quantify
 # the performance of the stochastic optimization model
-def GetSolutionEV(probF, probS, **kwargs):
+def DetSolution(**kwargs):
+    # get settings    
+    settings = DefaultSettingsExcept(**kwargs)
+    yield_means = SetParameters(settings, returnyieldmean=True)
+    x_ini, constraints, args, meta, other = SetParameters(settings, \
+                                                          wo_yields = True)
+    
+    # for each year, sort crops according to performance in kcal/$ and fill 
+    # cluster areas up until demand is reached
+    x = np.zeros([args["T_max"], args["num_crops"], args["k"]])
+    for t in range(0, settings["T_max"]):
+        yld_tmp = yield_means[t,:,:]
+        # get yields in kcal per ha
+        yields_kcal = (yld_tmp.transpose()*args["crop_cal"]).transpose()
+        # calculate production per dollar for each crop in each cluster
+        kcal_per_dollar =  yields_kcal/args["costs"]
+        # find order of clutsers according to performacnce of the respective 
+        # best crop
+        cluster_order = np.flip(np.argsort(np.max(kcal_per_dollar, axis = 0)))
+        # variable for termination of algorithm
+        not_done = True
+        i = 0
+        # food demand not yet covered
+        remaining_demand = args["demand"][t]
+        while not_done == True:
+            # if all clusters are used but demand not yet met this approach 
+            # does not work
+            if i >= args["k"]:
+                print("Geht nicht")
+                not_done = False
+                continue
+            # else get next best cluster
+            cl = cluster_order[i]
+            # with the correct crop
+            cr = np.where(kcal_per_dollar[:,cl] ==  \
+                          np.max(kcal_per_dollar[:,cl]))[0][0]
+            # calculate possible production using all area of that cluster 
+            # for this crop
+            possible_production = args["max_areas"][cl]*yields_kcal[cr, cl]
+            # if this is more than still needed, use only the area needed 
+            # and set not_done = False to terminate the algorithm
+            if possible_production >= remaining_demand:
+                x[t, cr, cl] = remaining_demand/yields_kcal[cr, cl]
+                not_done = False
+            # else use whole area and calculate the still remaining demand
+            else:
+                x[t, cr, cl] = args["max_areas"][cl]
+                remaining_demand = remaining_demand - possible_production
+                i = i+1
+    
+    return(x, args)
+    
+    
+# function to get expected total costs using a specific crop allocation (used
+# for VSS but does not return VSS directly)    
+def VSS(crop_alloc, probF, probS, **kwargs):
     # create dictionary of all settings (includes calculating or loading the
     # correct expected income)
     settings = DefaultSettingsExcept(**kwargs)
@@ -1352,28 +1430,11 @@ def GetSolutionEV(probF, probS, **kwargs):
     rhoF, rhoS = GetPenalties(settings, probF, probS)
     # get parameters for the given settings
     x_ini, const, args, meta_cobyla, other = SetParameters(settings)   
-    
-    # calculate expected yields
-    exp_ylds = np.nanmean(args["ylds"], axis = 0)
-    
-    # change arguments to run model for expected yields
-    args_tmp = args.copy()
-    args_tmp["N_c"] = 1
-    args_tmp["cat_clusters"] = np.zeros([1, settings["T_max"], settings["k"]])
-    args_tmp["terminal_years"] = np.array([-1])
-    args_tmp["ylds"] = np.reshape(exp_ylds, (1, settings["T_max"], \
-                                settings["num_crops"], settings["k"]))
-    
-    # run the optimizer for this scenario
-    print("Calculate crop allocation for EV solution")
-    crop_alloc, meta_sol, duration = \
-            OptimizeMultipleYears(x_ini, const, args_tmp, meta_cobyla, rhoF, 0)
             
     # run stochastic objective function for resulting crop allocation
     print("Calculate expected costs for EV crop allocation")
-    crop_alloc, meta_sol = GetMetaMultipleYears(crop_alloc, args, rhoF, rhoS)
+    crop_alloc, meta_sol = GetMetaMultipleYears(crop_alloc.flatten(), args, \
+                                                rhoF, rhoS)
     
-    return(crop_alloc, meta_sol, exp_ylds, rhoF, rhoS, args)
+    return(meta_sol, settings, rhoF, rhoS)
     
-            
-
