@@ -2,13 +2,13 @@
 
 ## Aim
 
-The aim of this project is a simplified two-stage stochastic optimization model for food security in West Africa. West 
+The aim of this project is a stylized two-stage stochastic optimization model for food security in West Africa. West 
 Africa is spatially subdivided in a modifiable number of clusters and uncertainty is included by yield distributions 
 per cluster, year and crop. The model covers a given time period (default is 2017-2041) and includes a government fund 
 which is built up by farmers paying taxes on their profits which is used for payouts to guarantee a certain income for 
 farmers in catastrophic years. The model output is an allocation of arable land in each year and cluster to the 
 different crops. The objective is a to minimize costs while assuring government solvency (i.e. the final government 
-fund should be positive) and food security (i.e. producing a certain amount of kcal every year) with given 
+fund should be positive) and food security (i.e. producing a certain amount of calories every year) with given 
 probabilities each. 
 
 ## Content

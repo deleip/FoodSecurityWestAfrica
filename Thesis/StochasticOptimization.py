@@ -1573,7 +1573,7 @@ fig.savefig("Figures/StoOpt/OtherParameters/FinalFund.png", \
 
 ###############################################################################
 
-# %% ###################### 4. ANALYZING OTHER k AND  #########################
+# %% ######################## 4. ANALYZING OTHER k  ###########################
 
 
 # %% a) Run model for different cases
@@ -1835,7 +1835,7 @@ props = dict(boxstyle='round', facecolor='wheat', alpha=0.2)
 ax = fig1.add_subplot(1, 2, 1)
 for r in range(0,2):
     plt.plot(years, np.nanmean(meta_sol_l[r]["S"], axis = 0),\
-             color = cols[r], lw = 2)
+             color = cols[r], lw = 2, label = r"$K = $" + str(r+1))
     print(np.mean(np.nanmean(meta_sol_l[r]["S"], axis = 0)[(-15):]))
     plt.ylim([-8e9, 4e11])
 ax.xaxis.set_tick_params(labelsize=20)
@@ -1843,6 +1843,9 @@ ax.yaxis.set_tick_params(labelsize=20)
 ax.yaxis.offsetText.set_fontsize(20)
 ax.xaxis.offsetText.set_fontsize(20)
 plt.xlabel("Years", fontsize = 26)
+ax.legend(loc = 4, \
+           bbox_to_anchor=(0.97, 0.025), fontsize = 24, \
+           fancybox = True, title_fontsize = "26")
 plt.ylabel(r"Food demand shortcomings [kcal]", fontsize = 26)
 plt.title("A", fontsize = 28)    
     
@@ -1850,19 +1853,18 @@ plt.title("A", fontsize = 28)
 props = dict(boxstyle='round', facecolor='wheat', alpha=0.2)
 ax = fig1.add_subplot(1, 2, 2)
 plt.hist(meta_sol_l[0]["final_fund"], alpha = 0.5, \
-         color = cols[0], label = r"$K = 1, \alpha_S = $"+ \
-         str(np.round(100*np.sum(meta_sol_l[0]["final_fund"] >= 0) / \
-                      settings_l[0]["N_c"], 2)) + "%", \
+         color = cols[0], label = r"$K = 1$", \
          density = True, bins = np.arange(-0.25e10, 0.85e10, 125000000))
 plt.hist(meta_sol_l[1]["final_fund"], alpha = 0.5, \
-         color = cols[1], label = r"$K = 2, K' = 1, \alpha_S = $" + \
-         str(np.round(100*np.sum(meta_sol_l[1]["final_fund"] >= 0) /  \
-                      settings_l[1]["N_c"], 2)) + "%", \
+         color = cols[1], label = r"$K = 2$", \
          density = True, bins = np.arange(-0.25e10, 0.85e10, 125000000))
-plt.ylim([-0.15e-10,0.9e-9])
+plt.ylim([-0.15e-10,0.8e-9])
 ax.xaxis.set_tick_params(labelsize=20)
 ax.yaxis.set_tick_params(labelsize=20)
 ax.yaxis.offsetText.set_fontsize(20)
+plt.legend(loc = 1, \
+           bbox_to_anchor=(0.32, 0.97), fontsize = 24, \
+           fancybox = True, title_fontsize = "26")
 ax.xaxis.offsetText.set_fontsize(20)
 plt.xlabel("Final fund in [$]", fontsize = 26)
 plt.ylabel("Density", fontsize = 26)
