@@ -1057,6 +1057,7 @@ def YieldRealisations(yld_slopes, yld_constants, resid_std, sim_start, N, \
                              num_clusters, num_crops, yield_projection, \
                              VSS)
         
+    # comparing with np.nans leads to annoying warnings, so we turn them off        
     np.seterr(invalid='ignore')
     ylds[ylds<0] = 0
     np.seterr(invalid='warn')
