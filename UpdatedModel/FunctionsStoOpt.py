@@ -230,7 +230,6 @@ def FoodSecurityProblem(PenMet = "prob", probF = 0.99, probS = 0.95, \
  
     settings = DefaultSettingsExcept(**kwargs)
     fn = filename(settings, PenMet, validation, probF, probS, rhoF, rhoS)
-    # print(fn)
     
     if not os.path.isfile("ModelOutput/SavedRuns/" + fn + ".txt"):
         try:
@@ -276,7 +275,6 @@ def FoodSecurityProblem(PenMet = "prob", probF = 0.99, probS = 0.95, \
                 
         meta_sol = GetMetaInformation(crop_alloc, args, rhoF, rhoS)
         meta_sol_vss =  GetMetaInformation(crop_alloc_vss, args, rhoF, rhoS)
-            
     
     return(crop_alloc, meta_sol, status, durations, settings, args, \
            rhoF, rhoS, VSS_value, crop_alloc_vss, meta_sol_vss, \
@@ -286,7 +284,6 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
                                 rhoFini = None, rhoSini = None, prints = True, \
                                 validation = None, save = True, **kwargs):
     """
-    
     Function combines setting up and solving the model, calculating additional
     information, and saving the results.
 
@@ -482,7 +479,6 @@ def DefaultSettingsExcept(k = 9,
                           expected_incomes = None,
                           needed_import = 0):     
     """
-
     Using the default for all settings not specified, this creates a 
     dictionary of all settings.
 
@@ -545,10 +541,6 @@ def DefaultSettingsExcept(k = 9,
     
 
     """
-                             
-# input are all settings, which are explained in StochasticOptimization.py
-# for any setting that is not given when the function is called, the default
-# value will be used.
 
     if type(k_using) is int:
         k_using = [k_using]
