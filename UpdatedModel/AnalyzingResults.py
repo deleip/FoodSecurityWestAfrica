@@ -12,7 +12,7 @@ import pickle
 from termcolor import colored
 import pandas as pd
 
-chdir('/home/debbora/IIASA/ForPublication/NewModel')
+chdir('/home/debbora/git_environment/FoodSecurityWestAfrica/UpdatedModel')
 # chdir("H:\ForPublication/NewModel")
 
 import FunctionsStoOpt as StoOpt

@@ -21,7 +21,7 @@ import sys
 import matplotlib.pyplot as plt
 import math
 import os
-from mpl_toolkits.basemap import Basemap
+# from mpl_toolkits.basemap import Basemap
 import matplotlib.cm as cm
 import matplotlib.colors as col
 from termcolor import colored
@@ -388,6 +388,10 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
     status, crop_alloc, meta_sol, prob, durations = \
         SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, prints = prints)
         
+    printing("\nResulting probabilities:\n" + \
+    "     probF: " + str(np.round(meta_sol["prob_food_security"]*100, 2)) + "%\n" + \
+    "     probS: " + str(np.round(meta_sol["prob_staying_solvent"]*100, 2)) + "%", prints)
+        
     # VSS
     printing("\nCalculating VSS", prints = prints)
     crop_alloc_vss, meta_sol_vss = VSS(settings, args, rhoF, rhoS)
@@ -654,6 +658,8 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
           trends
         - prob_cat_year: probability for a catastrophic years given the 
           covered risk level
+        - share_no_cat: share of samples that don't have a catastrophe within 
+          the considered timeframe
 
     """
     
@@ -908,15 +914,18 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
     # get yield realizations:
     # what is the probability of a catastrophic year for given settings?
     prob_cat_year = RiskForCatastrophe(risk, len(k_using))
-    printing("\nProb for catastrophic year: " + str(prob_cat_year), prints = prints)    
+    printing("\nProb for catastrophic year: " + str(np.round(prob_cat_year*100, 2)) + "%", prints = prints)    
     # create realizations of presence of catastrophic yields and corresponding
     # yield distributions
-    printing("\nGenerating yield samples\n", prints = prints)
+    printing("\nGenerating yield samples", prints = prints)
     np.random.seed(seed)
     cat_clusters, terminal_years, ylds, yld_means = \
           YieldRealisations(slopes, constants, residual_stds, sim_start, \
                            N, risk, T, len(k_using), num_crops, \
                            yield_projection, VSS, wo_yields)
+    # probability to not have a catastrophe
+    no_cat = np.sum(terminal_years == -1) / N
+    printing("\nShare of samples without catastrophe: " + str(np.round(no_cat*100, 2)) + "%\n", prints = prints)  
         
 # 14. group output into different dictionaries
     # arguments that are given to the objective function by the solver
@@ -944,7 +953,8 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
              "constants": constants,
              "yld_means": yld_means,
              "residual_stds": residual_stds,
-             "prob_cat_year": prob_cat_year}
+             "prob_cat_year": prob_cat_year,
+             "share_no_cat": no_cat}
     
 # 15. scale parameters
     args["costs"] = 1e-3 * args["costs"]
@@ -1412,7 +1422,7 @@ def GetInitialGuess(dictGuesses, name):
 
 # %% ############### FUNCTIONS RUNNING MODEL TO GET PENALTIES #################
 
-def CheckForFullAreaProbF(args, other, probF, prints = True):
+def CheckForFullAreaProbF(args, other, probF, accuracy, prints = True):
     """
     Function to find the highest probF possible under the given settings, and
     calculating the amount of import needed to increase this probabtility to 
@@ -1426,6 +1436,9 @@ def CheckForFullAreaProbF(args, other, probF, prints = True):
         Other information on the model setup (on the yield distributions).
     probF : float
         The desired probability for food security.
+    accuracy : int, optional
+        Desired decimal places of accuracy of the obtained probF. 
+        The default is 3.
     prints : boolean, optional
         Specifying whether the progress should be documented thorugh console 
         outputs. The default is True.
@@ -1461,15 +1474,19 @@ def CheckForFullAreaProbF(args, other, probF, prints = True):
     meta_sol = GetMetaInformation(x, args, rhoF = 0, rhoS = 0) 
     max_probF = meta_sol["prob_food_security"]
     max_probS = meta_sol["prob_staying_solvent"]
+    printing("     maxProbS: " + str(np.round(max_probS * 100, accuracy - 1)) + "%" + \
+          ", maxProbF: " + str(np.round(max_probF * 100, accuracy - 1)) + "%", prints)
     
     # check if it is high enough
     needed_import = np.quantile(meta_sol["shortcomings"]\
                  [~np.isnan(meta_sol["shortcomings"])].flatten(), probF)
     if max_probF >= probF:
-        printing("Desired probF can be reached", prints)
+        printing("     Desired probF (" + str(np.round(probF * 100, accuracy - 1)) \
+                             + "%) can be reached\n", prints)
     else:
         printing("     Import of " + str(np.round(needed_import, 2)) + \
-                 " 10^12 kcal is needed", prints = prints)
+                 " 10^12 kcal is needed to reach probF = " + \
+                 str(np.round(probF * 100, accuracy - 1)) + "%\n", prints = prints)
             
     return(max_probF, max_probS, needed_import)
 
@@ -1524,7 +1541,7 @@ def CheckForFullAreaProbS(args, other, probS, prints = True):
         
     return(max_probS, max_probF, probSnew)
 
-def CheckForFullArea(args, other, probF = None, probS = None, prints = True):
+def CheckForFullArea(args, other, probF = None, probS = None, accuracy = 3, prints = True):
     """
     Wrapper function for finding potential of area either for food security 
     or for solvency. Only one probF and probS should differ from None, thus
@@ -1540,6 +1557,9 @@ def CheckForFullArea(args, other, probF = None, probS = None, prints = True):
         The desired probability for food security. The default is None.
     probS : float or None, optional
         The desired probability for solvency. The default is None.
+    accuracy : int, optional
+        Desired decimal places of accuracy of the obtained probF. 
+        The default is 3.
     prints : boolean, optional
         Specifying whether the progress should be documented thorugh console 
         outputs. The default is True.
@@ -1555,7 +1575,7 @@ def CheckForFullArea(args, other, probF = None, probS = None, prints = True):
     elif probF is None and probS is None:
         sys.exit("Either the desired probF or the desired probS needs to be given.")
     elif probF is not None and probS is None:
-        return(CheckForFullAreaProbF(args, other, probF, prints))
+        return(CheckForFullAreaProbF(args, other, probF, accuracy, prints))
     elif probS is not None and probF is None:
         return(CheckForFullAreaProbS(args, other, probS, prints))
           
@@ -1606,8 +1626,7 @@ def GetRhoF(args, other, probF, rhoFini, accuracy = 3, prints = True):
     """
     args_tmp = args.copy()
     maxProbF, maxProbS, needed_import = CheckForFullArea(args_tmp, other, probF = probF, prints = prints)
-    print("     maxProbS: " + str(np.round(maxProbS * 100, 1)) + \
-          ", maxProbF: " + str(np.round(maxProbF * 100, 1)) + "\n")
+    
     if needed_import > 0:
         args_tmp["import"] = needed_import
     
@@ -1623,8 +1642,8 @@ def GetRhoF(args, other, probF, rhoFini, accuracy = 3, prints = True):
     rhoFold = rhoFini
     # printing("      " + "\u005F" * 21, prints = prints)
     printing("     rhoF: " + str(rhoFold) + \
-          ", prob: " + str(np.round(meta_sol["prob_food_security"],4)) + \
-          ", time: " + str(np.round(durations[2], 2)), prints = prints)
+          " $/10^3kcal, probF: " + str(np.round(meta_sol["prob_food_security"]*100, accuracy - 1)) + \
+          "%, time: " + str(np.round(durations[2], 2)) + "s", prints = prints)
             
     # we increase (or decrease) rhoF until we first pass the desired 
     # probability. Then we reduce the search intervall by half in each step
@@ -1659,8 +1678,8 @@ def GetRhoF(args, other, probF, rhoFini, accuracy = 3, prints = True):
         
         rhoFold = rhoFnew
         printing("     rhoF: " + str(rhoFold) + \
-              ", prob: " + str(np.round(meta_sol["prob_food_security"], 4)) + \
-              ", time: " + str(np.round(durations[2], 2)), prints = prints)
+              " $/10^3kcal, probF: " + str(np.round(meta_sol["prob_food_security"]*100, accuracy - 1)) + \
+              "%, time: " + str(np.round(durations[2], 2)) + "s", prints = prints)
             
     # printing("      " + "\u0305 " * 21, prints = prints)           
     return(rhoFold, maxProbF, maxProbS, needed_import, crop_alloc, meta_sol)
@@ -1710,9 +1729,9 @@ def GetRhoS(args, other, probS, rhoSini, accuracy = 3, prints = True):
     # the wanted one is not possible
     maxProbS, maxProbF, probSnew = CheckForFullArea(args, other, probS = probS, prints = prints)
     probSnew = np.round(probSnew, accuracy)
-    print("     maxProbS: " + str(np.round(maxProbS * 100, 3)) + \
-          ", maxProbF: " + str(np.round(maxProbF * 100, 3)) +\
-          ", pSnew: " + str(np.round(probSnew * 100, 3)) + "\n")
+    print("     maxProbS: " + str(np.round(maxProbS * 100, accuracy - 1)) + \
+          "%, maxProbF: " + str(np.round(maxProbF * 100, accuracy - 1)) +\
+          "%, pSnew: " + str(np.round(probSnew * 100, accuracy - 1)) + "%\n")
         
         
     # initialize values for search algorithm
@@ -1724,15 +1743,16 @@ def GetRhoS(args, other, probS, rhoSini, accuracy = 3, prints = True):
     # calculate initial guess
     status, crop_alloc, meta_sol, prob, durations = \
                     SolveReducedcLinearProblemGurobiPy(args, 0, rhoSini, prints = False)
-    if np.round(meta_sol["prob_no_cat"], accuracy) == probSnew:
-        printing("     Only in cases with no catastrophe the fund can stay solvent", prints = prints)
+    if np.round(other["share_no_cat"], accuracy) == probSnew:
+        printing("     Only in cases with no catastrophe the fund can stay solvent\n" + \
+                 "     Setting penalty to zero", prints = prints)
         return(0, probSnew, maxProbS, maxProbF)                
         
     rhoSold = rhoSini
     # printing("      " + "\u005F" * 21, prints = prints)
     printing("     rhoS: " + str(rhoSold) + \
-          ", prob: " + str(np.round(meta_sol["prob_staying_solvent"], 4)) + \
-          ", time: " + str(np.round(durations[2], 2)), prints = prints)
+          " $/$, probS: " + str(np.round(meta_sol["prob_staying_solvent"]*100, accuracy -1)) + \
+          "%, time: " + str(np.round(durations[2], 2)) + "s", prints = prints)
 
     if np.round(meta_sol["prob_staying_solvent"], accuracy) >= probSnew:
         diff = 100
@@ -1776,8 +1796,8 @@ def GetRhoS(args, other, probS, rhoSini, accuracy = 3, prints = True):
         
         rhoSold = rhoSnew
         printing("     rhoS: " + str(rhoSold) + \
-              ", prob: " + str(np.round(meta_sol["prob_staying_solvent"], 4)) + \
-              ", time: " + str(np.round(durations[2], 2)), prints = prints)
+              " $/$, probS: " + str(np.round(meta_sol["prob_staying_solvent"]*100, accuracy - 1)) + \
+              "%, time: " + str(np.round(durations[2], 2)) + "s", prints = prints)
             
     # printing("      " + "\u0305 " * 21, prints = prints)           
     return(rhoSold, probSnew, maxProbS, maxProbF)
@@ -2171,8 +2191,6 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
           sample.   
         - num_years_with_losses: Number of occurences where farmers of a 
           cluster have negative profits.
-        - prob_no_cat: Share of samples with no catastrophe in the considered
-          timeframe.
 
     """
     
@@ -2201,8 +2219,6 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
                                            rhoS)
     
     # calculationg additional quantities:
-    # probability to not have a catastrophe
-    no_cat = np.sum(args["terminal_years"] == -1) /  args["N"]
     # probability of solvency in case of catastrophe
     prob_staying_solvent = np.sum(final_fund >= 0) /  args["N"]
     tmp = np.copy(shortcomings)
@@ -2229,8 +2245,7 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
                 "prob_food_security": prob_food_security,
                 "payouts": payouts,
                 "yearly_fixed_costs": yearly_fixed_costs,
-                "num_years_with_losses": num_years_with_losses,
-                "prob_no_cat": no_cat}
+                "num_years_with_losses": num_years_with_losses}
     
     return(meta_sol)  
     
@@ -2432,11 +2447,11 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, prints = True):
             
     # printing("      " + "\u005F" * 21, prints = prints)
     printing("     Time      Setting up model: " + \
-            str(np.round(durations[0], 2)), prints = prints)
+            str(np.round(durations[0], 2)) + "s", prints = prints)
     printing("               Solving model: " + \
-            str(np.round(durations[1], 2)), prints = prints)
+            str(np.round(durations[1], 2)) + "s", prints = prints)
     printing("               Total: " + \
-            str(np.round(durations[2], 2)), prints = prints) 
+            str(np.round(durations[2], 2)) + "s", prints = prints) 
     # printing("      " + "\u0305 " * 21, prints = prints)           
                 
     return(status, crop_alloc, meta_sol, prob, durations)

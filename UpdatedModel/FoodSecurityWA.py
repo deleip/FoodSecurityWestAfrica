@@ -9,7 +9,7 @@ from os import chdir
 import pickle
 from termcolor import colored
 
-chdir('/home/debbora/IIASA/ForPublication/NewModel')
+chdir('/home/debbora/git_environment/FoodSecurityWestAfrica/UpdatedModel')
 # chdir("H:\ForPublication/NewModel")
 
 import FunctionsStoOpt as StoOpt
@@ -156,5 +156,5 @@ crop_alloc, meta_sol, status, durations, settings, args, \
                 rhoF, rhoS, VSS_value, crop_alloc_vss, meta_sol_vss, \
                 validation_values, probSnew, fn = StoOpt.FoodSecurityProblem(
                                             validation = 50000,
-                                            k_using = [8],
+                                            k_using = [5],
                                             N = 5000)
