@@ -3,7 +3,7 @@
 """
 Created on Wed Nov 11 23:31:27 2020
 
-@author: debbora
+@author: Debbora Leip
 """
 
 # %% #################### IMPORTING NECESSARY PACKAGES  #######################
@@ -56,7 +56,9 @@ def CheckFolderStructure():
         os.mkdir("Figures/CompareCropAllocs")
     if not os.path.isdir("Figures/CompareCropAllocsRiskPooling"):
         os.mkdir("Figures/CompareCropAllocsRiskPooling")
-     
+    if not os.path.isdir("Figures/rhoSvsDebts"):
+        os.mkdir("Figures/rhoSvsDebts")
+        
     if not os.path.isdir("InputData"):
         warn.warn("You are missing the input data")
         exit()
@@ -126,8 +128,8 @@ def CheckFolderStructure():
     if not os.path.exists("PenaltiesAndIncome/MaxProbSforAreaF.txt"):
         with open("PenaltiesAndIncome/MaxProbSforAreaF.txt", "wb") as fp:
             pickle.dump({}, fp)
-    if not os.path.exists("PenaltiesAndIncome/NewProbS.txt"):
-        with open("PenaltiesAndIncome/NewProbS.txt", "wb") as fp:
+    if not os.path.exists("PenaltiesAndIncome/MinimizedNecessaryDebt.txt"):
+        with open("PenaltiesAndIncome/MinimizedNecessaryDebt.txt", "wb") as fp:
             pickle.dump({}, fp)
             
 # %% ############## WRAPPING FUNCTIONS FOR FOOD SECURITY MODEL ################
@@ -230,20 +232,27 @@ def FoodSecurityProblem(PenMet = "prob", probF = 0.99, probS = 0.95, \
  
     settings = DefaultSettingsExcept(**kwargs)
     fn = filename(settings, PenMet, validation, probF, probS, rhoF, rhoS)
+    if PenMet == "penalties":
+        probS = None
+        probF = None
+    elif PenMet != "prob":
+        sys.exit("A non-valid penalty method was chosen (PenMet must " + \
+                 "be either \"prob\" or \"penalties\").")
+    
     
     if not os.path.isfile("ModelOutput/SavedRuns/" + fn + ".txt"):
         try:
-            crop_alloc, meta_sol, status, durations, settings, args, \
+            crop_alloc, meta_sol, status, durations, settings, args, other, \
             rhoF, rhoS, VSS_value, crop_alloc_vss, meta_sol_vss, \
-            validation_values, probSnew = OptimizeModel(PenMet = PenMet,  
-                                                      probF = probF, 
-                                                      probS = probS, 
-                                                      rhoFini = rhoF,
-                                                      rhoSini = rhoS,
-                                                      prints = prints,
-                                                      validation = validation,
-                                                      save = save,
-                                                      **kwargs)
+            validation_values = OptimizeModel(PenMet = PenMet,  
+                                              probF = probF, 
+                                              probS = probS, 
+                                              rhoFini = rhoF,
+                                              rhoSini = rhoS,
+                                              prints = prints,
+                                              validation = validation,
+                                              save = save,
+                                              **kwargs)
             if plotTitle is not None:
                 PlotModelOutput(PlotType = "CropAlloc", title = plotTitle, \
                                 file = fn, crop_alloc = crop_alloc, k = settings["k"], \
@@ -261,6 +270,7 @@ def FoodSecurityProblem(PenMet = "prob", probF = 0.99, probS = 0.95, \
             crop_alloc = pickle.load(fp)
             settings = pickle.load(fp)
             args = pickle.load(fp)
+            other = pickle.load(fp)
             rhoF = pickle.load(fp)
             rhoS = pickle.load(fp)
             status = pickle.load(fp)
@@ -271,14 +281,18 @@ def FoodSecurityProblem(PenMet = "prob", probF = 0.99, probS = 0.95, \
             if PenMet == "prob":
                 probF = pickle.load(fp)
                 probS = pickle.load(fp)
-            probSnew = pickle.load(fp)
                 
-        meta_sol = GetMetaInformation(crop_alloc, args, rhoF, rhoS)
-        meta_sol_vss =  GetMetaInformation(crop_alloc_vss, args, rhoF, rhoS)
+        meta_sol = GetMetaInformation(crop_alloc, args, rhoF, rhoS, probS)
+        meta_sol_vss =  GetMetaInformation(crop_alloc_vss, args, rhoF, rhoS, probS)
+        
+        if plotTitle is not None:
+            PlotModelOutput(PlotType = "CropAlloc", title = plotTitle, \
+                            file = fn, crop_alloc = crop_alloc, k = settings["k"], \
+                            k_using = settings["k_using"], max_areas = args["max_areas"])
     
-    return(crop_alloc, meta_sol, status, durations, settings, args, \
+    return(crop_alloc, meta_sol, status, durations, settings, args, other, \
            rhoF, rhoS, VSS_value, crop_alloc_vss, meta_sol_vss, \
-           validation_values, probSnew, fn)          
+           validation_values, fn)          
 
 def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
                                 rhoFini = None, rhoSini = None, prints = True, \
@@ -363,6 +377,8 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
         case that probability can't be reached).
 
     """
+    # timing
+    all_start  = tm.time()
     
     # create dictionary of all settings (includes calculating or loading the
     # correct expected income)
@@ -376,17 +392,16 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
     
     # get the right penalties
     if PenMet == "prob":
-        rhoF, rhoS, probSnew, needed_import = GetPenalties(settings, args, other, probF, probS, \
+        rhoF, rhoS, necessary_debt, needed_import = GetPenalties(settings, args, other, probF, probS, \
                                   rhoFini, rhoSini, prints = prints)
+        settings["import"] = needed_import
         if needed_import > 0:
             args["import"] = needed_import
-    elif PenMet != "penalties":
-        sys.exit("A non-valid penalty method was chosen (PenMet must " + \
-                 "be either \"prob\" or \"penalties\").")
+        settings["neccessary_debt"] = necessary_debt
     
     # run the optimizer
     status, crop_alloc, meta_sol, prob, durations = \
-        SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, prints = prints)
+        SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS, prints = prints)
         
     printing("\nResulting probabilities:\n" + \
     "     probF: " + str(np.round(meta_sol["prob_food_security"]*100, 2)) + "%\n" + \
@@ -394,7 +409,7 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
         
     # VSS
     printing("\nCalculating VSS", prints = prints)
-    crop_alloc_vss, meta_sol_vss = VSS(settings, args, rhoF, rhoS)
+    crop_alloc_vss, meta_sol_vss = VSS(settings, args, rhoF, rhoS, probS)
     VSS_value = meta_sol_vss["exp_tot_costs"] - meta_sol["exp_tot_costs"]
     
     # out of sample validation
@@ -402,7 +417,7 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
     if validation is not None:
         printing("\nOut of sample validation", prints = prints)
         meta_sol_val = OutOfSampleVal(crop_alloc, settings, rhoF, \
-                                      rhoS, expected_incomes, validation)
+                              rhoS, expected_incomes, validation, probS, prints)
         validation_values = {"sample_size": validation,
                "total_costs": meta_sol["exp_tot_costs"], 
                "total_costs_val": meta_sol_val["exp_tot_costs"],
@@ -442,12 +457,12 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
         if PenMet == "prob":
             info.append("probF")
             info.append("probS")
-        info.append("probSnew")
         with open("ModelOutput/SavedRuns/" + fn + ".txt", "wb") as fp:
             pickle.dump(info, fp)
             pickle.dump(crop_alloc, fp)
             pickle.dump(settings, fp)
             pickle.dump(args, fp)
+            pickle.dump(other, fp)
             pickle.dump(rhoF, fp)
             pickle.dump(rhoS, fp)
             pickle.dump(status, fp)
@@ -458,13 +473,15 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
             if PenMet == "prob":
                 pickle.dump(probF, fp)
                 pickle.dump(probS, fp)
-                pickle.dump(probSnew, fp)
-            else: # we need to save something for probSnew
-                pickle.dump(None, fp)
+     
+    # timing
+    all_end  = tm.time()   
+    full_time = all_end - all_start
+    printing("\nTotal time: " + str(np.round(full_time, 2)) + "s", prints = prints)
             
-    return(crop_alloc, meta_sol, status, durations, settings, args, \
+    return(crop_alloc, meta_sol, status, durations, settings, args, other, \
            rhoF, rhoS, VSS_value, crop_alloc_vss, meta_sol_vss, \
-           validation_values, probSnew)          
+           validation_values)          
 
 # %% ############# FUNCTIONS TO GET INPUT FOR FOOD SECURITY MODEL #############
 
@@ -481,7 +498,8 @@ def DefaultSettingsExcept(k = 9,
                           tax = 0.01,
                           perc_guaranteed = 0.9,
                           expected_incomes = None,
-                          needed_import = 0):     
+                          needed_import = 0,
+                          ini_fund = 0):     
     """
     Using the default for all settings not specified, this creates a 
     dictionary of all settings.
@@ -533,10 +551,15 @@ def DefaultSettingsExcept(k = 9,
         If None, the expected income will be calculated by solving the model
         for the corresponding scenario without government. I an array is given,
         this will be assumed to have the correct values. The default is None.
-    needed_import: float
+    needed_import : float
         If PenMet = "prob", this will be caluclated such that the probability
         for food security can be reached. If PenMet = "penalties" this will 
         not be changed from the input value. The default is 0.
+    ini_fund : float
+        If PenMet = "prob", this will be caluclated such that the probability
+        for solvency can be reached. If PenMet = "penalties" this will 
+        not be changed from the input value. The default is 0.
+        
         
     Returns
     -------
@@ -578,7 +601,8 @@ def DefaultSettingsExcept(k = 9,
                  "tax": tax,
                  "perc_guaranteed": perc_guaranteed,
                  "expected_incomes": expected_incomes,
-                 "import": needed_import}   
+                 "import": needed_import,
+                 "ini_fund": ini_fund}   
      
 
     # return dictionary of all settings
@@ -660,8 +684,17 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
           covered risk level
         - share_no_cat: share of samples that don't have a catastrophe within 
           the considered timeframe
+        - y_profit: minimal yield per crop and cluster needed to not have 
+          losses
+        - share_rice_np: share of cases where rice yields are too low to 
+          provide profit
+        - share_maize_np: share of cases where maize yields are too low to 
+          provide profit
+        - exp_profit: expected profits in 10^9$/10^6ha per year, crop, cluster
 
     """
+    
+    crops = ["Rice", "Maize"]
     
 # 0. extract settings from dictionary
     k = settings["k"]
@@ -811,7 +844,9 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
     # On average: (304.6 + 305 + 301.4 + 213.86)/4 = 281.22 
     costs = np.transpose(np.tile(np.array([643.44, 281.22]), \
                                                      (len(k_using), 1)))
-   
+    # in 10^9$/10^6ha
+    costs = 1e-3 * costs 
+        
 # 7. Energy value of crops
     # https://www.ars.usda.gov/northeast-area/beltsville-md-bhnrc/
     # beltsville-human-nutrition-research-center/methods-and-application-
@@ -821,6 +856,8 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
     # Maize: NDB_No 20014, "CORN GRAIN,YEL" (kcal/100g)
     kcal_maize = 365 * 10000            # [kcal/t]
     crop_cal = np.array([kcal_rice, kcal_maize])
+    # in 10^12kcal/10^6t
+    crop_cal = 1e-6 * crop_cal
     
 # 8. Food demand
     # based on the demand per person and day (ppdemand) and assuming no change
@@ -842,6 +879,8 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
         demand = ppdemand*365*total_pop_scen[(sim_start-1950): \
                                                 (sim_start-1950+T)]
         demand = demand * pop_ratio
+    # in 10^12 kcal
+    demand = 1e-12 * demand
         
 # 9. guaranteed income as share of expected income w/o government
     # if expected income is not given...
@@ -861,11 +900,9 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
                             total_pop_ratios[(sim_start-1950): \
                                                 (sim_start-1950+T)]) \
                             .swapaxes(0,1)
-                            
-# 10. initial fund size
-    ini_fund = 0
+    printing("     Guaranteed income per cluster (in first year): " + str(np.round(guaranteed_income[0,:].flatten(), 3)), prints)
     
-# 11. prices for selling crops, per crop and cluster
+# 10. prices for selling crops, per crop and cluster
     with open("InputData//Prices/CountryAvgFarmGatePrices.txt", "rb") as fp:    
         country_avg_prices = pickle.load(fp)
     # Gambia is not included in our area
@@ -878,7 +915,12 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
     
     prices = np.transpose(np.tile(np.array([price_rice, \
                                             price_maize]), (len(k_using), 1)))
+    # in 10^9$/10^6t
+    prices = 1e-3 * prices 
     
+# 11. thresholds for yields being profitable
+    y_profit = costs/prices
+        
 # 12. Agricultural Areas: 
     # Landscapes of West Africa - A Window on a Changing World: 
     # "Between 1975 and 2013, the area covered by crops doubled in West 
@@ -893,6 +935,8 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
     # assuming evenly spread agricultural area over the area we use is 
     # already a big simplification, hence this will not be that critical.
     max_areas = cluster_areas * 0.224        
+    # in 10^6ha
+    max_areas = 1e-6 * max_areas
 
 # 13. generating yield samples
     # using historic yield data from GDHY  
@@ -913,11 +957,11 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
 
     # get yield realizations:
     # what is the probability of a catastrophic year for given settings?
+    printing("\nOverview on yield samples", prints = prints)
     prob_cat_year = RiskForCatastrophe(risk, len(k_using))
-    printing("\nProb for catastrophic year: " + str(np.round(prob_cat_year*100, 2)) + "%", prints = prints)    
+    printing("     Prob for catastrophic year: " + str(np.round(prob_cat_year*100, 2)) + "%", prints = prints)    
     # create realizations of presence of catastrophic yields and corresponding
     # yield distributions
-    printing("\nGenerating yield samples", prints = prints)
     np.random.seed(seed)
     cat_clusters, terminal_years, ylds, yld_means = \
           YieldRealisations(slopes, constants, residual_stds, sim_start, \
@@ -925,8 +969,24 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
                            yield_projection, VSS, wo_yields)
     # probability to not have a catastrophe
     no_cat = np.sum(terminal_years == -1) / N
-    printing("\nShare of samples without catastrophe: " + str(np.round(no_cat*100, 2)) + "%\n", prints = prints)  
-        
+    printing("     Share of samples without catastrophe: " + str(np.round(no_cat*100, 2)), prints = prints) 
+    # share of non-profitable crops
+    share_rice_np = np.sum(ylds[:,:,0,:] < y_profit[0,:])/np.sum(~np.isnan(ylds[:,:,0,:]))
+    printing("     Share of cases with rice yields too low to provide profit: " + \
+             str(np.round(share_rice_np * 100, 2)), prints = prints)
+    share_maize_np = np.sum(ylds[:,:,1,:] < y_profit[1,:])/np.sum(~np.isnan(ylds[:,:,1,:]))
+    printing("     Share of cases with maize yields too low to provide profit: " + \
+             str(np.round(share_maize_np * 100, 2)), prints = prints)
+    # in average more profitable crop
+    exp_profit = yld_means * prices - costs
+    avg_time_profit = np.nanmean(exp_profit, axis = 0)
+    more_profit = np.argmax(avg_time_profit)
+    printing("     On average more profit: " + crops[more_profit], prints = prints)
+    # in average more productive crop
+    avg_time_production = np.nanmean(yld_means, axis = 0)
+    more_food = np.argmax(avg_time_production)
+    printing("     On average higher productivity: " + crops[more_food] + "\n", prints = prints)
+    
 # 14. group output into different dictionaries
     # arguments that are given to the objective function by the solver
     args = {"k": k,
@@ -939,7 +999,7 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
             "costs": costs,
             "demand": demand,
             "import": settings["import"],
-            "ini_fund": ini_fund,
+            "ini_fund": settings["ini_fund"],
             "tax": tax,
             "prices": prices,
             "T": T,
@@ -954,15 +1014,11 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
              "yld_means": yld_means,
              "residual_stds": residual_stds,
              "prob_cat_year": prob_cat_year,
-             "share_no_cat": no_cat}
-    
-# 15. scale parameters
-    args["costs"] = 1e-3 * args["costs"]
-    args["demand"] = 1e-12 * args["demand"]
-    args["ini_fund"] = 1e-9 * args["ini_fund"]
-    args["prices"] = 1e-3 * args["prices"]
-    args["crop_cal"] = 1e-6 * args["crop_cal"]
-    args["max_areas"] = 1e-6 * args["max_areas"]
+             "share_no_cat": no_cat,
+             "y_profit": y_profit,
+             "share_rice_np": share_rice_np,
+             "share_maize_np": share_maize_np,
+             "exp_profit": exp_profit}
         
     return(args, other)
 
@@ -1353,8 +1409,6 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     with open("PenaltiesAndIncome/MaxProbSforAreaF.txt", "rb") as fp:    
         dict_maxProbS = pickle.load(fp)
     rhoFini = GetInitialGuess(dict_rhoFs, SettingsFirstGuess)
-    if rhoFini is None:
-        rhoFini = 1
     
     # we assume that without government farmers aim for 95% probability of 
     # food security, therefore we find the right penalty for probF = 95%.
@@ -1363,7 +1417,7 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     args, other = SetParameters(settings_ExpIn, prints = False)
     try:
         rhoF, maxProbF, max_probS, needed_import, crop_alloc, meta_sol = \
-               GetRhoF(args, other, probF = probF, rhoFini = rhoFini) 
+               GetRhoF(args, other, probF = probF, rhoFini = rhoFini, prints = False) 
     except PenaltyException as e:
         raise PenaltyException(message =  str(e) + " (called from CalcExpectedIncome)")
           
@@ -1422,7 +1476,7 @@ def GetInitialGuess(dictGuesses, name):
 
 # %% ############### FUNCTIONS RUNNING MODEL TO GET PENALTIES #################
 
-def CheckForFullAreaProbF(args, other, probF, accuracy, prints = True):
+def CheckOptimalProbF(args, other, probF, probS, accuracy, prints = True):
     """
     Function to find the highest probF possible under the given settings, and
     calculating the amount of import needed to increase this probabtility to 
@@ -1474,10 +1528,10 @@ def CheckForFullAreaProbF(args, other, probF, accuracy, prints = True):
     meta_sol = GetMetaInformation(x, args, rhoF = 0, rhoS = 0) 
     max_probF = meta_sol["prob_food_security"]
     max_probS = meta_sol["prob_staying_solvent"]
-    printing("     maxProbS: " + str(np.round(max_probS * 100, accuracy - 1)) + "%" + \
-          ", maxProbF: " + str(np.round(max_probF * 100, accuracy - 1)) + "%", prints)
+    printing("     maxProbF: " + str(np.round(max_probF * 100, accuracy - 1)) + "%" + \
+          ", maxProbS: " + str(np.round(max_probS * 100, accuracy - 1)) + "%", prints)
     
-    # check if it is high enough
+    # check if it is high enough (shortcomings given as demand - production (- import))
     needed_import = np.quantile(meta_sol["shortcomings"]\
                  [~np.isnan(meta_sol["shortcomings"])].flatten(), probF)
     if max_probF >= probF:
@@ -1490,7 +1544,7 @@ def CheckForFullAreaProbF(args, other, probF, accuracy, prints = True):
             
     return(max_probF, max_probS, needed_import)
 
-def CheckForFullAreaProbS(args, other, probS, prints = True):
+def CheckOptimalProbS(args, other, probS, accuracy, prints = True):
     """
     Function to find the highest probS that is possible under given settings.
 
@@ -1518,30 +1572,31 @@ def CheckForFullAreaProbS(args, other, probS, prints = True):
         case that probability can't be reached).
 
     """
-    # find best crop per cluster (based on average yields)
-    yld_means = other["yld_means"]  # t/ha
-    profit_mean = yld_means * args["prices"] - args["costs"] # 10^9$/10^6t
-    which_crop = np.argmax(profit_mean, axis = 1)
-
-    # set area in the cluster to full area for the rigth crop
-    x = np.zeros((args["T"], args["num_crops"], len(args["k_using"])))
-    for t in range(0, args["T"]):
-        for k in range(0, len(args["k_using"])):
-            x[t, which_crop[t, k], k] = args["max_areas"][k]
+    
+    
+    status, crop_alloc, meta_sol, prob, durations = \
+                    SolveReducedcLinearProblemGurobiPy(args, 0, 1e9, probS, prints = False)   
+    
     
     # run obective function for this area and the given settings
-    meta_sol = GetMetaInformation(x, args, rhoF = 0, rhoS = 0)
     max_probS = meta_sol["prob_staying_solvent"]
     max_probF = meta_sol["prob_food_security"]
-    
-    if max_probS < probS:
-        probSnew = max_probS
-    else:
-        probSnew = probS
+    printing("     maxProbS: " + str(np.round(max_probS * 100, accuracy - 1)) + "%" + \
+          ", maxProbF: " + str(np.round(max_probF * 100, accuracy - 1)) + "%", prints)
         
-    return(max_probS, max_probF, probSnew)
+    # check if it is high enough
+    necessary_debt = meta_sol["necessary_debt"]
+    if max_probS >= probS:
+        printing("     Desired probS (" + str(np.round(probS * 100, accuracy - 1)) \
+                             + "%) can be reached", prints)
+    else:
+        printing("     Desired probS (" + str(np.round(probS * 100, accuracy - 1)) \
+                  + "%) cannot be reached (neccessary debt " + \
+                  str(np.round(necessary_debt, 3)) + " 10^9$)", prints)
+        
+    return(max_probS, max_probF, necessary_debt)
 
-def CheckForFullArea(args, other, probF = None, probS = None, accuracy = 3, prints = True):
+def CheckPotential(args, other, probF = None, probS = None, accuracy = 3, prints = True):
     """
     Wrapper function for finding potential of area either for food security 
     or for solvency. Only one probF and probS should differ from None, thus
@@ -1575,11 +1630,11 @@ def CheckForFullArea(args, other, probF = None, probS = None, accuracy = 3, prin
     elif probF is None and probS is None:
         sys.exit("Either the desired probF or the desired probS needs to be given.")
     elif probF is not None and probS is None:
-        return(CheckForFullAreaProbF(args, other, probF, accuracy, prints))
+        return(CheckOptimalProbF(args, other, probF, accuracy, prints))
     elif probS is not None and probF is None:
-        return(CheckForFullAreaProbS(args, other, probS, prints))
-          
-def GetRhoF(args, other, probF, rhoFini, accuracy = 3, prints = True):
+        return(CheckOptimalProbS(args, other, probS, accuracy, prints))
+
+def GetRhoF(args, other, probF, rhoFini, shareDiff = 10, accuracy = 4, prints = True):
     """
     Finding the correct rhoF given the probability probF, based on a bisection
     search algorithm.
@@ -1601,7 +1656,7 @@ def GetRhoF(args, other, probF, rhoFini, accuracy = 3, prints = True):
         food demand.
     accuracy : int, optional
         Desired decimal places of accuracy of the obtained probF. 
-        The default is 2.
+        The default is 4.
     prints : boolean, optional
         Specifying whether the progress should be documented thorugh console 
         outputs. The default is True.
@@ -1624,67 +1679,113 @@ def GetRhoF(args, other, probF, rhoFini, accuracy = 3, prints = True):
     meta_sol : dict
         Dictionary of meta information to the optimal crop allocations
     """
+    
+    # needed import
     args_tmp = args.copy()
-    maxProbF, maxProbS, needed_import = CheckForFullArea(args_tmp, other, probF = probF, prints = prints)
+    maxProbF, maxProbS, needed_import = CheckPotential(args_tmp, other, probF = probF, prints = prints)
     
     if needed_import > 0:
         args_tmp["import"] = needed_import
+        
+    # accuracy information
+    printing("     accuracy we demand for probF: " + str(accuracy - 2) + " decimal places", prints = prints)
+    printing("     accuracy we demand for rhoF: 1/" + str(shareDiff) + " of final rhoF\n", prints = prints)
+    
+    # check if rhoF from run with smaller N works here as well:
+    # if we get the right probF for our guess, and a lower probF for rhoFcheck 
+    # at the lower end of our accuracy-interval, we know that the correct 
+    # rhoF is in that interval and can return our guess
+    if rhoFini is not None:
+        printing("     Checking guess from run with lower N", prints = prints)
+        status, crop_alloc, meta_sol, prob, durations = \
+                        SolveReducedcLinearProblemGurobiPy(args_tmp, rhoFini, 0, prints = False) 
+        ReportProgressFindingRho(rhoFini, meta_sol, accuracy, durations, \
+                                 ProbType = "F", prefix = "Guess: ", prints = prints) 
+        if np.round(meta_sol["prob_food_security"], accuracy) == probF:
+            rhoFcheck = rhoFini - rhoFini/shareDiff
+            status, crop_alloc_check, meta_sol_check, prob, durations = \
+                SolveReducedcLinearProblemGurobiPy(args_tmp, rhoFcheck, 0, prints = False)  
+            ReportProgressFindingRho(rhoFcheck, meta_sol_check, accuracy, durations, \
+                                     ProbType = "F", prefix = "Check: ", prints = prints) 
+            if np.round(meta_sol_check["prob_food_security"], accuracy) < probF:
+                printing("\n     Final rhoF: " + str(rhoFini), prints = prints)
+                return(rhoFini, maxProbF, maxProbS, needed_import, crop_alloc, meta_sol)    
+        printing("     Oops, that guess didn't work - starting from scratch\n", prints = prints)
+    
+    # else we start from scratch
+    rhoFini = 1
     
     # initialize values for search algorithm
-    rhoFlastdown = 0
-    rhoFlastup = 0
-    probStayedSame = 0
-    probCompare = 0
+    rhoFLastDown = np.inf
+    rhoFLastUp = 0
+    lowestCorrect = np.inf
     
     # calculate initial guess
     status, crop_alloc, meta_sol, prob, durations = \
                 SolveReducedcLinearProblemGurobiPy(args_tmp, rhoFini, 0, prints = False)
+    
+    if np.round(meta_sol["prob_food_security"], accuracy) == probF:
+        lowestCorrect = rhoFini
+                
+    # remember guess
     rhoFold = rhoFini
-    # printing("      " + "\u005F" * 21, prints = prints)
-    printing("     rhoF: " + str(rhoFold) + \
-          " $/10^3kcal, probF: " + str(np.round(meta_sol["prob_food_security"]*100, accuracy - 1)) + \
-          "%, time: " + str(np.round(durations[2], 2)) + "s", prints = prints)
-            
-    # we increase (or decrease) rhoF until we first pass the desired 
-    # probability. Then we reduce the search intervall by half in each step
-    # until the demanded accuracy is reached
-    while np.round(meta_sol["prob_food_security"], accuracy) != probF:
-        # find next guess
-        if meta_sol["prob_food_security"] < probF:
-            rhoFlastup = rhoFold
-            if rhoFlastdown == 0:
-                # if we kept increasing the penalty for a while, but the 
-                # probability doesn't increase any more, we throw an error
-                if np.round(meta_sol["prob_food_security"], 4) == \
-                                np.round(probCompare, 4):
-                    probStayedSame += 1                
-                if probStayedSame > 2:
-                    raise PenaltyException(message = "ProbF cannot be reached")
-                probCompare = meta_sol["prob_food_security"]
-                # else we keep increasing
-                rhoFnew = rhoFold * 2
-            else:
-                rhoFnew = rhoFold + (rhoFlastdown - rhoFold)/2 
-        else:
-            rhoFlastdown = rhoFold
-            if rhoFlastup == 0:
-                rhoFnew = rhoFold / 4
-            else:
-                rhoFnew = rhoFold - (rhoFold - rhoFlastup) /2
+    
+    # report
+    accuracy_int = lowestCorrect - rhoFLastUp
+    ReportProgressFindingRho(rhoFold, meta_sol, accuracy, durations, \
+                             accuracy_int, ProbType = "F", prints = prints)
         
+    while True:   
+        
+        # find next guess
+        rhoFnew, rhoFLastDown, rhoFLastUp = \
+                    UpdatedRhoGuess(meta_sol, rhoFLastUp, rhoFLastDown, \
+                                    rhoFold, probF, accuracy, probType = "F")
+       
         # solve model for guess
         status, crop_alloc, meta_sol, prob, durations = \
                 SolveReducedcLinearProblemGurobiPy(args_tmp, rhoFnew, 0, prints = False)
         
-        rhoFold = rhoFnew
-        printing("     rhoF: " + str(rhoFold) + \
-              " $/10^3kcal, probF: " + str(np.round(meta_sol["prob_food_security"]*100, accuracy - 1)) + \
-              "%, time: " + str(np.round(durations[2], 2)) + "s", prints = prints)
+        
+        # We want to find the lowest penalty for which we get the right probability.
+        # The accuracy interval is always the difference between the lowest 
+        # penalty for which we get the right probability and the highest penalty
+        # that gives a smaller probability (which is the rhoLastUp). If that is 
+        # smaller than a certain share of the lowest correct penalte we have
+        # reached the necessary accuracy.
+        if np.round(meta_sol["prob_food_security"], accuracy) == probF:
+            accuracy_int = rhoFnew - rhoFLastUp
+            if accuracy_int < rhoFnew/shareDiff:
+                rhoF = rhoFnew
+                break
+        elif np.round(meta_sol["prob_food_security"], accuracy) < probF:
+            accuracy_int = lowestCorrect - rhoFnew
+            if accuracy_int < lowestCorrect/shareDiff:
+                rhoF = lowestCorrect
+                break
+        else:
+            accuracy_int = lowestCorrect - rhoFLastUp
             
-    # printing("      " + "\u0305 " * 21, prints = prints)           
-    return(rhoFold, maxProbF, maxProbS, needed_import, crop_alloc, meta_sol)
+        # report
+        ReportProgressFindingRho(rhoFnew, meta_sol, accuracy, durations, \
+                                 accuracy_int, ProbType = "F", prints = prints)
+            
+        # remember guess
+        rhoFold = rhoFnew
+        if np.round(meta_sol["prob_food_security"], accuracy) == probF \
+            and lowestCorrect > rhoFnew:
+            lowestCorrect = rhoFnew
+            
+    
+    # last report
+    ReportProgressFindingRho(rhoFnew, meta_sol, accuracy, durations, \
+                             accuracy_int, ProbType = "F", prints = prints)    
+        
+    printing("\n     Final rhoF: " + str(rhoF), prints = prints)
+    
+    return(rhoF, maxProbF, maxProbS, needed_import, crop_alloc, meta_sol)
 
-def GetRhoS(args, other, probS, rhoSini, accuracy = 3, prints = True):
+def GetRhoS_Wrapper(args, other, probS, rhoSini, file, shareDiff = 10, accuracy = 3, prints = True):
     """
     Finding the correct rhoS given the probability probS, based on a bisection
     search algorithm.
@@ -1723,84 +1824,499 @@ def GetRhoS(args, other, probS, rhoSini, accuracy = 3, prints = True):
     maxProbF : float
         Probability for food security for the settings that give the maxProbS.
     """
-
+    
     # find the highest possible probS (and probF when using area to get the max
     # probS), and choose probSnew to be either the wanted probS or probSmax if
     # the wanted one is not possible
-    maxProbS, maxProbF, probSnew = CheckForFullArea(args, other, probS = probS, prints = prints)
-    probSnew = np.round(probSnew, accuracy)
-    print("     maxProbS: " + str(np.round(maxProbS * 100, accuracy - 1)) + \
-          "%, maxProbF: " + str(np.round(maxProbF * 100, accuracy - 1)) +\
-          "%, pSnew: " + str(np.round(probSnew * 100, accuracy - 1)) + "%\n")
-        
-        
-    # initialize values for search algorithm
-    rhoSlastdown = 0
-    rhoSlastup = 0
-    probStayedSame = 0
-    probCompare = 0
+    maxProbS, maxProbF, necessary_debt = CheckPotential(args, other, probS = probS, prints = prints)   
     
-    # calculate initial guess
-    status, crop_alloc, meta_sol, prob, durations = \
-                    SolveReducedcLinearProblemGurobiPy(args, 0, rhoSini, prints = False)
-    if np.round(other["share_no_cat"], accuracy) == probSnew:
-        printing("     Only in cases with no catastrophe the fund can stay solvent\n" + \
-                 "     Setting penalty to zero", prints = prints)
-        return(0, probSnew, maxProbS, maxProbF)                
-        
-    rhoSold = rhoSini
-    # printing("      " + "\u005F" * 21, prints = prints)
-    printing("     rhoS: " + str(rhoSold) + \
-          " $/$, probS: " + str(np.round(meta_sol["prob_staying_solvent"]*100, accuracy -1)) + \
-          "%, time: " + str(np.round(durations[2], 2)) + "s", prints = prints)
-
-    if np.round(meta_sol["prob_staying_solvent"], accuracy) >= probSnew:
-        diff = 100
+    if maxProbS >= probS:
+        printing("     Finding corresponding penalty\n", prints)
+        rhoS = GetRhoS(args, probS, rhoSini, shareDiff, accuracy, prints)
+        necessary_debt = 0
     else:
-        diff = 0
+        printing("     Finding lowest penalty minimizing necessary debt\n", prints)
+        rhoS, necessary_debt = MinimizeNecessaryDebt(args, probS, rhoSini, necessary_debt,  shareDiff, accuracy, file, prints)
     
-    # we increase (or decrease) rhoS until we first pass the desired 
-    # probability. Then we reduce the search intervall by half in each step
-    # until the demanded accuracy is reached
-    while np.round(meta_sol["prob_staying_solvent"], accuracy) != probSnew or diff > rhoSold/10:
-        # find next guess
-        if np.round(meta_sol["prob_staying_solvent"], accuracy) < probSnew:
-            rhoSlastup = rhoSold
-            if rhoSlastdown == 0:
-                # if we kept increasing the penalty for a while, but the 
-                # probability doesn't increase any more, we throw an error
-                if np.round(meta_sol["prob_staying_solvent"], 4) == \
-                                np.round(probCompare, 4):
-                    probStayedSame += 1
-                if probStayedSame > 2:
-                    raise PenaltyException(message = "ProbS cannot be reached")
-                probCompare = meta_sol["prob_staying_solvent"]
-                # else we keep increasing
-                rhoSnew = rhoSold * 4
+    printing("\n     Final rhoS: " + str(rhoS))
+    
+    return(rhoS, necessary_debt, maxProbS, maxProbF)
+
+def UpdateRhoDebtOutside(necessary_debt, debt_top, debt_bottom, rhoSold, \
+                  UpperBorder, LowerBorder, rhoSdip, debtsDip, shareDiff):
+    if len(rhoSdip) == 0:
+        if necessary_debt == debt_bottom:
+            if UpperBorder is None:
+                rhoSnew = rhoSold * 2
+                LowerBorder = rhoSold
+                diff = False
             else:
-                rhoSnew = rhoSold + (rhoSlastdown - rhoSold)/2 
+                rhoSnew = rhoSold + (UpperBorder - rhoSold)/2
+                LowerBorder = rhoSold
+                diff = (UpperBorder - rhoSold)/2
+                if diff > rhoSnew/shareDiff:
+                    diff = False
+        # attention, we do not take care of the case of hitting exactly this value 
+        # in the "dip" of the function => das koennen wir loesen indem wir mit 
+        # gerundeten debt werten arbeiten - ah ne doch nicht, weil dann muesste 
+        # ich die rand debts auch runden, und das macht es noch wahrscheinlicher
+        # sie zu treffen...
+        elif necessary_debt == debt_top:
+            rhoSnew = rhoSold - (rhoSold - LowerBorder)/2
+            UpperBorder = rhoSold
+            diff = (rhoSold - LowerBorder)/2
+            if diff > rhoSnew/shareDiff:
+                diff = False
+    else:
+        if necessary_debt == debt_bottom:
+            rhoSnew = rhoSold + (rhoSdip[0] - rhoSold)/2
+            LowerBorder = rhoSold
+            diff = (rhoSdip[0] - rhoSold)/2
+            if diff > rhoSnew/shareDiff:
+                diff = False
+        elif necessary_debt == debt_top:
+            rhoSnew = rhoSold - (rhoSold - rhoSdip[-1])/2
+            UpperBorder = rhoSold
+            diff = (rhoSold - rhoSdip[-1])/2
+            if diff > rhoSnew/shareDiff:
+                diff = False
+                
+    if necessary_debt != debt_bottom and necessary_debt != debt_top:
+        rhoSdip.append(rhoSold)
+        debtsDip.append(necessary_debt)
+        s = sorted(zip(rhoSdip,debtsDip))
+        rhoSdip = [x for x,_ in s]
+        debtsDip = [x for _,x in s]
+        if debtsDip[-1] == min(debtsDip):
+            rhoSnew = rhoSdip[-1] + (UpperBorder - rhoSdip[-1])/2
+            diff = (UpperBorder - rhoSdip[-1])/2
+            if diff > rhoSnew/shareDiff:
+                diff = False
+        elif debtsDip[0] == min(debtsDip):
+            rhoSnew = rhoSdip[0] - (rhoSdip[0] - LowerBorder)/2
+            diff = (rhoSdip[0] - LowerBorder)/2
+            if diff > rhoSnew/shareDiff:
+                diff = False
         else:
-            rhoSlastdown = rhoSold
-            if rhoSlastup == 0:
-                rhoSnew = rhoSold / 4
-            else:
-                rhoSnew = rhoSold - (rhoSold - rhoSlastup) /2
-        if diff != 0 and rhoSlastup != 0:
-            diff = abs(rhoSold - rhoSnew) 
-            print(diff, flush = True)
+            rhoSnew = "Found dip!"
+            diff = False
             
+    # wenn am ende immer noch min(debtsDip) = debtsDip[0], dann rhoS = 0
+    # wenn am ende immer noch min(debtsDip) = debtsDip[-1], dann rhoS = rhoSdip[-1] ??
+    
+    
+    return(rhoSnew, UpperBorder, LowerBorder, rhoSdip, debtsDip, diff)
+
+def UpdateRhoDebtDip(rhoSdip, debtsDip, rhoSold1 = None, necessary_debt1 = None, \
+                     rhoSold2 = None, necessary_debt2 = None):
+    if rhoSold1 is not None:
+        rhoSdip.append(rhoSold1)
+        debtsDip.append(necessary_debt1)
+    if rhoSold2 is not None:
+        rhoSdip.append(rhoSold2)
+        debtsDip.append(necessary_debt2)
+    s = sorted(zip(rhoSdip,debtsDip))
+    rhoSdip = [x for x,_ in s]
+    debtsDip = [x for _,x in s]
+    
+    i = debtsDip.index(min(debtsDip))
+    rhoSnew1 = rhoSdip[i] + (rhoSdip[i+1] - rhoSdip[i])/2
+    rhoSnew2 = rhoSdip[i] - (rhoSdip[i] - rhoSdip[i-1])/2
+    
+    return(rhoSnew1, rhoSnew2, rhoSdip[i], debtsDip[i], rhoSdip, debtsDip)
+    
+
+def MinimizeNecessaryDebt(args, probS, rhoSini, debt_top, shareDiff, accuracy, file, prints):
+    # minimizing the absolute value of debt neccessary to reach probS, as we 
+    # also don't want to be too good (as probabilities higher than probS will
+    # lead to negative debt)
+    
+    # accuracy information
+    printing("     accuracy we demand for rhoS: 1/" + str(shareDiff) + " of final rhoS\n", prints = prints)
+    
+    # checking for rhoS = 0
+    status, crop_alloc, meta_sol, prob, durations = \
+        SolveReducedcLinearProblemGurobiPy(args, 0, 0, probS, prints = False) 
+    debt_bottom = meta_sol["necessary_debt"]
+    
+    # check if rhoS from run with smaller N works here as well
+    if rhoSini is not None:
+        # TODO I think this case doesn't happen - if it does I could still
+        # optimize this to use the guess to improve computational time for 
+        # rhoSini == 0
+        if rhoSini != 0:
+            printing("     Checking guess from run with lower N", prints = prints)
+            status, crop_alloc, meta_sol, prob, durations = \
+                SolveReducedcLinearProblemGurobiPy(args, 0, rhoSini, probS, prints = False) 
+            necessary_debt = meta_sol["necessary_debt"]
+            ReportProgressFindingRho(rhoSini, meta_sol, accuracy, durations, \
+                                     ProbType = "S", debt = necessary_debt, prefix = "Guess: ", prints = prints)
+                
+            if necessary_debt == debt_top:
+                rhoScheck = rhoSini - rhoSini/shareDiff
+                status, crop_alloc, meta_sol, prob, durations = \
+                    SolveReducedcLinearProblemGurobiPy(args, 0, rhoScheck, probS, prints = False) 
+                necessary_debt_check = meta_sol["necessary_debt"]
+                ReportProgressFindingRho(rhoScheck, meta_sol, accuracy, durations, \
+                                         ProbType = "S", debt = necessary_debt_check, prefix = "Check: ", prints = prints)
+                if necessary_debt_check > necessary_debt:
+                    return(rhoSini, necessary_debt)
+            elif necessary_debt != debt_bottom:          
+                rhoScheck1 = rhoSini - rhoSini/shareDiff
+                rhoScheck2 = rhoSini + rhoSini/shareDiff
+                status, crop_alloc, meta_sol, prob, durations = \
+                    SolveReducedcLinearProblemGurobiPy(args, 0, rhoScheck1, probS, prints = False) 
+                necessary_debt_check1 = meta_sol["necessary_debt"]
+                ReportProgressFindingRho(rhoScheck1, meta_sol, accuracy, durations, \
+                                         ProbType = "S", debt = necessary_debt_check1, prefix = "Check 1: ", prints = prints)
+                status, crop_alloc, meta_sol, prob, durations = \
+                    SolveReducedcLinearProblemGurobiPy(args, 0, rhoScheck2, probS, prints = False) 
+                necessary_debt_check2 = meta_sol["necessary_debt"]
+                ReportProgressFindingRho(rhoScheck2, meta_sol, accuracy, durations, \
+                                         ProbType = "S", debt = necessary_debt_check2, prefix = "Check 2: ", prints = prints)
+                if necessary_debt_check1 > necessary_debt and \
+                    necessary_debt_check2 > necessary_debt:
+                    return(rhoSini, necessary_debt)
+        printing("     Oops, that guess didn't work - starting from scratch\n", prints = prints)
+    
+    # initializing values for search algorithm
+    LowerBorder = 0
+    UpperBorder = None
+    rhoSdip = []
+    debtsDip = []
+    diff = False
+    
+    # initialize figure showing rhoS vs. necessary debt to reach probS
+    fig = plt.figure(figsize = figsize)  
+    
+    # plot and report
+    plt.scatter(0, debt_bottom, s = 10, color = "blue")
+    ReportProgressFindingRho(0, meta_sol, accuracy, durations, \
+                             ProbType = "S", debt = debt_bottom, prints = prints)
+    
+    # checking for high rhoS
+    rhoSnew = 100
+    status, crop_alloc, meta_sol, prob, durations = \
+        SolveReducedcLinearProblemGurobiPy(args, 0, rhoSnew, probS, prints = False) 
+    necessary_debt = meta_sol["necessary_debt"]
+    
+    # remember guess
+    rhoSold = rhoSnew
+ 
+    # plot and report
+    plt.scatter(rhoSold, necessary_debt, s = 10)
+    ReportProgressFindingRho(rhoSold, meta_sol, accuracy, durations, \
+                             ProbType = "S", debt = necessary_debt, prints = prints)
+        
+    while not diff:
+        #get next guess
+        rhoSnew, UpperBorder, LowerBorder, rhoSdip, debtsDip, diff = \
+            UpdateRhoDebtOutside(necessary_debt, debt_top, debt_bottom, rhoSold, \
+                  UpperBorder, LowerBorder, rhoSdip, debtsDip, shareDiff)
+        
+        if rhoSnew == "Found dip!":
+            break
+        
+        status, crop_alloc, meta_sol, prob, durations = \
+            SolveReducedcLinearProblemGurobiPy(args, 0, rhoSnew, probS, prints = False) 
+        necessary_debt = meta_sol["necessary_debt"]
+        
+        # report
+        ReportProgressFindingRho(rhoSnew, meta_sol, accuracy, durations, \
+                                 ProbType = "S", debt = necessary_debt, prints = prints)
+        
+        # remember guess
+        rhoSold = rhoSnew
+        
+        # plot
+        plt.scatter(rhoSnew, necessary_debt, s = 10, color = "blue")
+    
+        
+    if rhoSnew == "Found dip!":
+        rhoSnew1, rhoSnew2, rhoSmin, debtMin, rhoSdip, debtsDip = UpdateRhoDebtDip(rhoSdip, debtsDip)
+        
+        while not diff:
+            # calculating results for first point
+            status, crop_alloc, meta_sol1, prob, durations1 = \
+                SolveReducedcLinearProblemGurobiPy(args, 0, rhoSnew1, probS, prints = False) 
+            necessary_debt1 = meta_sol1["necessary_debt"]
+        
+            # plot
+            plt.scatter(rhoSnew1, necessary_debt1, s = 10, color = "blue")
+            
+            # report
+            ReportProgressFindingRho(rhoSnew1, meta_sol1, accuracy, durations1, \
+                                     ProbType = "S", debt = necessary_debt1, prefix = "1. ", prints = prints)
+                
+            # if already this debt is the new minimum, the other can't be
+            # smaller (as there can only be one global minimum)
+            if necessary_debt1 < debtMin:
+                diff = rhoSnew1 - rhoSmin
+                if diff > rhoSnew1/shareDiff:
+                    diff = False
+                # get new guesses
+                rhoSnew1, rhoSnew2, rhoSmin, debtMin, rhoSdip, debtsDip = \
+                    UpdateRhoDebtDip(rhoSdip, debtsDip, rhoSnew1, \
+                                     necessary_debt1)
+                continue
+                
+            # calculating results for second point
+            status, crop_alloc, meta_sol2, prob, durations2 = \
+                SolveReducedcLinearProblemGurobiPy(args, 0, rhoSnew2, probS, prints = False) 
+            necessary_debt2 = meta_sol2["necessary_debt"] 
+        
+            # plot
+            plt.scatter(rhoSnew2, necessary_debt2, s = 10, color = "blue")
+            
+            # report
+            ReportProgressFindingRho(rhoSnew2, meta_sol2, accuracy, durations2, \
+                                     ProbType = "S", debt = necessary_debt2, prefix = "2. ", prints = prints)
+                
+            # check if we are accurate enough (we assume that we never get the
+            # exact same debt twice as long as we are in the "dip" of the curve=)
+            if necessary_debt2 > debtMin:
+                diff = rhoSnew1 - rhoSnew2
+                if diff > rhoSmin/shareDiff:
+                    diff = False
+            elif necessary_debt2 < debtMin:
+                diff = rhoSmin - rhoSnew2
+                if diff > rhoSnew2/shareDiff:
+                    diff = False
+            
+            # get new guesses
+            rhoSnew1, rhoSnew2, rhoSmin, debtMin, rhoSdip, debtsDip = \
+                UpdateRhoDebtDip(rhoSdip, debtsDip, rhoSnew1, rhoSnew2, \
+                                 necessary_debt1, necessary_debt2)
+            
+    plt.xlabel("rhoS", fontsize = 24)
+    plt.ylabel("Necessary debt to reach probS", fontsize = 24)
+    plt.title("Necessary debt for different rhoS", fontsize = 30)
+    fig.savefig("Figures/rhoSvsDebts/CropAlloc_" + file + ".jpg", bbox_inches = "tight", pad_inches = 1)
+    
+    if len(debtsDip) <= 1:
+        if debt_bottom < debt_top:
+            rhoS = 0
+            necessary_debt = debt_bottom
+        elif debt_bottom > debt_top:
+            rhoS = UpperBorder
+            necessary_debt = debt_top
+    else:
+        if debtsDip[0] == min(debtsDip):
+            rhoS = 0
+            necessary_debt = debt_bottom
+        elif debtsDip[-1] == min(debtsDip):
+            rhoS = UpperBorder
+            necessary_debt = debt_top
+        else:
+            rhoS = rhoSdip[debtsDip.index(min(debtsDip))]
+            necessary_debt = min(debtsDip)
+            
+    return(rhoS, necessary_debt)
+
+# def MinimizeNecessaryDebtTest(args, probS, rhoSini, accuracy, prints):
+#     # minimizing the absolute value of debt neccessary to reach probS, as we 
+#     # also don't want to be too good (as probabilities higher than probS will
+#     # lead to negative debt)
+#     rhoSs = [0, 10, 20, 30, 40, 50, 60, 70]
+    
+#     plt.figure(figsize = figsize)   
+    
+#     for rhoS in rhoSs:
+#         status, crop_alloc, meta_sol, prob, durations = \
+#             SolveReducedcLinearProblemGurobiPy(args, 0, rhoS, probS, prints = False) 
+#         necessary_debt = - np.quantile(meta_sol["final_fund"], 1 - probS)
+        
+#         # report
+#         ReportProgressFindingRho(rhoS, meta_sol, accuracy, durations, \
+#                                  ProbType = "S", necessary_debt, prints = prints)
+        
+#         # plot
+#         plt.scatter(rhoS, necessary_debt, s = 10)
+    
+#     plt.xlabel("rhos")
+#     plt.ylabel("necessary debt to reach probS")
+    
+#     return(rhoS)
+
+def UpdatedRhoGuess(meta_sol, rhoLastUp, rhoLastDown, rhoOld, prob, accuracy, probType = "F"):
+    if probType == "F":
+        currentProb = meta_sol["prob_food_security"]
+    elif probType == "S":
+        currentProb = meta_sol["prob_staying_solvent"]
+    
+    # find next guess
+    if np.round(currentProb, accuracy) < prob:
+        rhoLastUp = rhoOld
+        if rhoLastDown == np.inf:
+            rhoNew = rhoOld * 4
+        else:
+            rhoNew = rhoOld + (rhoLastDown - rhoOld)/ 2 
+    else:
+        rhoLastDown = rhoOld
+        if rhoLastUp == 0:
+            rhoNew = rhoOld / 4
+        else:
+            rhoNew = rhoOld - (rhoOld - rhoLastUp) / 2
+    
+    return(rhoNew, rhoLastDown, rhoLastUp)
+
+def ReportProgressFindingRho(rhoOld, meta_sol, accuracy, durations, \
+                             accuracy_int = False, ProbType = "S", debt = False, prefix = "", prints = True):
+    if ProbType == "F":
+        currentProb = meta_sol["prob_food_security"]
+        unit = " $/10^3kcal"
+    elif ProbType == "S":
+        currentProb = meta_sol["prob_staying_solvent"]
+        unit = " $/$"
+    
+    if debt:
+        debt_text = ", nec. debt: " + str(np.round(debt, 3)) + " 10^9$"
+    else:
+        debt_text = ""
+        
+    if accuracy_int:
+        accuracy_text = " (current accuracy interval: " + str(np.round(accuracy_int, 2)) + ")"
+    else:
+        accuracy_text = ""
+        
+    printing("     " + prefix + "rho" + ProbType + ": " + str(rhoOld) + unit + \
+          ", prob" + ProbType + ": " + str(np.round(currentProb * 100, \
+                                                    accuracy -1)) + \
+          "%" + debt_text + ", time: " + str(np.round(durations[2], 2)) + "s" + accuracy_text, \
+              prints = prints)
+    
+
+def GetRhoS(args, probS, rhoSini, shareDiff, accuracy = 3, prints = True):
+    """
+    Finding the correct rhoS given the probability probS, based on a bisection
+    search algorithm.
+
+    Parameters
+    ----------
+    args : dict
+        Dictionary of arguments needed as model input.  
+    other : dict
+        Other information on the model setup (on the yield distributions).
+    probS : float
+        demanded probability of keeping the solvency constraint (only 
+        relevant if PenMet == "prob").
+    rhoSini : float or None 
+        If PenMet == "penalties", this is the value that will be used for rhoS.
+        if PenMet == "prob" and rhoSini is None, a initial guess for rhoS will 
+        be calculated in GetPenalties, else this will be used as initial guess 
+        for the penalty which will give the correct probability for solvency.
+    accuracy : int, optional
+        Desired decimal places of accuracy of the obtained probF. 
+        The default is 3.
+    prints : boolean, optional
+        Specifying whether the progress should be documented thorugh console 
+        outputs. The default is True.
+
+    Returns
+    -------
+    rhoS : float
+        The correct penalty rhoF to reach the probability probS
+    probSnew : float
+        The new probability for solvency (different from the input probS in 
+        case that probability can't be reached).
+    maxProbS : float
+        Maximum probability for solvency that can be reached under these 
+        settings.
+    maxProbF : float
+        Probability for food security for the settings that give the maxProbS.
+    """
+        
+    # accuracy information
+    printing("     accuracy we demand for probS: " + str(accuracy - 2) + " decimal places", prints = prints)
+    printing("     accuracy we demand for rhoS: 1/" + str(shareDiff) + " of final rhoS\n", prints = prints)
+    
+    # check if rhoS from run with smaller N works here as well
+    # if we get the right probS for our guess, and a lower probS for rhoScheck 
+    # at the lower end of our accuracy-interval, we know that the correct 
+    # rhoS is in that interval and can return our guess
+    if rhoSini is not None:
+        printing("     Checking guess from run with lower N", prints = prints)
+        status, crop_alloc, meta_sol, prob, durations = \
+                        SolveReducedcLinearProblemGurobiPy(args, 0, rhoSini, probS, prints = False)  
+        ReportProgressFindingRho(rhoSini, meta_sol, accuracy, durations, \
+                                 ProbType = "S", prefix = "Guess: ", prints = prints)
+        if np.round(meta_sol["prob_staying_solvent"], accuracy) == probS:
+            rhoScheck = rhoSini - rhoSini/shareDiff
+            status, crop_alloc, meta_sol, prob, durations = \
+                SolveReducedcLinearProblemGurobiPy(args, 0, rhoScheck, probS, prints = False)  
+            ReportProgressFindingRho(rhoScheck, meta_sol, accuracy, durations, \
+                                     ProbType = "S", prefix = "Check: ", prints = prints)
+            if np.round(meta_sol["prob_staying_solvent"], accuracy) < probS:
+                return(rhoSini)    
+        printing("     Oops, that guess didn't work - starting from scratch\n", prints = prints)
+    
+    # else we start from scratch
+    rhoSini = 100
+
+    # initialize values for search algorithm
+    rhoSLastDown = np.inf
+    rhoSLastUp = 0
+    lowestCorrect = np.inf
+    
+    # calculate results for initial guess
+    status, crop_alloc, meta_sol, prob, durations = \
+                    SolveReducedcLinearProblemGurobiPy(args, 0, rhoSini, probS, prints = False)    
+                  
+    # remember guess
+    rhoSold = rhoSini
+    if np.round(meta_sol["prob_staying_solvent"], accuracy) == probS:
+        lowestCorrect = rhoSini
+
+    # report
+    accuracy_int = lowestCorrect - rhoSLastUp
+    ReportProgressFindingRho(rhoSold, meta_sol, accuracy, durations, \
+                             accuracy_int, ProbType = "S", prints = prints)
+
+    while True:   
+        
+        # find next guess
+        rhoSnew, rhoSLastDown, rhoSLastUp = \
+                    UpdatedRhoGuess(meta_sol, rhoSLastUp, rhoSLastDown, \
+                                    rhoSold, probS, accuracy, probType = "S")    
         
         # solve model for guess
         status, crop_alloc, meta_sol, prob, durations = \
-                        SolveReducedcLinearProblemGurobiPy(args, 0, rhoSnew, prints = False)
+           SolveReducedcLinearProblemGurobiPy(args, 0, rhoSnew, probS, prints = False)
         
-        rhoSold = rhoSnew
-        printing("     rhoS: " + str(rhoSold) + \
-              " $/$, probS: " + str(np.round(meta_sol["prob_staying_solvent"]*100, accuracy - 1)) + \
-              "%, time: " + str(np.round(durations[2], 2)) + "s", prints = prints)
+        # We want to find the lowest penalty for which we get the right probability.
+        # The accuracy interval is always the difference between the lowest 
+        # penalty for which we get the right probability and the highest penalty
+        # that gives a smaller probability (which is the rhoLastUp). If that is 
+        # smaller than a certain share of the lowest correct penalte we have
+        # reached the necessary accuracy.
+        if np.round(meta_sol["prob_staying_solvent"], accuracy) == probS:
+            accuracy_int = rhoSnew - rhoSLastUp
+            if accuracy_int < rhoSnew/shareDiff:
+                rhoS = rhoSnew
+                break
+        elif np.round(meta_sol["prob_staying_solvent"], accuracy) < probS:
+            accuracy_int = lowestCorrect - rhoSnew
+            if accuracy_int < lowestCorrect/shareDiff:
+                rhoS = lowestCorrect
+                break
+        else:
+            accuracy_int = lowestCorrect - rhoSLastUp
             
-    # printing("      " + "\u0305 " * 21, prints = prints)           
-    return(rhoSold, probSnew, maxProbS, maxProbF)
+        # report
+        ReportProgressFindingRho(rhoSold, meta_sol, accuracy, durations, \
+                                 accuracy_int, ProbType = "S", prints = prints)
+            
+        # remember guess
+        rhoSold = rhoSnew
+        if np.round(meta_sol["prob_staying_solvent"], accuracy) == probS \
+            and lowestCorrect > rhoSnew:
+            lowestCorrect = rhoSnew
+
+    # last report
+    ReportProgressFindingRho(rhoSnew, meta_sol, accuracy, durations, \
+                             accuracy_int, ProbType = "S", prints = prints)    
+    
+    return(rhoS)
             
 def GetPenalties(settings, args, other, probF, probS, \
                  rhoFini = None, rhoSini = None, prints = True):
@@ -1896,8 +2412,6 @@ def GetPenalties(settings, args, other, probF, probS, \
             # to 1)
             if rhoFini is None:
                 rhoFini = GetInitialGuess(dict_rhoFs, SettingsFirstGuess)
-            if rhoFini is None:
-                rhoFini = 1
             # calculating rhoF
             printing("Calculating rhoF and import", prints = prints)
             try:
@@ -1925,7 +2439,7 @@ def GetPenalties(settings, args, other, probF, probS, \
         rhoS = 0
     else:         
         # all settings that affect the calculation of rhoS
-        SeetingsBasics = "k" + str(settings["k"]) + \
+        SettingsBasics = "k" + str(settings["k"]) + \
                 "using" +  '_'.join(str(n) for n in settings["k_using"]) + \
                 "num_crops" + str(settings["num_crops"]) + \
                 "yield_projection" + str(settings["yield_projection"]) + \
@@ -1933,20 +2447,20 @@ def GetPenalties(settings, args, other, probF, probS, \
                 "pop_scenario" + str(settings["pop_scenario"]) +  \
                 "T" + str(settings["T"])
         SettingsMaxProbF = SettingsBasics + "N" + str(settings["N"])
-        SeetingsBasics = SeetingsBasics + \
+        SettingsBasics = SettingsBasics + \
                 "risk" + str(settings["risk"]) + \
                 "tax" + str(settings["tax"]) + \
                 "perc_guaranteed" + str(settings["perc_guaranteed"])
         SettingsMaxProbS = SettingsBasics + "N" + str(settings["N"])
-        SettingsFirstGuess = SeetingsBasics + "probS" + str(probS)
+        SettingsFirstGuess = SettingsBasics + "probS" + str(probS)
         SettingsAffectingRhoS = SettingsFirstGuess + \
                 "N" + str(settings["N"])
                      
         # get dictionary of settings for which rhoS has been calculated already
         with open("PenaltiesAndIncome/RhoSs.txt", "rb") as fp:    
             dict_rhoSs = pickle.load(fp)
-        with open("PenaltiesAndIncome/NewProbS.txt", "rb") as fp:    
-            dict_newProbS = pickle.load(fp)
+        with open("PenaltiesAndIncome/MinimizedNecessaryDebt.txt", "rb") as fp:    
+            dict_necDebt = pickle.load(fp)
         with open("PenaltiesAndIncome/MaxProbSforAreaS.txt", "rb") as fp:    
             dict_maxProbS = pickle.load(fp)
         with open("PenaltiesAndIncome/MaxProbFforAreaS.txt", "rb") as fp:    
@@ -1956,7 +2470,7 @@ def GetPenalties(settings, args, other, probF, probS, \
         if SettingsAffectingRhoS in dict_rhoSs.keys():
             printing("\nFetching rhoS", prints = prints)
             rhoS = dict_rhoSs[SettingsAffectingRhoS]
-            probSnew = dict_newProbS[SettingsAffectingRhoS]
+            necessary_debt = dict_necDebt[SettingsAffectingRhoS]
         else:
             # if this setting was calculated for a lower N and no initial
             # guess was given, we use the rhoS calculted for the lower N as 
@@ -1964,27 +2478,25 @@ def GetPenalties(settings, args, other, probF, probS, \
             # to 100)
             if rhoSini is None:
                 rhoSini = GetInitialGuess(dict_rhoSs, SettingsFirstGuess)
-            if rhoSini is None:
-                rhoSini = 100
             # calculating rhoS
             printing("\nCalculating rhoS", prints = prints)
-            rhoS, probSnew, maxProbS, maxProbF = GetRhoS(args, other, probS, rhoSini, prints = prints)
+            rhoS, necessary_debt, maxProbS, maxProbF = GetRhoS_Wrapper(args, other, probS, rhoSini, SettingsAffectingRhoS, prints = prints)
             dict_rhoSs[SettingsAffectingRhoS] = rhoS
-            dict_newProbS[SettingsAffectingRhoS] = probSnew
+            dict_necDebt[SettingsAffectingRhoS] = necessary_debt
             dict_maxProbS[SettingsMaxProbS] = maxProbS
             dict_maxProbF[SettingsMaxProbF] = maxProbF
         
         # saving updated dict
         with open("PenaltiesAndIncome/RhoSs.txt", "wb") as fp:    
              pickle.dump(dict_rhoSs, fp)
-        with open("PenaltiesAndIncome/NewProbS.txt", "wb") as fp:    
-             pickle.dump(dict_newProbS, fp)
+        with open("PenaltiesAndIncome/MinimizedNecessaryDebt.txt", "wb") as fp:    
+             pickle.dump(dict_necDebt, fp)
         with open("PenaltiesAndIncome/MaxProbSforAreaS.txt", "wb") as fp:    
              pickle.dump(dict_maxProbS, fp)
         with open("PenaltiesAndIncome/MaxProbFforAreaS.txt", "wb") as fp:    
              pickle.dump(dict_maxProbF, fp)
              
-    return(rhoF, rhoS, probSnew, needed_import)
+    return(rhoF, rhoS, necessary_debt, needed_import)
     
 # %% ########### FUNCTIONS TO GET META INFORMATION ON MODEL OUTPUT ############
 
@@ -2142,7 +2654,7 @@ def ObjectiveFunction(x, num_clusters, num_crops, N, \
         np.nansum(fixed_costs, axis = (2,3)), #  fixcosts (N, T)
         ) 
 
-def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
+def GetMetaInformation(crop_alloc, args, rhoF, rhoS, probS = None):
     """
     To get metainformation for final crop allocation after running model.
 
@@ -2247,11 +2759,14 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
                 "yearly_fixed_costs": yearly_fixed_costs,
                 "num_years_with_losses": num_years_with_losses}
     
+    if probS is not None:
+        meta_sol["necessary_debt"] = - np.quantile(meta_sol["final_fund"], 1 - probS)
+    
     return(meta_sol)  
     
 # %% #################### VALUE OF THE STOCHASTIC SOLUTION ####################  
  
-def VSS(settings, args, rhoF, rhoS):
+def VSS(settings, args, rhoF, rhoS, probS = None):
     """
     Calculating expected total costs using the optimal crop area allocation 
     assuming expected yield values as yield realization.
@@ -2284,15 +2799,15 @@ def VSS(settings, args, rhoF, rhoS):
     
     # solve model for the expected yields
     status, crop_alloc_vss, meta_sol, prob, durations = \
-                SolveReducedcLinearProblemGurobiPy(args_vss, rhoF, rhoS, prints = False)
+                SolveReducedcLinearProblemGurobiPy(args_vss, rhoF, rhoS, probS, prints = False)
                 
     # get information of using VSS solution in stochastic setting
-    meta_sol_vss = GetMetaInformation(crop_alloc_vss, args, rhoF, rhoS)
+    meta_sol_vss = GetMetaInformation(crop_alloc_vss, args, rhoF, rhoS, probS)
     return(crop_alloc_vss, meta_sol_vss)      
     
 # %% ############ IMPLEMENTING AND SOLVING LINEAR VERSION OF MODEL ############
 
-def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, prints = True):
+def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS = None, prints = True):
     """
     Sets up and solves the linear form of the food security problem.
 
@@ -2397,7 +2912,7 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, prints = True):
                            for (t, k) in it.product(range(0, termyear_p1[s]), \
                                 range(0, K))]) \
                  <= args["ini_fund"] for s in range(0, N)), "c_sol")
-    
+        
 # constraints 4
     prob.addConstrs((gp.quicksum([- Wgov[t, k, s]] + \
             [- args["ylds"][s, t, j, k] * x[t, j, k] * args["prices"][j, k] + \
@@ -2438,7 +2953,7 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, prints = True):
                                         "," + str(j) + "," + str(k) + "]").X
                   
         meta_sol = GetMetaInformation(crop_alloc, args, \
-                                                    rhoF, rhoS)
+                                                    rhoF, rhoS, probS)
         
         # if meta_sol["num_years_with_losses"] > 0:
         #     warn.warn(str("Please notice that in " + \
@@ -2459,7 +2974,7 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, prints = True):
 # %% ################### OUT OF SAMLE VALIDATION OF RESULT ####################  
 
 def OutOfSampleVal(crop_alloc, settings, rhoF, rhoS, \
-                   expected_incomes, M, prints = True):
+                   expected_incomes, M, probS = None, prints = True):
     """
     For validation, the objective function is re-evaluate, using the optimal
     crop allocation but a higher sample size.    
@@ -2502,7 +3017,7 @@ def OutOfSampleVal(crop_alloc, settings, rhoF, rhoS, \
     
     # run objective function for higher sample size
     printing("     Objective function", prints = prints)
-    meta_sol_vss = GetMetaInformation(crop_alloc, args, rhoF, rhoS)
+    meta_sol_vss = GetMetaInformation(crop_alloc, args, rhoF, rhoS, probS)
     # printing("      " + "\u0305 " * 21, prints = prints)           
     return(meta_sol_vss)      
 
@@ -3275,7 +3790,7 @@ def printing(content, prints = True, flush = True):
     
 def filename(settings, PenMet, validation, probF = 0.95, probS = 0.95, \
              rhoF = None, rhoS = None, groupSize = "", groupAim = "", \
-             adjacent = False):
+             adjacent = False, allNames = False):
     """
     Combines all settings to a single file name to save results.
 
@@ -3322,7 +3837,7 @@ def filename(settings, PenMet, validation, probF = 0.95, probS = 0.95, \
         Filename combining all settings.
 
     """
-    
+        
     settingsTmp = settings.copy()
     if type(settingsTmp["k_using"]) is tuple:
         settingsTmp["k_using"] = list(settingsTmp["k_using"])
@@ -3377,6 +3892,31 @@ def filename(settings, PenMet, validation, probF = 0.95, probS = 0.95, \
         "M" + '_'.join(str(n) for n in validationTmp) + \
         "Tax" + '_'.join(str(n) for n in settingsTmp["tax"]) + \
         "PercIgov" + '_'.join(str(n) for n in settingsTmp["perc_guaranteed"])
+    
+    
+    if allNames:
+        # all settings that affect the calculation of rhoF
+        SettingsBasics = "k" + str(settings["k"]) + \
+                "using" +  '_'.join(str(n) for n in settings["k_using"]) + \
+                "num_crops" + str(settings["num_crops"]) + \
+                "yield_projection" + str(settings["yield_projection"]) + \
+                "sim_start" + str(settings["sim_start"]) + \
+                "pop_scenario" + str(settings["pop_scenario"]) +  \
+                "T" + str(settings["T"])
+        SettingsMaxProbF = SettingsBasics + "N" + str(settings["N"])
+        SettingsAffectingRhoF = SettingsBasics + "probF" + str(probF) + \
+                "N" + str(settings["N"])
+        
+        # all settings that affect the calculation of rhoS
+        SettingsBasics = SettingsBasics + \
+                "risk" + str(settings["risk"]) + \
+                "tax" + str(settings["tax"]) + \
+                "perc_guaranteed" + str(settings["perc_guaranteed"])
+        SettingsMaxProbS = SettingsBasics + "N" + str(settings["N"])
+        SettingsAffectingRhoS = SettingsBasics + "probS" + str(probS) + \
+                "N" + str(settings["N"])
+        return(fn, SettingsMaxProbF, SettingsAffectingRhoF, \
+               SettingsMaxProbS, SettingsAffectingRhoS)
     
     return(fn)
 
