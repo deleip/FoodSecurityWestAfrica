@@ -51,7 +51,7 @@ def MakeList(grouping):
                 res.append(gr[i])
     return(res)        
     
-def printing(content, prints = True, flush = True):
+def printing(content, prints = True, LogFile = None, flush = True):
     """
     Function to only print progress report to console if chosen.
 
@@ -60,7 +60,10 @@ def printing(content, prints = True, flush = True):
     content : str
         Message that is to be printed.
     prints : boolean, optional
-        Whether message should be printed. The default is True.
+        Whether message should be printed to console. The default is True.
+    LogFile : boolean, optional
+        Whether message should be printed to log file. If None, the same value
+        as prints is used. The default is None.
     flush : bpolean, optional
         Whether to forcibly flush the stream. The default is True.
 
@@ -69,9 +72,18 @@ def printing(content, prints = True, flush = True):
     None.
 
     """
+    # output to consoole
     if prints:
         print(content, flush = flush)
     
+    # output to log file
+    if LogFile is None:
+        LogFile = prints
+    if LogFile:
+        log = open("ModelLogs/tmp.txt", "a")
+        log.write("\n" + content)
+        log.close()
+        
     return(None)
     
 def filename(settings, PenMet, validation, probF = 0.95, probS = 0.95, \

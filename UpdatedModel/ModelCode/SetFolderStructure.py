@@ -19,6 +19,9 @@ def CheckFolderStructure():
     or validation values are not yet present empty dictionaries are put in 
     place. If input data is missing the function throws an error.
     """
+    if not os.path.isdir("ModelLogs"):
+        os.mkdir("ModelLogs")
+        
     if not os.path.isdir("Figures"):
         os.mkdir("Figures")
     

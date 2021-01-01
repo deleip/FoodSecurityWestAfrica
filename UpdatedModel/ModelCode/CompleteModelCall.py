@@ -11,6 +11,7 @@ import pickle
 import sys
 import time as tm 
 import numpy as np
+from datetime import datetime
 
 from ModelCode.SettingsParameters import DefaultSettingsExcept
 from ModelCode.Auxiliary import filename
@@ -274,6 +275,23 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
     # timing
     all_start  = tm.time()
     
+    # TODO include decision for logfile in all printing statements so console
+    # initialize log file
+    if os.path.exists("ModelLogs/tmp.txt"):
+        os.remove("ModelLogs/tmp.txt")
+    log = open("ModelLogs/tmp.txt", "a")
+    log.write("Model started " + str(datetime.now().strftime("%B %d, %Y, at %H:%M")))
+    log.write("\n\nModel Input: PenMet = " + str(PenMet) + 
+              "\n             probF = " + str(probF) + 
+              "\n             probS = " + str(probS) + 
+              "\n             rhoF = " + str(rhoFini) + 
+              "\n             rhoS = " + str(rhoSini) + 
+              "\n             validation = " + str(validation) + 
+              "\n             save = " + str(save))
+    for key in kwargs.keys():
+        log.write("\n             " + key + " = " + str(kwargs[key]))
+    log.close()
+        
     # create dictionary of all settings (includes calculating or loading the
     # correct expected income)
     printing("\nDefining Settings", prints = prints)
@@ -346,6 +364,9 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
             if PenMet == "prob":
                 pickle.dump(probF, fp)
                 pickle.dump(probS, fp)
+     
+    # rename the temporal log file
+    os.rename("ModelLogs/tmp.txt", "ModelLogs/" + fn + ".txt")    
      
     # timing
     all_end  = tm.time()   

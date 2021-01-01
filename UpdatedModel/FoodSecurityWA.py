@@ -5,14 +5,21 @@ Created on Sat Nov 21 11:42:56 2020
 
 @author: Debbora Leip
 """
+# set the right directory
+import os
+dir_path = os.path.dirname(os.path.realpath(__file__))
+os.chdir(dir_path)
 
+# import all project related functions
 import FoodSecurityModule as FS  
+
+# import other modules
 import pickle
 
 # set up folder structure (if not already done)
 FS.CheckFolderStructure()
         
-# %% ######################### 1. GROUPING CLUSTERS ###########################
+# %% ######################### 0. GROUPING CLUSTERS ###########################
 
 # combinations of the aim and whether clusters in a group have to be adjacent
 comb = [("Similar", "True"),
@@ -28,6 +35,33 @@ for s in [1, 2, 3, 5]:
                         " for k = " + str(k) + " clusters " + "and group" + \
                         " size s = " + str(s) + " according to " + aim + "ity")
         
+
+# %% ####### 2. DEFAULT RUN FOR ALL CLUSTER GROUPS OF SIZE 1, 2, 3, 5  ########
+
+# group size, sample size N, validation sample size M
+comb = [(1, 25000, 200000),
+        (2, 50000, 200000),
+        (3, 75000, 200000),
+        (5, 100000, 300000)]
+
+for size, N, M in comb:
+    for aim in ["Similar", "Dissimilar"]:
+        with open("InputData/Clusters/ClusterGroups/GroupingSize" \
+                      + str(size) + aim + ".txt", "rb") as fp:
+                BestGrouping = pickle.load(fp)
+                
+        for cluster_active in BestGrouping:
+            print("\u2017"*49)
+            print("Aim: " + aim + ", size: " + str(size) + ", clusters: " + str(cluster_active))
+            print("\u033F "*49)
+            
+            crop_alloc, meta_sol, status, durations, settings, args, \
+            yield_information, population_information, rhoF, rhoS, VSS_value, \
+            crop_alloc_vss, meta_sol_vss, validation_values, fn = \
+                FS.FoodSecurityProblem(validation = M,
+                                       plotTitle = "Aim: " + aim + ", clusters: " + str(cluster_active),
+                                       k_using = list(cluster_active),
+                                       N = N)
 
 # %% ##################### 2. RUNS USING ONE CLUSTER ##########################
 
@@ -97,46 +131,3 @@ for probF in [0.97, 0.99]:
                                                     risk = risk,
                                                     N = 50000)
  
-  
-# %% ##################### 2. RUNS USING ONE CLUSTER ##########################
-
-comb = [(1, 50000, 200000),
-        (2, 75000, 200000),
-        (3, 75000, 200000),
-        (5, 100000, 200000)]
-
-for size, M, N in comb:
-    for aim in ["Similar", "Dissimilar"]:
-        with open("InputData/Clusters/ClusterGroups/GroupingSize" \
-                      + str(size) + aim + ".txt", "rb") as fp:
-                BestGrouping = pickle.load(fp)
-                
-        for cluster_active in BestGrouping:
-            print("\u2017"*49)
-            print("Aim: " + aim + ", size: " + str(size) + ", clusters: " + str(cluster_active))
-            print("\u033F "*49)
-            
-            crop_alloc, meta_sol, status, durations, settings, args, \
-            rhoF, rhoS, VSS_value, crop_alloc_vss, meta_sol_vss, \
-            validation_values, probSnew, fn = FS.FoodSecurityProblem(PenMet = "prob", 
-                                        probF = 0.99, 
-                                        probS = 0.95, 
-                                        validation = M,
-                                        plotTitle = "Aim: " + aim + ", clusters: " + str(cluster_active),
-                                        k = 9,
-                                        k_using = list(cluster_active),
-                                        tax = 0.03,
-                                        perc_guaranteed = 0.85,
-                                        risk = 0.05,
-                                        N = N)
-                
-                
-# %%
-
-crop_alloc, meta_sol, status, durations, settings, args, yield_information, \
-population_information, rhoF, rhoS, VSS_value, crop_alloc_vss, meta_sol_vss, \
-                validation_values, fn = FS.FoodSecurityProblem(
-                                            validation = 50000,
-                                            k_using = [4],
-                                            N = 5000,
-                                            plotTitle = "Crop allocation over time")

@@ -5,13 +5,6 @@ Created on Fri Jan  1 14:35:49 2021
 
 @author: Debbora Leip
 """
-
-# set the right directory
-import os
-dir_path = os.path.dirname(os.path.realpath(__file__))
-os.chdir(dir_path)
-print("Current homefolder: " + dir_path)
-
 # get all functions 
 from ModelCode.GeneralSettings import ReturnGeneralSettings
 from ModelCode.GeneralSettings import ChangeGeneralSettings
@@ -42,5 +35,5 @@ from ModelCode.AnalysisAndComparison import GetResultsToCompare
 from ModelCode.Auxiliary import filename
 
 # set up folder structure (if not already done)
-FS.CheckFolderStructure()
+CheckFolderStructure()
         
