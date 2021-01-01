@@ -22,13 +22,16 @@ FS.CheckFolderStructure()
 # %% ######################### 0. GROUPING CLUSTERS ###########################
 
 # combinations of the aim and whether clusters in a group have to be adjacent
-comb = [("Similar", "True"),
-        ("Dissimilar", "True"),
-        ("Similar", "False")]
+comb = [("Similar", True),
+        ("Dissimilar", True),
+        ("Similar", False), 
+        ("Dissimilar", False)]
 
 k = 9
 for s in [1, 2, 3, 5]:
     for (aim, adjacent) in comb:
+        print("group size s = " + str(s) + " according to " + aim + "ity with " + \
+              "adjacency " + str(adjacent), flush = True)
         BestGrouping, BestCosts, valid = \
                 FS.GroupingClusters(k = k, size = s, aim = aim, adjacent = adjacent, \
                     title ="Viaualization of " + "the grouping of clusters" + \

@@ -50,7 +50,7 @@ def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True, title = 
         ShiftedGrouping.append(tuple([i + 1 for i in list(gr)]))
                
     if title is not None:
-        VisualizeClusterGroups(k, size, aim, ShiftedGrouping, title, figsize, \
+        VisualizeClusterGroups(k, size, aim, adjacent, ShiftedGrouping, title, figsize, \
                           fontsizet = 20, fontsizea = 16)
     
     if adjacent:
@@ -136,7 +136,7 @@ def MedoidMedoidDist(medoids, dist):
                                                 [medoids[j][0], medoids[j][1]]
     return(res)
 
-def VisualizeClusterGroups(k, size, aim, grouping, title, figsize, \
+def VisualizeClusterGroups(k, size, aim, adjacent, grouping, title, figsize, \
                           fontsizet = 20, fontsizea = 16):
     
     from mpl_toolkits.basemap import Basemap
@@ -222,8 +222,14 @@ def VisualizeClusterGroups(k, size, aim, grouping, title, figsize, \
     cbar.set_ticks(range(1, k + 1))
     cbar.set_ticklabels(range(1, k + 1))
     
+    # add adjacency to file name
+    if adjacent:
+        ad = "Adj"
+    else:
+        ad = ""
+        
     # save figure
     fig.savefig("Figures/ClusterGroups/VisualizationGrouping_" + \
-                "k" + str(k) + "s" + str(size) + aim + ".png", \
+                "k" + str(k) + "s" + str(size) + aim + ad +".png", \
             bbox_inches = "tight", pad_inches = 1)
     return()
