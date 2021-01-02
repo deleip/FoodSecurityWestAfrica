@@ -23,6 +23,9 @@ shareDiffS = 10
 # right rhoS
 accuracy_debt = 4
 
+# should model progress be logged?
+logs_on = True
+
 from termcolor import colored
 
 # TODO

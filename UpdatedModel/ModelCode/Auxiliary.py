@@ -7,6 +7,8 @@ Created on Fri Jan  1 14:09:14 2021
 """
 import itertools as it
 
+from ModelCode.GeneralSettings import logs_on
+
 # %% ############################### AUXILIARY ################################  
 
 def flatten(ListOfLists):
@@ -51,7 +53,7 @@ def MakeList(grouping):
                 res.append(gr[i])
     return(res)        
     
-def printing(content, prints = True, LogFile = None, flush = True):
+def printing(content, prints = True, flush = True):
     """
     Function to only print progress report to console if chosen.
 
@@ -77,9 +79,7 @@ def printing(content, prints = True, LogFile = None, flush = True):
         print(content, flush = flush)
     
     # output to log file
-    if LogFile is None:
-        LogFile = prints
-    if LogFile:
+    if logs_on:
         log = open("ModelLogs/tmp.txt", "a")
         log.write("\n" + content)
         log.close()
