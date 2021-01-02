@@ -1079,10 +1079,10 @@ def UpdateDebtInformation(rhoSnew, necessary_debt, debt_top, debt_bottom, \
     """
 
     # Update inforamtion on Borders 
-    if necessary_debt == debt_bottom:
+    if np.round(necessary_debt, accuracy_debt) == np.round(debt_bottom, accuracy_debt):
         LowerBorder = rhoSnew
         
-    elif necessary_debt == debt_top:
+    elif np.round(necessary_debt, accuracy_debt) == np.round(debt_top, accuracy_debt):
         UpperBorder = rhoSnew
     
     # update information on "valley"
@@ -1167,9 +1167,9 @@ def DebtReport(necessary_debt, debt_bottom, debt_top):
         necessary_debt.
 
     """
-    if necessary_debt == debt_top:
+    if  np.round(necessary_debt, accuracy_debt) == np.round(debt_top, accuracy_debt):
         debt_report = "1e9"
-    elif necessary_debt == debt_bottom:
+    elif np.round(necessary_debt, accuracy_debt) == np.round(debt_bottom, accuracy_debt):
         debt_report = "0"
     else:
         debt_report = necessary_debt

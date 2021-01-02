@@ -327,7 +327,7 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
     
     # run the optimizer
     status, crop_alloc, meta_sol, prob, durations = \
-        SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS, prints = prints)
+        SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS, prints = prints, logs_on = True)
         
     printing("\nResulting probabilities:\n" + \
     "     probF: " + str(np.round(meta_sol["prob_food_security"]*100, 2)) + "%\n" + \
@@ -376,6 +376,11 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
      
     # rename the temporal log file
     if logs_on:
+        if os.path.exists("ModelLogs/" + fn  + ".txt"):
+            i = 1
+            while os.path.exists("ModelLogs/" + fn  + "_" + str(i) + ".txt"):
+                i += 1
+            fn = fn + str(i)
         os.rename("ModelLogs/tmp.txt", "ModelLogs/" + fn + ".txt")    
      
     # timing

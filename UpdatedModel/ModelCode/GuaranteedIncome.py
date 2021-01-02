@@ -63,6 +63,10 @@ def GetExpectedIncome(settings, prints = True):
     if np.sum(expected_incomes < 0) > 0:
         sys.exit("Negative expected income")
         
+    printing("     Expected income per cluster in " + \
+             str(settings["sim_start"] - 1) + ": " + \
+             str(np.round(expected_incomes, 3)), prints = prints)
+        
     return(expected_incomes)
        
 def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
@@ -132,7 +136,7 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     # food security, therefore we find the right penalty for probF = 95%.
     # As we want the income in a scenario without government, the final run of
     # GetRhoF (with rohS = 0) automatically is the right run
-    args, yield_information, population_information = SetParameters(settings_ExpIn, prints = False)
+    args, yield_information, population_information = SetParameters(settings_ExpIn, prints = False, logs_on = False)
     
     rhoF, maxProbF, max_probS, needed_import, crop_alloc, meta_sol = \
            GetRhoF(args, yield_information, probF = probF, rhoFini = rhoFini, prints = False) 

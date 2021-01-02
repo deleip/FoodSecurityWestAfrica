@@ -42,17 +42,14 @@ for s in [1, 2, 3, 5]:
 # %% ##### 2. DEFAULT RUN FOR ADJACENT CLUSTER GROUPS OF SIZE 1, 2, 3, 5  #####
 
 # group size, sample size N, validation sample size M
-comb = [(1, 25000, 100000),
-        (2, 50000, 200000),
-        (3, 75000, 300000),
-        (5, 100000, 400000)
+comb = [(1, 15000, 100000),
+        #(2, 50000, 200000),
+        #(3, 75000, 300000),
+        #(5, 100000, 400000)
         ]
 
 for size, N, M in comb:
-    for aim in ["Similar", "Dissimilar"]:
-        if size == 1 and aim == "Dissimilar":
-            continue
-    
+    for aim in ["Dissimilar"]:    
         with open("InputData/Clusters/ClusterGroups/GroupingSize" \
                       + str(size) + aim + ".txt", "rb") as fp:
                 BestGrouping = pickle.load(fp)
@@ -144,4 +141,4 @@ yield_information, population_information, rhoF, rhoS, VSS_value, \
 crop_alloc_vss, meta_sol_vss, validation_values, fn = \
     FS.FoodSecurityProblem(validation = 100000,
                            k_using = [8],
-                           N = 25000)
+                           N = 15000)

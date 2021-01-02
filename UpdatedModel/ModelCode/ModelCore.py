@@ -17,7 +17,7 @@ from ModelCode.MetaInformation import GetMetaInformation
 
 # %% ############ IMPLEMENTING AND SOLVING LINEAR VERSION OF MODEL ############
 
-def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS = None, prints = True):
+def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS = None, prints = True, logs_on = False):
     """
     Sets up and solves the linear form of the food security problem.
 
@@ -49,7 +49,7 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS = None, prints = 
         sec.)
 
     """
-    printing("\nSolving Model", prints = prints)
+    printing("\nSolving Model", prints = prints, logs_on = logs_on)
     
     start = tm.time()
     
@@ -172,11 +172,11 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS = None, prints = 
             
     # printing("      " + "\u005F" * 21, prints = prints)
     printing("     Time      Setting up model: " + \
-            str(np.round(durations[0], 2)) + "s", prints = prints)
+            str(np.round(durations[0], 2)) + "s", prints = prints, logs_on = logs_on)
     printing("               Solving model: " + \
-            str(np.round(durations[1], 2)) + "s", prints = prints)
+            str(np.round(durations[1], 2)) + "s", prints = prints, logs_on = logs_on)
     printing("               Total: " + \
-            str(np.round(durations[2], 2)) + "s", prints = prints) 
+            str(np.round(durations[2], 2)) + "s", prints = prints, logs_on = logs_on) 
     # printing("      " + "\u0305 " * 21, prints = prints)           
                 
     return(status, crop_alloc, meta_sol, prob, durations)

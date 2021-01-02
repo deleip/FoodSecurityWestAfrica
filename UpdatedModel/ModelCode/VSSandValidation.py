@@ -44,11 +44,11 @@ def VSS(settings, args, rhoF, rhoS, probS = None):
     """
     # get arguments to calculate deterministic solution (in particular the 
     # expected yields instead of yield samples)
-    args_vss, yield_information, population_information = SetParameters(settings, VSS = True, prints = False)
+    args_vss, yield_information, population_information = SetParameters(settings, VSS = True, prints = False, logs_on = False)
     
     # solve model for the expected yields
     status, crop_alloc_vss, meta_sol, prob, durations = \
-                SolveReducedcLinearProblemGurobiPy(args_vss, rhoF, rhoS, probS, prints = False)
+                SolveReducedcLinearProblemGurobiPy(args_vss, rhoF, rhoS, probS, prints = False, logs_on = False)
                 
     # get information of using VSS solution in stochastic setting
     meta_sol_vss = GetMetaInformation(crop_alloc_vss, args, rhoF, rhoS, probS)
@@ -95,7 +95,8 @@ def OutOfSampleVal(crop_alloc, settings, rhoF, rhoS, \
     settings_val["N"] = M
     # get yield samples
     printing("     Getting parameters and yield samples", prints = prints)
-    args, yield_information, population_information = SetParameters(settings_val, prints = False)
+    args, yield_information, population_information = SetParameters(settings_val, \
+                                            prints = False, logs_on = False)
     
     # run objective function for higher sample size
     printing("     Objective function", prints = prints)

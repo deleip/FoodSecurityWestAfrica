@@ -53,7 +53,7 @@ def MakeList(grouping):
                 res.append(gr[i])
     return(res)        
     
-def printing(content, prints = True, flush = True):
+def printing(content, prints = True, flush = True, logs_on = logs_on):
     """
     Function to only print progress report to console if chosen.
 
