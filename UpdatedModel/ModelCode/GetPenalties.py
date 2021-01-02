@@ -18,7 +18,7 @@ from ModelCode.GeneralSettings import accuracyF
 from ModelCode.GeneralSettings import accuracyS
 from ModelCode.GeneralSettings import shareDiffF
 from ModelCode.GeneralSettings import shareDiffS
-
+from ModelCode.GeneralSettings import accuracy_debt
 
 # %% ########################## WRAPPING FUNCTION #############################
 
@@ -178,7 +178,7 @@ def GetPenalties(settings, args, yield_information, probF, probS, \
             rhoS = dict_rhoSs[SettingsAffectingRhoS]
             necessary_debt = dict_necDebt[SettingsAffectingRhoS]
             printing("     rhoS: " + str(rhoS) + ", necessary debt: " + \
-                     str(np.round(necessary_debt, 3)) + " 10^9$", \
+                     str(np.round(necessary_debt, accuracy_debt)) + " 10^9$", \
                      prints = prints)
         else:
             # if this setting was calculated for a lower N and no initial
@@ -371,7 +371,7 @@ def CheckOptimalProbS(args, other, probS, accuracy, prints = True):
     else:
         printing("     Desired probS (" + str(np.round(probS * 100, accuracy - 1)) \
                   + "%) cannot be reached (neccessary debt " + \
-                  str(np.round(necessary_debt, 3)) + " 10^9$)", prints)
+                  str(np.round(necessary_debt, accuracy_debt)) + " 10^9$)", prints)
         
     return(max_probS, max_probF, necessary_debt)
 
@@ -446,7 +446,7 @@ def GetRhoF(args, yield_information, probF, rhoFini, shareDiff = shareDiffF, \
     # rhoF is in that interval and can return our guess
     # TODO export this in extra function
     if rhoFini is not None:
-        printing("     Checking guess from run with lower N", prints = prints)
+        printing("     Checking guess from run with other N", prints = prints)
         status, crop_alloc, meta_sol, prob, durations = \
                         SolveReducedcLinearProblemGurobiPy(args_tmp, rhoFini, 0, prints = False) 
         ReportProgressFindingRho(rhoFini, meta_sol, accuracy, durations, \
@@ -514,8 +514,8 @@ def GetRhoF(args, yield_information, probF, rhoFini, shareDiff = shareDiffF, \
             if accuracy_int < lowestCorrect/shareDiff:
                 rhoF = lowestCorrect
                 break
-        else:
-            accuracy_int = lowestCorrect - rhoFLastUp
+        elif np.round(meta_sol["prob_food_security"], accuracy) > probF:
+            accuracy_int = rhoFnew - rhoFLastUp
             
         # report
         ReportProgressFindingRho(rhoFnew, meta_sol, accuracy, durations, \
@@ -648,7 +648,7 @@ def GetRhoS(args, probS, rhoSini, shareDiff, accuracy, prints = True):
     # rhoS is in that interval and can return our guess
     # TODO export that to separate function
     if rhoSini is not None:
-        printing("     Checking guess from run with lower N", prints = prints)
+        printing("     Checking guess from run with other N", prints = prints)
         status, crop_alloc, meta_sol, prob, durations = \
                         SolveReducedcLinearProblemGurobiPy(args, 0, rhoSini, probS, prints = False)  
         ReportProgressFindingRho(rhoSini, meta_sol, accuracy, durations, \
@@ -713,11 +713,11 @@ def GetRhoS(args, probS, rhoSini, shareDiff, accuracy, prints = True):
             if accuracy_int < lowestCorrect/shareDiff:
                 rhoS = lowestCorrect
                 break
-        else:
-            accuracy_int = lowestCorrect - rhoSLastUp
+        elif np.round(meta_sol["prob_staying_solvent"], accuracy) > probS:
+            accuracy_int = rhoSnew - rhoSLastUp
             
         # report
-        ReportProgressFindingRho(rhoSold, meta_sol, accuracy, durations, \
+        ReportProgressFindingRho(rhoSnew, meta_sol, accuracy, durations, \
                                  "S", accuracy_int, prints = prints)
             
         # remember guess
@@ -793,7 +793,7 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, debt_top, shareDiff, accuracy, f
     # check if rhoS from run with smaller N works here as well
     if rhoSini is not None:
         rhoS, necessary_debt = CheckRhoSiniDebt(args, probS, rhoSini, \
-                    debt_top, debt_bottom, shareDiff, accuracy, file, prints)
+                    debt_top, debt_bottom, shareDiff, accuracy, prints)
         if rhoS is not None:
             printing("     Cool, that worked!", prints = prints)
             return(rhoS, necessary_debt)
@@ -825,8 +825,9 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, debt_top, shareDiff, accuracy, f
  
     # plot and report
     plt.scatter(rhoSnew, necessary_debt, s = 10)
+    debt_report = DebtReport(necessary_debt, debt_bottom, debt_top)
     ReportProgressFindingRho(rhoSnew, meta_sol, accuracy, durations, \
-                             "S", interval, debt = necessary_debt, prints = prints)
+                             "S", interval, debt = debt_report, prints = prints)
         
     while True:
         # get next guess
@@ -849,8 +850,9 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, debt_top, shareDiff, accuracy, f
                         UpperBorder, LowerBorder, rhoSvalley, debtsValley)
         
         # report
+        debt_report = DebtReport(necessary_debt, debt_bottom, debt_top)
         ReportProgressFindingRho(rhoSnew, meta_sol, accuracy, durations, \
-                                 "S", interval, debt = necessary_debt, prints = prints)
+                                 "S", interval, debt = debt_report, prints = prints)
         
         # plot
         plt.scatter(rhoSnew, necessary_debt, s = 10, color = "blue")
@@ -879,13 +881,18 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, debt_top, shareDiff, accuracy, f
                             UpperBorder, LowerBorder, rhoSvalley, debtsValley)
              
             # report
+            debt_report = DebtReport(necessary_debt, debt_bottom, debt_top)
             ReportProgressFindingRho(rhoSnew1, meta_sol1, accuracy, durations1, \
-                            "S", interval, debt = necessary_debt1, \
+                            "S", interval, debt = debt_report, \
                             prefix = "1. ", prints = prints)
                 
             # are we accurate enough?    
             if FinalRhoS is not None:
                 break
+            
+            # if rhoSnew1 is the new minimum rhoSnew2 cannot be better
+            if rhoSvalley[debtsValley.index(min(debtsValley))] == rhoSnew1:
+                continue
                 
             # calculating results for second point
             status, crop_alloc, meta_sol2, prob, durations2 = \
@@ -902,8 +909,9 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, debt_top, shareDiff, accuracy, f
                             UpperBorder, LowerBorder, rhoSvalley, debtsValley)
                     
             # report
+            debt_report = DebtReport(necessary_debt, debt_bottom, debt_top)
             ReportProgressFindingRho(rhoSnew2, meta_sol2, accuracy, durations2, \
-                            "S", interval, debt = necessary_debt2, \
+                            "S", interval, debt = debt_report, \
                             prefix = "2. ", prints = prints)
                
             # are we accurate enough?    
@@ -975,7 +983,7 @@ def CheckRhoSiniDebt(args, probS, rhoSini, debt_top, debt_bottom, shareDiff, acc
     # optimize this to use the guess to improve computational time for 
     # rhoSini == 0
     if rhoSini != 0:
-        printing("     Checking guess from run with lower N", prints = prints)
+        printing("     Checking guess from run with other N", prints = prints)
         status, crop_alloc, meta_sol, prob, durations = \
             SolveReducedcLinearProblemGurobiPy(args, 0, rhoSini, probS, prints = False) 
         necessary_debt = meta_sol["necessary_debt"]
@@ -1029,7 +1037,7 @@ def UpdateDebtInformation(rhoSnew, necessary_debt, debt_top, debt_bottom, \
     debt_top : float
         The debt that would be necessary for rhoS -> inf (aproximated by
         setting rhoS = 1e9).
-    debt_top : float
+    debt_bottom : float
         The debt that would be necessary for rhoS = 0.
     shareDiff : int
         The share of the final rhoS that the accuracy interval can have as 
@@ -1099,7 +1107,7 @@ def UpdateDebtInformation(rhoSnew, necessary_debt, debt_top, debt_bottom, \
         if debtsValley[0] < debt_bottom and debtsValley[0] < debt_top:
             rhoS = rhoSvalley[0]
             necessary_debt = debtsValley[0]
-            interval = max(UpperBorder - rhoS, rhoS - LowerBorder)
+            interval = UpperBorder - LowerBorder
         elif debt_bottom < debt_top:
             rhoS = 0
             necessary_debt = debt_bottom
@@ -1113,11 +1121,11 @@ def UpdateDebtInformation(rhoSnew, necessary_debt, debt_top, debt_bottom, \
         if debtsValley[0] == min(debtsValley):
             rhoS = 0
             necessary_debt = debt_bottom
-            interval = rhoSvalley[0] - LowerBorder
+            interval = rhoSvalley[1] - LowerBorder
         elif debtsValley[-1] == min(debtsValley):
             rhoS = UpperBorder
             necessary_debt = debt_top
-            interval = UpperBorder - rhoSvalley[-1]
+            interval = UpperBorder - rhoSvalley[-2]
         else:
             i = debtsValley.index(min(debtsValley))
             rhoS = rhoSvalley[i]
@@ -1132,10 +1140,41 @@ def UpdateDebtInformation(rhoSnew, necessary_debt, debt_top, debt_bottom, \
     else:
         if interval < LowerBorder/shareDiff:
             return(LowerBorder, UpperBorder, rhoSvalley, debtsValley, interval, \
-                   rhoS, necessary_debt)          
+                   rhoS, necessary_debt)   
         
     return(LowerBorder, UpperBorder, rhoSvalley, debtsValley, interval, None, None)
 
+def DebtReport(necessary_debt, debt_bottom, debt_top):
+    """
+    For reporting: if the debt equals to either the debt for rhoS = 0 or 
+    for rhoS = inf, we want to state that.
+
+    Parameters
+    ----------
+    necessary_debt : TYPE
+        The necessary debt when using rhoSnew.
+    debt_top : float
+        The debt that would be necessary for rhoS -> inf (aproximated by
+        setting rhoS = 1e9).
+    debt_bottom : float
+        The debt that would be necessary for rhoS = 0.
+
+    Returns
+    -------
+    debt_report : float or str
+        If the debt equals either debt_top or debt_bottom, this is a str 
+        with the corresponding information. Else it is the value of 
+        necessary_debt.
+
+    """
+    if necessary_debt == debt_top:
+        debt_report = "1e9"
+    elif necessary_debt == debt_bottom:
+        debt_report = "0"
+    else:
+        debt_report = necessary_debt
+    
+    return(debt_report)
 
 def UpdateRhoDebtOutside(debt_top, debt_bottom, \
                   UpperBorder, LowerBorder, rhoSvalley, debtsValley):
@@ -1186,6 +1225,7 @@ def UpdateRhoDebtOutside(debt_top, debt_bottom, \
         elif debtsValley[0] == min(debtsValley):
             rhoSnew = (rhoSvalley[0] + LowerBorder)/2
         else:
+            print("Found Valley", flush = True)
             rhoSnew = "Found valley!"
             
     return(rhoSnew)
@@ -1207,16 +1247,21 @@ def UpdateRhoDebtValley(rhoSvalley, debtsValley):
     Returns
     -------
     rhoSnew1 : float
-        First next guess for rhoS (higher than the current best guess for rhoS).
+        First next guess for rhoS (between the current best guess and its 
+        "better" neighbor).
     rhoSnew2 : float
-        Second next guess for rhoS (lower than the current best guess for rhoS).
-    
+        Second next guess for rhoS (between the current best guess and its 
+        other neighbor).
 
     """
     
     i = debtsValley.index(min(debtsValley))
-    rhoSnew1 = (rhoSvalley[i] + rhoSvalley[i+1])/2
-    rhoSnew2 = (rhoSvalley[i] + rhoSvalley[i-1])/2
+    if debtsValley[i-1] < debtsValley[i+1]:
+        rhoSnew1 = (rhoSvalley[i] + rhoSvalley[i-1])/2
+        rhoSnew2 = (rhoSvalley[i] + rhoSvalley[i+1])/2
+    else:     
+        rhoSnew1 = (rhoSvalley[i] + rhoSvalley[i+1])/2
+        rhoSnew2 = (rhoSvalley[i] + rhoSvalley[i-1])/2
     
     return(rhoSnew1, rhoSnew2)  
 
@@ -1324,7 +1369,8 @@ def UpdatedRhoGuess(meta_sol, rhoLastUp, rhoLastDown, rhoOld, prob, accuracy, pr
     return(rhoNew, rhoLastDown, rhoLastUp)
 
 def ReportProgressFindingRho(rhoOld, meta_sol, accuracy, durations, \
-                             ProbType, accuracy_int = False, debt = False, prefix = "", prints = True):
+                             ProbType, accuracy_int = False, debt = False, \
+                             prefix = "", prints = True):
     """
     Function to report progress in finding the correct pealty to the console.
 
@@ -1373,8 +1419,10 @@ def ReportProgressFindingRho(rhoOld, meta_sol, accuracy, durations, \
         unit = " $/$"
     
     # if debt is given create corresponding text piece
-    if debt:
-        debt_text = ", nec. debt: " + str(np.round(debt, 3)) + " 10^9$"
+    if type(debt) is str:
+        debt_text = ", nec. debt as for rhoS = " + debt
+    elif debt:
+        debt_text = ", nec. debt: " + str(np.round(debt, accuracy_debt)) + " 10^9$"
     else:
         debt_text = ""
         
