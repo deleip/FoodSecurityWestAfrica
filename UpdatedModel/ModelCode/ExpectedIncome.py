@@ -55,7 +55,7 @@ def GetExpectedIncome(settings, prints = True):
     # else calculate (and save) it
     else:
         expected_incomes = CalcExpectedIncome(settings, \
-                                 SettingsAffectingGuaranteedIncome)
+                        SettingsAffectingGuaranteedIncome, prints = prints)
         dict_incomes[SettingsAffectingGuaranteedIncome] = expected_incomes
         with open("PenaltiesAndIncome/ExpectedIncomes.txt", "wb") as fp:    
              pickle.dump(dict_incomes, fp)
@@ -139,7 +139,7 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     args, yield_information, population_information = SetParameters(settings_ExpIn, prints = False, logs_on = False)
     
     rhoF, maxProbF, max_probS, needed_import, crop_alloc, meta_sol = \
-           GetRhoF(args, yield_information, probF = probF, rhoFini = rhoFini, prints = False) 
+           GetRhoF(args, yield_information, probF = probF, rhoFini = rhoFini, prints = False, logs_on = False) 
           
     dict_rhoFs[SettingsAffectingRhoF] = rhoF
     dict_imports[SettingsAffectingRhoF] = needed_import

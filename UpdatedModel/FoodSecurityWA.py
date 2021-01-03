@@ -42,10 +42,10 @@ for s in [1, 2, 3, 5]:
 # %% ##### 2. DEFAULT RUN FOR ADJACENT CLUSTER GROUPS OF SIZE 1, 2, 3, 5  #####
 
 # group size, sample size N, validation sample size M
-comb = [(1, 15000, 100000),
-        #(2, 50000, 200000),
-        #(3, 75000, 300000),
-        #(5, 100000, 400000)
+comb = [#(1, 15000, 100000),
+        #(2, 30000, 200000),
+        (3, 50000, 200000),
+        (5, 800000, 300000)
         ]
 
 for size, N, M in comb:
@@ -54,6 +54,7 @@ for size, N, M in comb:
                       + str(size) + aim + ".txt", "rb") as fp:
                 BestGrouping = pickle.load(fp)
                 
+        BestGrouping.reverse()
         for cluster_active in BestGrouping:
             print("\u2017"*49)
             print("Aim: " + aim + ", size: " + str(size) + ", clusters: " + str(cluster_active))
@@ -63,7 +64,7 @@ for size, N, M in comb:
             yield_information, population_information, rhoF, rhoS, VSS_value, \
             crop_alloc_vss, meta_sol_vss, validation_values, fn = \
                 FS.FoodSecurityProblem(validation = M,
-                                       plotTitle = "Aim: " + aim + ", clusters: " + str(cluster_active),
+                                       plotTitle = "Aim: " + aim  + ", Adjacent: False",
                                        k_using = list(cluster_active),
                                        N = N)
 
@@ -141,4 +142,5 @@ yield_information, population_information, rhoF, rhoS, VSS_value, \
 crop_alloc_vss, meta_sol_vss, validation_values, fn = \
     FS.FoodSecurityProblem(validation = 100000,
                            k_using = [8],
+                           plotTitle = "(Aim: Dissimilar, Adjacent: Flase)",
                            N = 15000)

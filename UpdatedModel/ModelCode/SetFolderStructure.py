@@ -9,6 +9,8 @@ Created on Fri Jan  1 13:44:33 2021
 import os
 import warnings as warn
 import pickle
+import shutil
+from termcolor import colored
 
 # %% ################ SETTING UP FOLDER STRUCTURE FOR RESULTS #################
 
@@ -75,9 +77,6 @@ def CheckFolderStructure():
         with open("ModelOutput/validation.txt", "wb") as fp:
             pickle.dump({}, fp)
         
-    if not os.path.isdir("OtherResults"):
-        os.mkdir("OtherResults")    
-        
     if not os.path.isdir("PenaltiesAndIncome"):
             os.mkdir("PenaltiesAndIncome")
     
@@ -108,4 +107,29 @@ def CheckFolderStructure():
     if not os.path.exists("PenaltiesAndIncome/MinimizedNecessaryDebt.txt"):
         with open("PenaltiesAndIncome/MinimizedNecessaryDebt.txt", "wb") as fp:
             pickle.dump({}, fp)
+    return(None)
             
+            
+def CleanFolderStructure():
+    print(colored("Warning, you are about to delete the folders " + \
+           "Figures, ModelLogs, ModelOutput, and PenaltiesAndIncome. " + \
+            "Do you wish to proceed?", "cyan"))
+    
+    proceed = input("Please enter yes/no: ")
+    while len(proceed) == 0 or (proceed[0] != "y" and proceed[0] != "n"):
+        proceed = input("Unknown input. Please enter yes or no: ")
+        
+    if proceed[0] == "y":
+        if os.path.isdir("Figures"):
+            shutil.rmtree("Figures")
+            
+        if os.path.isdir("ModelLogs"):
+            shutil.rmtree("ModelLogs")
+            
+        if os.path.isdir("ModelOutput"):
+            shutil.rmtree("ModelOutput")
+            
+        if os.path.isdir("PenaltiesAndIncome"):
+            shutil.rmtree("PenaltiesAndIncome")
+    
+    return(None)

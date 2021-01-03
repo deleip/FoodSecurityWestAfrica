@@ -12,6 +12,7 @@ import pickle
 import pandas as pd
 
 from ModelCode.Auxiliary import printing
+from ModelCode.GeneralSettings import logs_on
 
 # %% ############# FUNCTIONS TO GET INPUT FOR FOOD SECURITY MODEL #############
 
@@ -138,7 +139,7 @@ def DefaultSettingsExcept(k = 9,
     # return dictionary of all settings
     return(settings)
 
-def SetParameters(settings, wo_yields = False, VSS = False, prints = True, logs_on = True):
+def SetParameters(settings, wo_yields = False, VSS = False, prints = True, logs_on = logs_on):
     """
     
     Based on the settings, this sets all parameters needed as input to the
@@ -160,6 +161,9 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True, logs_
     prints : boolean, optional
         Specifying whether the progress should be documented thorugh console 
         outputs. The default is True.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log document.
+        The default is defined in ModelCode/GeneralSettings.
 
     Returns
     -------
@@ -481,9 +485,11 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True, logs_
 
     # get yield realizations:
     # what is the probability of a catastrophic year for given settings?
-    printing("\nOverview on yield samples", prints = prints)
+    printing("\nOverview on yield samples", prints = prints, logs_on = logs_on)
     prob_cat_year = RiskForCatastrophe(risk, len(k_using))
-    printing("     Prob for catastrophic year: " + str(np.round(prob_cat_year*100, 2)) + "%", prints = prints)    
+    printing("     Prob for catastrophic year: " + \
+             str(np.round(prob_cat_year*100, 2)) + "%", \
+             prints = prints, logs_on = logs_on)    
     # create realizations of presence of catastrophic yields and corresponding
     # yield distributions
     np.random.seed(seed)
@@ -507,13 +513,15 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True, logs_
     # in average more profitable crop
     exp_profit = yld_means * prices - costs
     avg_time_profit = np.nanmean(exp_profit, axis = 0)
-    more_profit = np.argmax(avg_time_profit)
-    printing("     On average more profit: " + crops[more_profit], \
+    more_profit = np.argmax(avg_time_profit, axis = 0) # per cluster
+    printing("     On average more profit (per cluster): " + \
+             str([crops[i] for i in more_profit]), \
              prints = prints, logs_on = logs_on)
     # in average more productive crop
     avg_time_production = np.nanmean(yld_means, axis = 0)
-    more_food = np.argmax(avg_time_production)
-    printing("     On average higher productivity: " + crops[more_food] + "\n", \
+    more_food = np.argmax(avg_time_production, axis = 0)
+    printing("     On average higher productivity (per cluster): " + \
+             str([crops[i] for i in more_food]) + "\n", \
              prints = prints, logs_on = logs_on)
     
 # 14. group output into different dictionaries

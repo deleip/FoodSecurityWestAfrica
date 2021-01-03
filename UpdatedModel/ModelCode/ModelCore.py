@@ -14,10 +14,11 @@ import gurobipy as gp
 from ModelCode.Auxiliary import printing
 from ModelCode.Auxiliary import flatten
 from ModelCode.MetaInformation import GetMetaInformation
+from ModelCode.GeneralSettings import logs_on
 
 # %% ############ IMPLEMENTING AND SOLVING LINEAR VERSION OF MODEL ############
 
-def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS = None, prints = True, logs_on = False):
+def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS = None, prints = True, logs_on = logs_on):
     """
     Sets up and solves the linear form of the food security problem.
 
@@ -33,6 +34,9 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS = None, prints = 
     prints : boolean, optional
         Specifying whether the progress should be documented thorugh console 
         outputs. The default is True.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log document.
+        The default is defined in ModelCode/GeneralSettings.
 
     Returns
     -------

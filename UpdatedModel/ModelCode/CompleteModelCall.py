@@ -20,7 +20,7 @@ from ModelCode.PlottingModelOutput import PlotModelOutput
 from ModelCode.Auxiliary import printing
 from ModelCode.MetaInformation import GetMetaInformation
 from ModelCode.SettingsParameters import SetParameters
-from ModelCode.GuaranteedIncome import GetExpectedIncome
+from ModelCode.ExpectedIncome import GetExpectedIncome
 from ModelCode.GetPenalties import GetPenalties
 from ModelCode.ModelCore import SolveReducedcLinearProblemGurobiPy
 from ModelCode.VSSandValidation import VSS
@@ -308,7 +308,7 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
     
     # get parameters for the given settings
     if settings["expected_incomes"] is None:  
-         settings["expected_incomes"] = GetExpectedIncome(settings, prints = False)
+         settings["expected_incomes"] = GetExpectedIncome(settings, prints = True)
     printing("\nGetting parameters", prints = prints)
     args, yield_information, population_information = SetParameters(settings)
     
@@ -374,20 +374,20 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
                 pickle.dump(probF, fp)
                 pickle.dump(probS, fp)
      
+    # timing
+    all_end  = tm.time()   
+    full_time = all_end - all_start
+    printing("\nTotal time: " + str(np.round(full_time, 2)) + "s", prints = prints)
+            
     # rename the temporal log file
     if logs_on:
         if os.path.exists("ModelLogs/" + fn  + ".txt"):
             i = 1
             while os.path.exists("ModelLogs/" + fn  + "_" + str(i) + ".txt"):
                 i += 1
-            fn = fn + str(i)
-        os.rename("ModelLogs/tmp.txt", "ModelLogs/" + fn + ".txt")    
-     
-    # timing
-    all_end  = tm.time()   
-    full_time = all_end - all_start
-    printing("\nTotal time: " + str(np.round(full_time, 2)) + "s", prints = prints)
-            
+            fn = fn + "_" + str(i)
+        os.rename("ModelLogs/tmp.txt", "ModelLogs/" + fn + ".txt") 
+        
     return(crop_alloc, meta_sol, status, durations, settings, args, yield_information, \
            population_information, rhoF, rhoS, VSS_value, crop_alloc_vss, meta_sol_vss, \
            validation_values)          

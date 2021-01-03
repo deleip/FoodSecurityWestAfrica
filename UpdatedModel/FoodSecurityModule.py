@@ -10,6 +10,7 @@ from ModelCode.GeneralSettings import ReturnGeneralSettings
 from ModelCode.GeneralSettings import ChangeGeneralSettings
 
 from ModelCode.SetFolderStructure import CheckFolderStructure
+from ModelCode.SetFolderStructure import CleanFolderStructure
 
 from ModelCode.GroupingClusters import GroupingClusters
 from ModelCode.GroupingClusters import VisualizeClusterGroups

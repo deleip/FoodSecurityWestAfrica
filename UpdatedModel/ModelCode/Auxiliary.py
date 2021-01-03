@@ -68,6 +68,9 @@ def printing(content, prints = True, flush = True, logs_on = logs_on):
         as prints is used. The default is None.
     flush : bpolean, optional
         Whether to forcibly flush the stream. The default is True.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log document.
+        The default is defined in ModelCode/GeneralSettings.
 
     Returns
     -------
