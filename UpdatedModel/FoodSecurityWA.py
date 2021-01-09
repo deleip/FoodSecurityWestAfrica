@@ -44,8 +44,8 @@ for s in [1, 2, 3, 5]:
 # group size, sample size N, validation sample size M
 comb = [#(1, 15000, 100000),
         #(2, 30000, 200000),
-        (3, 50000, 200000),
-        #(5, 10000, 300000)
+        #(3, 50000, 200000),
+        (5, 200000, 400000)
         ]
 
 for size, N, M in comb:
@@ -55,7 +55,7 @@ for size, N, M in comb:
                 BestGrouping = pickle.load(fp)
                 
         BestGrouping.reverse()
-        for cluster_active in [BestGrouping[1]]:
+        for cluster_active in [BestGrouping[0]]:
             print("\u2017"*49)
             print("Aim: " + aim + ", size: " + str(size) + ", clusters: " + str(cluster_active))
             print("\u033F "*49)

@@ -8,6 +8,7 @@ Created on Fri Jan  1 15:19:25 2021
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import os
 
 from ModelCode.GeneralSettings import figsize
 
@@ -184,6 +185,8 @@ def PlotCropAlloc(crop_alloc, k, k_using, max_areas, cols = None, cols_b = None,
     
     
     if file is not None:
-        fig.savefig("Figures/CropAllocs/CropAlloc_" + file + ".jpg", bbox_inches = "tight", pad_inches = 1)
+        if not os.path.isdir("Figures/CropAllocs/" + str(K) + "clusters"):
+            os.mkdir("Figures/CropAllocs/" + str(K) + "clusters") 
+        fig.savefig("Figures/CropAllocs/" + str(K) + "clusters/CropAlloc_" + file + ".jpg", bbox_inches = "tight", pad_inches = 1)
         
     return()

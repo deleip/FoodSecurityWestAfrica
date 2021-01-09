@@ -132,4 +132,5 @@ def CleanFolderStructure():
         if os.path.isdir("PenaltiesAndIncome"):
             shutil.rmtree("PenaltiesAndIncome")
     
+    CheckFolderStructure()
     return(None)
