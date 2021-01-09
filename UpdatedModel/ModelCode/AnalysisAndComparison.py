@@ -228,7 +228,7 @@ def CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, MaxAreasPool, M
         fig.savefig("Figures/CompareCropAllocsRiskPooling/" + filename + \
                     ".jpg", bbox_inches = "tight", pad_inches = 1)
 
-def GetResultsToCompare(ResType = "k_using", PenMet = "prob", probF = 0.95, \
+def GetResultsToCompare(ResType = "k_using", PenMet = "prob", probF = 0.99, \
                        probS = 0.95, rhoF = None, rhoS = None, prints = True, \
                        groupSize = "", groupAim = "", adjacent = False, \
                        validation = None, **kwargs):
@@ -288,7 +288,7 @@ def GetResultsToCompare(ResType = "k_using", PenMet = "prob", probF = 0.95, \
         Filename to be used as basis for saving figures using this data.
 
     """
-
+    print(kwargs)
     settingsIterate = DefaultSettingsExcept(**kwargs)
     fnIterate = filename(settingsIterate, PenMet, validation, probF, probS, \
                      rhoF, rhoS, groupSize = groupSize, groupAim = groupAim, \
@@ -306,6 +306,7 @@ def GetResultsToCompare(ResType = "k_using", PenMet = "prob", probF = 0.95, \
     settingsIterate["rhoF"] = rhoF
     settingsIterate["rhoS"] = rhoS
     settingsIterate["validation"] = validation
+    del settingsIterate["import"]
     
     ToIterate = settingsIterate[ResType]
     
@@ -324,10 +325,10 @@ def GetResultsToCompare(ResType = "k_using", PenMet = "prob", probF = 0.95, \
             if type(val) is tuple:
                 val = list(val)
                 val.sort()
-        settingsIterate[ResType] = val
-        
+                
         crop_alloc, meta_sol, status, durations, settings, args, \
-        rhoF, rhoS, VSS_value, crop_alloc_vss, meta_sol_vss, \
+        yield_information, population_information, rhoF, rhoS, \
+        VSS_value, crop_alloc_vss, meta_sol_vss, \
         validation_values, fn = FoodSecurityProblem(PenMet = PenMet,
                                     prints = prints, **settingsIterate)
         

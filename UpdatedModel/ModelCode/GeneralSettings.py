@@ -17,8 +17,9 @@ shareDiffF= 10
 shareDiffS = 10
 
 # accuracy of debts used in the algorithm to find the right rhoS in cases where
-# probS cannot be reached
-accuracy_debt = 4
+# probS cannot be reached (given as the share of the difference between 
+# debt_bottom and debt_top)
+accuracy_debt = 0.0005
 
 # should model progress be logged?
 logs_on = True
@@ -36,7 +37,7 @@ def ReturnGeneralSettings():
           "\naccuracy that is demanded from the probabilities as decimal " + \
           "places (for probabilities given as float, not as percentage)" + \
           " - for food security probability", flush = True)
-    print("     accuracyS: " + str(accuracyF) + \
+    print("     accuracyS: " + str(accuracyS) + \
           "\naccuracy that is demanded from the probabilities as decimal " + \
           "places (for probabilities given as float, not as percentage)" + \
           " - for solvency probability", flush = True)
@@ -48,12 +49,12 @@ def ReturnGeneralSettings():
           "\naccuracy of the penalties given thorugh size of the accuracy " + \
           "interval: the size needa to be smaller than final rho/shareDiff" + \
           " - for solvency penalty", flush = True)
-    print("     accuracy_debt: " + str(accuracyF) + \
+    print("     accuracy_debt: " + str(accuracy_debt) + \
           "\naccuracy of debts used in the algorithm to find the right " + \
           "rhoS in cases where probS cannot be reached", flush = True)
-    print("     logs_on: " + str(accuracyF) + \
+    print("     logs_on: " + str(logs_on) + \
           "\nshould model progress be logged?", flush = True)
-    print("     figsize: " + str(accuracyF) + \
+    print("     figsize: " + str(figsize) + \
           "\ndefault figsize used for figures", flush = True)
     
     return(None)

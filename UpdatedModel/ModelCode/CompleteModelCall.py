@@ -165,7 +165,7 @@ def FoodSecurityProblem(PenMet = "prob", probF = 0.99, probS = 0.95, \
         
     # if not, it is calculated
     else:            
-        printing("Loading results", prints = prints)
+        printing("Loading results", prints = prints, logs_on = False)
         with open("ModelOutput/SavedRuns/" + fn + ".txt", "rb") as fp:
             pickle.load(fp) # info
             crop_alloc = pickle.load(fp)

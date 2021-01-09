@@ -34,6 +34,7 @@ from ModelCode.AnalysisAndComparison import CompareCropAllocRiskPooling
 from ModelCode.AnalysisAndComparison import GetResultsToCompare
 
 from ModelCode.Auxiliary import filename
+from ModelCode.Auxiliary import MakeList
 
 # set up folder structure (if not already done)
 CheckFolderStructure()

@@ -24,7 +24,8 @@ from ModelCode.GeneralSettings import logs_on
 # %% ########################## WRAPPING FUNCTION #############################
 
 def GetPenalties(settings, args, yield_information, probF, probS, \
-                 rhoFini = None, rhoSini = None, prints = True):
+                 rhoFini = None, rhoSini = None, prints = True, \
+                 logs_on = logs_on):
     """
     Given the probabilities probF and probS this either loads or calculates
     the corresponding penalties. Penalties are calculated with the respective
@@ -179,7 +180,7 @@ def GetPenalties(settings, args, yield_information, probF, probS, \
             rhoS = dict_rhoSs[SettingsAffectingRhoS]
             necessary_debt = dict_necDebt[SettingsAffectingRhoS]
             printing("     rhoS: " + str(rhoS) + ", necessary debt: " + \
-                     str(np.round(necessary_debt, accuracy_debt)) + " 10^9$", \
+                     str(np.round(necessary_debt, 4)) + " 10^9$", \
                      prints = prints)
         else:
             # if this setting was calculated for a lower N and no initial
@@ -381,7 +382,7 @@ def CheckOptimalProbS(args, other, probS, accuracy, prints = True):
     else:
         printing("     Desired probS (" + str(np.round(probS * 100, accuracy - 1)) \
                   + "%) cannot be reached (neccessary debt " + \
-                  str(np.round(necessary_debt, accuracy_debt)) + " 10^9$)", prints)
+                  str(np.round(necessary_debt, 4)) + " 10^9$)", prints)
         
     return(max_probS, max_probF, necessary_debt)
 
@@ -850,10 +851,10 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, debt_top, shareDiff, accuracy, f
                     necessary_debt, debt_top, debt_bottom, shareDiff, \
                     UpperBorder, LowerBorder, rhoSvalley, debtsValley)
          
-    print("          lower Border: " + str(LowerBorder), flush = True)
-    print("          upper Border: " + str(UpperBorder), flush = True)
-    print("          rhoSvalley: " + str(rhoSvalley), flush = True)
-    print("          debtsValley: " + str(debtsValley), flush = True)
+    # print("          lower Border: " + str(LowerBorder), flush = True)
+    # print("          upper Border: " + str(UpperBorder), flush = True)
+    # print("          rhoSvalley: " + str(rhoSvalley), flush = True)
+    # print("          debtsValley: " + str(debtsValley), flush = True)
     
     # plot and report
     plt.scatter(rhoSnew, necessary_debt, s = 10)
@@ -881,10 +882,10 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, debt_top, shareDiff, accuracy, f
                         necessary_debt, debt_top, debt_bottom, shareDiff, \
                         UpperBorder, LowerBorder, rhoSvalley, debtsValley)
                     
-        print("          lower Border: " + str(LowerBorder), flush = True)
-        print("          upper Border: " + str(UpperBorder), flush = True)
-        print("          rhoSvalley: " + str(rhoSvalley), flush = True)
-        print("          debtsValley: " + str(debtsValley), flush = True)
+        # print("          lower Border: " + str(LowerBorder), flush = True)
+        # print("          upper Border: " + str(UpperBorder), flush = True)
+        # print("          rhoSvalley: " + str(rhoSvalley), flush = True)
+        # print("          debtsValley: " + str(debtsValley), flush = True)
     
         # report
         debt_report = DebtReport(necessary_debt, debt_bottom, debt_top)
@@ -917,10 +918,10 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, debt_top, shareDiff, accuracy, f
                             necessary_debt1, debt_top, debt_bottom, shareDiff, \
                             UpperBorder, LowerBorder, rhoSvalley, debtsValley)
                      
-            print("          lower Border: " + str(LowerBorder), flush = True)
-            print("          upper Border: " + str(UpperBorder), flush = True)
-            print("          rhoSvalley: " + str(rhoSvalley), flush = True)
-            print("          debtsValley: " + str(debtsValley), flush = True)
+            # print("          lower Border: " + str(LowerBorder), flush = True)
+            # print("          upper Border: " + str(UpperBorder), flush = True)
+            # print("          rhoSvalley: " + str(rhoSvalley), flush = True)
+            # print("          debtsValley: " + str(debtsValley), flush = True)
     
             # report
             debt_report = DebtReport(necessary_debt, debt_bottom, debt_top)
@@ -950,10 +951,10 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, debt_top, shareDiff, accuracy, f
                             necessary_debt2, debt_top, debt_bottom, shareDiff, \
                             UpperBorder, LowerBorder, rhoSvalley, debtsValley)
                     
-            print("          lower Border: " + str(LowerBorder), flush = True)
-            print("          upper Border: " + str(UpperBorder), flush = True)
-            print("          rhoSvalley: " + str(rhoSvalley), flush = True)
-            print("          debtsValley: " + str(debtsValley), flush = True)
+            # print("          lower Border: " + str(LowerBorder), flush = True)
+            # print("          upper Border: " + str(UpperBorder), flush = True)
+            # print("          rhoSvalley: " + str(rhoSvalley), flush = True)
+            # print("          debtsValley: " + str(debtsValley), flush = True)
             
             # report
             debt_report = DebtReport(necessary_debt, debt_bottom, debt_top)
@@ -1124,11 +1125,19 @@ def UpdateDebtInformation(rhoSnew, necessary_debt, debt_top, debt_bottom, \
 
     """
 
+    # the demanded accuracy in the debt is given as a share of the difference
+    # between debt_top and debt_bottom
+    accuracy_diff_debt = np.abs(debt_top - debt_bottom) * accuracy_debt    
+
     # Update inforamtion on Borders 
-    if np.round(necessary_debt, accuracy_debt) == np.round(debt_bottom, accuracy_debt):
-        LowerBorder = rhoSnew
+    # if np.round(necessary_debt, accuracy_debt) == np.round(debt_bottom, accuracy_debt):
+    #     LowerBorder = rhoSnew
         
-    elif np.round(necessary_debt, accuracy_debt) == np.round(debt_top, accuracy_debt):
+    # Update inforamtion on Borders 
+    if np.abs(necessary_debt - debt_bottom) < accuracy_diff_debt:
+        LowerBorder = rhoSnew
+    
+    elif np.abs(necessary_debt - debt_top) < accuracy_diff_debt:
         UpperBorder = rhoSnew
     
     # update information on "valley"
@@ -1177,6 +1186,8 @@ def UpdateDebtInformation(rhoSnew, necessary_debt, debt_top, debt_bottom, \
             rhoS = rhoSvalley[i]
             necessary_debt = min(debtsValley)  
             interval = rhoSvalley[i+1] - rhoSvalley[i-1]
+            
+        
     
     # check whether we are acurate enough
     if rhoS != 0:
@@ -1213,9 +1224,13 @@ def DebtReport(necessary_debt, debt_bottom, debt_top):
         necessary_debt.
 
     """
-    if  np.round(necessary_debt, accuracy_debt) == np.round(debt_top, accuracy_debt):
+    # the demanded accuracy in the debt is given as a share of the difference
+    # between debt_top and debt_bottom
+    accuracy_diff_debt = np.abs(debt_top - debt_bottom) * accuracy_debt    
+    
+    if  np.abs(necessary_debt - debt_top) < accuracy_diff_debt:
         debt_report = "1e9"
-    elif np.round(necessary_debt, accuracy_debt) == np.round(debt_bottom, accuracy_debt):
+    elif np.abs(necessary_debt - debt_bottom) < accuracy_diff_debt:
         debt_report = "0"
     else:
         debt_report = necessary_debt
@@ -1471,7 +1486,7 @@ def ReportProgressFindingRho(rhoOld, meta_sol, accuracy, durations, \
     if type(debt) is str:
         debt_text = ", nec. debt as for rhoS = " + debt
     elif debt:
-        debt_text = ", nec. debt: " + str(np.round(debt, accuracy_debt)) + " 10^9$"
+        debt_text = ", nec. debt: " + str(np.round(debt, 4)) + " 10^9$"
     else:
         debt_text = ""
         

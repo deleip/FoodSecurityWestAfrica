@@ -52,7 +52,7 @@ def PlotModelOutput(PlotType = "CropAlloc", cols = None, cols_b = None, \
                 "limegreen", "darkturquoise", "darkorchid", "seagreen", 
                 "indigo"]
     if cols_b is None:
-        cols_b = ["dodgerblue", "red", "darkgrey", "y", \
+        cols_b = ["dodgerblue", "red", "darkgrey", "khaki", \
               "lime", "cyan", "orchid", "lightseagreen", "mediumpurple"]      
             
     # plotting the specified information
@@ -116,41 +116,46 @@ def PlotCropAlloc(crop_alloc, k, k_using, max_areas, cols = None, cols_b = None,
                     wspace=0.15, hspace=0.35)
     
     # overview of all crop area allocations in one plot
-    if K > 2:
+    if K > 1:
         ax = fig.add_subplot(1,2,1)
-        plt.plot(years, np.sum(crop_alloc, axis = (1,2)), color = "k", \
-                 lw = 2, alpha = 0.7)
+        l0, = plt.plot(years, np.sum(crop_alloc, axis = (1,2)), color = "k", \
+                 lw = 2, alpha = 0.7, ls = "-.")
     else:
         ax = fig.add_subplot(1,1,1)
     for cl in range(0, K):
         l1, = plt.plot(years, np.repeat(max_areas[cl], len(years)), \
                  color = cols_b[k_using[cl]-1], lw = 5, alpha = 0.4)
         l2, = plt.plot(years, crop_alloc[:,0,cl], color = cols[k_using[cl]-1], \
-                 lw = 2, linestyle = "--")
+                 lw = 1.8, linestyle = "--")
         l3, = plt.plot(years, crop_alloc[:,1,cl], color = cols[k_using[cl]-1], \
-                 lw = 2, label = "Cluster " + str(k_using[cl]))
+                 lw = 1.8, label = "Cluster " + str(k_using[cl]))
     plt.xlim(years[0] - 0.5, years[-1] + 0.5)
-    plt.ylim(-0.05 * np.max(max_areas), 1.1 * np.max(max_areas))
+    # plt.ylim(-0.05 * np.max(max_areas), 1.1 * np.max(max_areas))
     ax.xaxis.set_tick_params(labelsize=24)
     ax.yaxis.set_tick_params(labelsize=24)
     ax.yaxis.offsetText.set_fontsize(24)
     ax.xaxis.offsetText.set_fontsize(24)
-    plt.xlabel("Years", fontsize = 30)
-    plt.ylabel(r"Crop area in [$10^6$ ha]", fontsize = 30)
+    plt.xlabel("Years", fontsize = 26)
+    plt.ylabel(r"Crop area in [$10^6$ ha]", fontsize = 26)
     if K > 2:
-        plt.title("Overview " + str(k_using) + title, fontsize = 32, pad = 10)
+        plt.suptitle(str(k_using) + title, fontsize = 30)
     elif K == 1:
         plt.title("Cluster " + str(k_using[0]) + title, \
-                  fontsize = 32, pad = 10)
+                  fontsize = 26, pad = 10)
     elif K == 2:
         plt.title("Cluster " + str(k_using[0]) + " and " + str(k_using[1]) + title, \
-                 fontsize = 32, pad = 10)
-    legend1 = plt.legend([l1, l2, l3], ["Maximum available area", "Area Rice", "Area Maize"], \
-                         fontsize = 20, loc = 2)
+                 fontsize = 26, pad = 10)
+    if K == 1:
+        legend1 = plt.legend([l1, l2, l3], ["Maximum available area", \
+                                            "Area Rice", "Area Maize"], \
+                             fontsize = 20, loc = 2)
+    else:
+        legend1 = plt.legend([l0, l1, l2, l3], ["Total cultivated area", \
+                                                "Maximum available area", \
+                                                "Area Rice", "Area Maize"], \
+                             fontsize = 20, loc = 2)
+        plt.legend(loc='lower left', ncol=K, borderaxespad=0.6, fontsize = 16)
     plt.gca().add_artist(legend1)
-    if K > 1:
-        plt.legend(loc='lower left',
-           ncol=K, borderaxespad=0.6, fontsize = 16)
     
     # crop area allocations in separate subplots per cluster
     if K > 2:
@@ -159,11 +164,11 @@ def PlotCropAlloc(crop_alloc, k, k_using, max_areas, cols = None, cols_b = None,
         for cl in range(0, K):
             ax = fig.add_subplot(rows, 4, whichplots[cl])
             plt.plot(years, np.repeat(max_areas[cl], len(years)), \
-                     color = cols_b[cl], lw = 5, alpha = 0.4)
+                     color = cols_b[k_using[cl]-1], lw = 5, alpha = 0.4)
             plt.plot(years, crop_alloc[:,0,cl], color = cols[k_using[cl]-1], \
-                     lw = 2, linestyle = "--")
+                     lw = 1.8, linestyle = "--")
             plt.plot(years, crop_alloc[:,1,cl], color = cols[k_using[cl]-1], \
-                     lw = 2, label = "Cluster " + str(k_using[cl]))
+                     lw = 1.8, label = "Cluster " + str(k_using[cl]))
             plt.ylim(-0.05 * np.max(max_areas), 1.1 * np.max(max_areas))
             plt.xlim(years[0] - 0.5, years[-1] + 0.5)
             ax.xaxis.set_tick_params(labelsize=16)
@@ -173,9 +178,9 @@ def PlotCropAlloc(crop_alloc, k, k_using, max_areas, cols = None, cols_b = None,
             # ax.text(0.05, 0.91, "Cluster " + str(int(k_using[cl])), \
             #         fontsize = 16, transform = ax.transAxes, \
             #         verticalalignment = 'top', bbox = props)
-            if cl == 0:
-                plt.title("                        Separate clusters", \
-                          fontsize = 32, pad = 8) 
+            # if cl == 0:
+            #     plt.title("                        Separate clusters", \
+            #               fontsize = 32, pad = 8) 
     
     
     if file is not None:
