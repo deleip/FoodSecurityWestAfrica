@@ -12,7 +12,6 @@ import pickle
 import pandas as pd
 
 from ModelCode.Auxiliary import printing
-from ModelCode.GeneralSettings import logs_on
 
 # %% ############# FUNCTIONS TO GET INPUT FOR FOOD SECURITY MODEL #############
 
@@ -139,7 +138,7 @@ def DefaultSettingsExcept(k = 9,
     # return dictionary of all settings
     return(settings)
 
-def SetParameters(settings, wo_yields = False, VSS = False, prints = True, logs_on = logs_on):
+def SetParameters(settings, wo_yields = False, VSS = False, console_output = None, logs_on = None):
     """
     
     Based on the settings, this sets all parameters needed as input to the
@@ -158,9 +157,9 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True, logs_
         returned and all clusters will be indicated as non-catastrophic by 
         cat_clusters, as needed to calculate the deterministic solution on 
         which the VSS is based. The default is False.
-    prints : boolean, optional
+    console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is True.
+        outputs. The default is defined in ModelCode/GeneralSettings.
     logs_on : boolean, optional
         Specifying whether the progress should be documented in a log document.
         The default is defined in ModelCode/GeneralSettings.
@@ -485,11 +484,11 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True, logs_
 
     # get yield realizations:
     # what is the probability of a catastrophic year for given settings?
-    printing("\nOverview on yield samples", prints = prints, logs_on = logs_on)
+    printing("\nOverview on yield samples", console_output = console_output, logs_on = logs_on)
     prob_cat_year = RiskForCatastrophe(risk, len(k_using))
     printing("     Prob for catastrophic year: " + \
              str(np.round(prob_cat_year*100, 2)) + "%", \
-             prints = prints, logs_on = logs_on)    
+             console_output = console_output, logs_on = logs_on)    
     # create realizations of presence of catastrophic yields and corresponding
     # yield distributions
     np.random.seed(seed)
@@ -500,15 +499,15 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True, logs_
     # probability to not have a catastrophe
     no_cat = np.sum(terminal_years == -1) / N
     printing("     Share of samples without catastrophe: " + str(np.round(no_cat*100, 2)), \
-              prints = prints, logs_on = logs_on) 
+              console_output = console_output, logs_on = logs_on) 
     # share of non-profitable crops
     share_rice_np = np.sum(ylds[:,:,0,:] < y_profit[0,:])/np.sum(~np.isnan(ylds[:,:,0,:]))
     printing("     Share of cases with rice yields too low to provide profit: " + \
-             str(np.round(share_rice_np * 100, 2)), prints = prints, \
+             str(np.round(share_rice_np * 100, 2)), console_output = console_output, \
              logs_on = logs_on)
     share_maize_np = np.sum(ylds[:,:,1,:] < y_profit[1,:])/np.sum(~np.isnan(ylds[:,:,1,:]))
     printing("     Share of cases with maize yields too low to provide profit: " + \
-             str(np.round(share_maize_np * 100, 2)), prints = prints, \
+             str(np.round(share_maize_np * 100, 2)), console_output = console_output, \
              logs_on = logs_on)
     # in average more profitable crop
     exp_profit = yld_means * prices - costs
@@ -516,13 +515,13 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True, logs_
     more_profit = np.argmax(avg_time_profit, axis = 0) # per cluster
     printing("     On average more profit (per cluster): " + \
              str([crops[i] for i in more_profit]), \
-             prints = prints, logs_on = logs_on)
+             console_output = console_output, logs_on = logs_on)
     # in average more productive crop
     avg_time_production = np.nanmean(yld_means, axis = 0)
     more_food = np.argmax(avg_time_production, axis = 0)
     printing("     On average higher productivity (per cluster): " + \
              str([crops[i] for i in more_food]) + "\n", \
-             prints = prints, logs_on = logs_on)
+             console_output = console_output, logs_on = logs_on)
     
 # 14. group output into different dictionaries
     # arguments that are given to the objective function by the solver

@@ -16,8 +16,6 @@ import FoodSecurityModule as FS
 # import other modules
 import pickle
 
-# set up folder structure (if not already done)
-FS.CheckFolderStructure()
         
 # %% ######################### 0. GROUPING CLUSTERS ###########################
 
@@ -140,7 +138,7 @@ for probF in [0.97, 0.99]:
 crop_alloc, meta_sol, status, durations, settings, args, \
 yield_information, population_information, rhoF, rhoS, VSS_value, \
 crop_alloc_vss, meta_sol_vss, validation_values, fn = \
-    FS.FoodSecurityProblem(validation = 100000,
-                           k_using = [8],
+    FS.FoodSecurityProblem(validation = 50000,
+                           k_using = [6],
                            plotTitle = "(Aim: Dissimilar, Adjacent: Flase)",
-                           N = 15000)
+                           N = 10000)

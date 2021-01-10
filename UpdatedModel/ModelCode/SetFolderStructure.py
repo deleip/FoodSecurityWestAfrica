@@ -111,7 +111,7 @@ def CheckFolderStructure():
             
             
 def CleanFolderStructure():
-    print(colored("Warning, you are about to delete the folders " + \
+    print(colored("Warning, you are about to reset the folders " + \
            "Figures, ModelLogs, ModelOutput, and PenaltiesAndIncome. " + \
             "Do you wish to proceed?", "cyan"))
     

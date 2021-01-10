@@ -10,12 +10,11 @@ import matplotlib.pyplot as plt
 import math
 import os
 
-from ModelCode.GeneralSettings import figsize
 
 # %% ########################## PLOTTING FUNCTIONS ############################  
 
 def PlotModelOutput(PlotType = "CropAlloc", cols = None, cols_b = None, \
-                    figsize = figsize, title = None, file = None, **kwargs):
+                    figsize = None, title = None, file = None, **kwargs):
     """
     Creating different types of plots based on the model in- and output
 
@@ -47,6 +46,9 @@ def PlotModelOutput(PlotType = "CropAlloc", cols = None, cols_b = None, \
 
     """
     
+    if figsize is None:
+        from ModelCode.GeneralSettings import figsize
+    
     # defining colors
     if cols is None:            
         cols = ["royalblue", "darkred", "grey", "gold", \
@@ -64,7 +66,7 @@ def PlotModelOutput(PlotType = "CropAlloc", cols = None, cols_b = None, \
     return()
 
 def PlotCropAlloc(crop_alloc, k, k_using, max_areas, cols = None, cols_b = None, \
-                  figsize = figsize, title = None, file = None, sim_start = 2017):
+                  figsize = None, title = None, file = None, sim_start = 2017):
     """
     Plots crop area allocations over the years for all clusters. Should be 
     called through PlotModelOutput(PlotType = "CropAlloc").

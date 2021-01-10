@@ -44,11 +44,11 @@ def VSS(settings, args, rhoF, rhoS, probS = None):
     """
     # get arguments to calculate deterministic solution (in particular the 
     # expected yields instead of yield samples)
-    args_vss, yield_information, population_information = SetParameters(settings, VSS = True, prints = False, logs_on = False)
+    args_vss, yield_information, population_information = SetParameters(settings, VSS = True, console_output = False, logs_on = False)
     
     # solve model for the expected yields
     status, crop_alloc_vss, meta_sol, prob, durations = \
-                SolveReducedcLinearProblemGurobiPy(args_vss, rhoF, rhoS, probS, prints = False, logs_on = False)
+                SolveReducedcLinearProblemGurobiPy(args_vss, rhoF, rhoS, probS, console_output = False, logs_on = False)
                 
     # get information of using VSS solution in stochastic setting
     meta_sol_vss = GetMetaInformation(crop_alloc_vss, args, rhoF, rhoS, probS)
@@ -58,7 +58,7 @@ def VSS(settings, args, rhoF, rhoS, probS = None):
 # %% ################### OUT OF SAMLE VALIDATION OF RESULT ####################  
 
 def OutOfSampleVal(crop_alloc, settings, rhoF, rhoS, \
-                   M, meta_sol, probS = None, prints = True):
+                   M, meta_sol, probS = None, console_output = None):
     """
     For validation, the objective function is re-evaluate, using the optimal
     crop allocation but a higher sample size.    
@@ -78,9 +78,9 @@ def OutOfSampleVal(crop_alloc, settings, rhoF, rhoS, \
         each clutser.               
     M : int
         Sample size used for validation.
-    prints : boolean, optional
+    console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is True.
+        outputs. The default is defined in ModelCode/GeneralSettings.
 
     Yields
     ------
@@ -89,17 +89,17 @@ def OutOfSampleVal(crop_alloc, settings, rhoF, rhoS, \
 
     """
     
-    # printing("      " + "\u005F" * 21, prints = prints)
+    # printing("      " + "\u005F" * 21, console_output = console_output)
     # higher sample size
     settings_val = settings.copy()
     settings_val["N"] = M
     # get yield samples
-    printing("     Getting parameters and yield samples", prints = prints)
+    printing("     Getting parameters and yield samples", console_output = console_output)
     args, yield_information, population_information = SetParameters(settings_val, \
-                                            prints = False, logs_on = False)
+                                            console_output = False, logs_on = False)
     
     # run objective function for higher sample size
-    printing("     Objective function", prints = prints)
+    printing("     Objective function", console_output = console_output)
     meta_sol_val = GetMetaInformation(crop_alloc, args, rhoF, rhoS, probS)
     
     # create dictionary with validation information

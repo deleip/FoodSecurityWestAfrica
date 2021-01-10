@@ -9,7 +9,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gs
 
-from ModelCode.GeneralSettings import figsize
 from ModelCode.Auxiliary import filename
 from ModelCode.SettingsParameters import DefaultSettingsExcept
 from ModelCode.Auxiliary import printing
@@ -19,7 +18,7 @@ from ModelCode.CompleteModelCall import FoodSecurityProblem
 
 def CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title, \
                       comparing = "clusters", cols = None, cols_b = None, filename = None, \
-                      figsize = figsize, fig = None, ax = None, subplots = False, \
+                      figsize = None, fig = None, ax = None, subplots = False, \
                       fs = "big", sim_start = 2017):
     """
     Creates a plot of the crop areas over time, either all in one plot or as
@@ -73,6 +72,8 @@ def CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title, \
     None.
 
     """
+    if figsize is None:
+        from ModelCode.GeneralSettings import figsize        
     
     if fs == "big":
         fs_axis = 24
@@ -166,7 +167,7 @@ def CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title, \
     
 def CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, MaxAreasPool, MaxAreasIndep, 
                                 labelsPool, labelsIndep, title = None, cols = None, cols_b = None, 
-                                subplots = False, filename = None, figsize = figsize, 
+                                subplots = False, filename = None, figsize = None, 
                                 sim_start = 2017):
     """
     Given two list of crop areas, max available areas and labels, this plots 
@@ -210,6 +211,8 @@ def CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, MaxAreasPool, M
     None.
 
     """
+    if figsize is None:
+        from ModelCode.GeneralSettings import figsize     
     
     fig = plt.figure(figsize = figsize)
     ax = fig.add_subplot(1,2,1)
@@ -229,7 +232,7 @@ def CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, MaxAreasPool, M
                     ".jpg", bbox_inches = "tight", pad_inches = 1)
 
 def GetResultsToCompare(ResType = "k_using", PenMet = "prob", probF = 0.99, \
-                       probS = 0.95, rhoF = None, rhoS = None, prints = True, \
+                       probS = 0.95, rhoF = None, rhoS = None, console_output = None, \
                        groupSize = "", groupAim = "", adjacent = False, \
                        validation = None, **kwargs):
     """
@@ -257,6 +260,9 @@ def GetResultsToCompare(ResType = "k_using", PenMet = "prob", probF = 0.99, \
     rhoS : float or None, optional 
         Value that will be used as penalty for insolvency of the government 
         fund (only relevant if PenMet == "penalties"). The default is None.
+    console_output : boolean, optional
+        Specifying whether the progress should be documented thorugh console 
+        outputs. The default is defined in ModelCode/GeneralSettings.
     groupSize : int, optional
         The size of the groups. If we load reults for different cluster groups,
         this is relevant for the output filename. The default is "".
@@ -288,6 +294,10 @@ def GetResultsToCompare(ResType = "k_using", PenMet = "prob", probF = 0.99, \
         Filename to be used as basis for saving figures using this data.
 
     """
+    
+    if console_output is None:
+        from ModelCode.GeneralSettings import console_output
+    
     print(kwargs)
     settingsIterate = DefaultSettingsExcept(**kwargs)
     fnIterate = filename(settingsIterate, PenMet, validation, probF, probS, \
@@ -318,7 +328,7 @@ def GetResultsToCompare(ResType = "k_using", PenMet = "prob", probF = 0.99, \
     labels = []
     
     for val in ToIterate:
-        printing(ResType + ": " + str(val), prints = prints)
+        printing(ResType + ": " + str(val), console_output = console_output)
         if ResType == "k_using":
             if type(val) is int:
                 val = [val]
@@ -330,7 +340,7 @@ def GetResultsToCompare(ResType = "k_using", PenMet = "prob", probF = 0.99, \
         yield_information, population_information, rhoF, rhoS, \
         VSS_value, crop_alloc_vss, meta_sol_vss, \
         validation_values, fn = FoodSecurityProblem(PenMet = PenMet,
-                                    prints = prints, **settingsIterate)
+                                    console_output = console_output, **settingsIterate)
         
         CropAllocs.append(crop_alloc)
         MaxAreas.append(args["max_areas"])

@@ -7,8 +7,6 @@ Created on Fri Jan  1 14:09:14 2021
 """
 import itertools as it
 
-from ModelCode.GeneralSettings import logs_on
-
 # %% ############################### AUXILIARY ################################  
 
 def flatten(ListOfLists):
@@ -53,7 +51,7 @@ def MakeList(grouping):
                 res.append(gr[i])
     return(res)        
     
-def printing(content, prints = True, flush = True, logs_on = logs_on):
+def printing(content, console_output = None, flush = True, logs_on = None):
     """
     Function to only print progress report to console if chosen.
 
@@ -61,11 +59,12 @@ def printing(content, prints = True, flush = True, logs_on = logs_on):
     ----------
     content : str
         Message that is to be printed.
-    prints : boolean, optional
-        Whether message should be printed to console. The default is True.
+    console_output : boolean, optional
+        Whether message should be printed to console. 
+        The default is defined in ModelCode/GeneralSettings.
     LogFile : boolean, optional
         Whether message should be printed to log file. If None, the same value
-        as prints is used. The default is None.
+        as console_output is used. The default is None.
     flush : bpolean, optional
         Whether to forcibly flush the stream. The default is True.
     logs_on : boolean, optional
@@ -77,8 +76,14 @@ def printing(content, prints = True, flush = True, logs_on = logs_on):
     None.
 
     """
+    
+    if console_output is None:
+        from ModelCode.GeneralSettings import console_output
+    if logs_on is None:
+        from ModelCode.GeneralSettings import logs_on
+    
     # output to consoole
-    if prints:
+    if console_output:
         print(content, flush = flush)
     
     # output to log file

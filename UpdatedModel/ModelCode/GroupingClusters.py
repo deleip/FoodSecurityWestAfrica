@@ -12,12 +12,13 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as col
 
-from ModelCode.GeneralSettings import figsize
-
 # %% ######################### GROUPING CLUSTERS ############################## 
 
-def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True, title = None, figsize = figsize):
+def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True, title = None, figsize = None):
     
+    if figsize is None:
+        from ModelCode.GeneralSettings import figsize
+        
     with open("InputData/Other/PearsonDistSPEI03.txt", "rb") as fp:    
         distance = pickle.load(fp)  
 

@@ -14,6 +14,7 @@ import numpy as np
 from datetime import datetime
 from termcolor import colored
 
+from ModelCode.SetFolderStructure import CheckFolderStructure
 from ModelCode.SettingsParameters import DefaultSettingsExcept
 from ModelCode.Auxiliary import filename
 from ModelCode.PlottingModelOutput import PlotModelOutput
@@ -25,12 +26,11 @@ from ModelCode.GetPenalties import GetPenalties
 from ModelCode.ModelCore import SolveReducedcLinearProblemGurobiPy
 from ModelCode.VSSandValidation import VSS
 from ModelCode.VSSandValidation import OutOfSampleVal
-from ModelCode.GeneralSettings import logs_on
 
 # %% ############## WRAPPING FUNCTIONS FOR FOOD SECURITY MODEL ################
 
 def FoodSecurityProblem(PenMet = "prob", probF = 0.99, probS = 0.95, \
-                        rhoF = None, rhoS = None, prints = True, \
+                        rhoF = None, rhoS = None, console_output = None, logs_on = None, \
                         validation = None, save = True, plotTitle = None, \
                         **kwargs):
     """
@@ -66,9 +66,9 @@ def FoodSecurityProblem(PenMet = "prob", probF = 0.99, probS = 0.95, \
         be calculated in GetPenalties, else this will be used as initial guess 
         for the penalty which will give the correct probability for solvency.
         The default is None.
-    prints : boolean, optional
-        whether output should be written to the console while running function.
-        The default is True.
+    console_output : boolean, optional
+        Specifying whether the progress should be documented thorugh console 
+        outputs. The default is defined in ModelCode/GeneralSettings.
     validation : None or int, optional
         if not None, the objevtice function will be re-evaluated for 
         validation with a higher sample size as given by this parameter. 
@@ -126,6 +126,9 @@ def FoodSecurityProblem(PenMet = "prob", probF = 0.99, probS = 0.95, \
         all settings combined to a single file name to save/load results
     """    
     
+    # set up folder structure (if not already done)
+    CheckFolderStructure()
+        
     # defining settings
     settings = DefaultSettingsExcept(**kwargs)
     
@@ -140,7 +143,7 @@ def FoodSecurityProblem(PenMet = "prob", probF = 0.99, probS = 0.95, \
         sys.exit("A non-valid penalty method was chosen (PenMet must " + \
                  "be either \"prob\" or \"penalties\").")
     
-    # if model output already exists, it is loaded
+    # if model output does not exist yet it is calculated
     if not os.path.isfile("ModelOutput/SavedRuns/" + fn + ".txt"):
         try:
             crop_alloc, meta_sol, status, durations, settings, args, \
@@ -151,7 +154,7 @@ def FoodSecurityProblem(PenMet = "prob", probF = 0.99, probS = 0.95, \
                                               probS = probS, 
                                               rhoFini = rhoF,
                                               rhoSini = rhoS,
-                                              prints = prints,
+                                              console_output = console_output,
                                               validation = validation,
                                               save = save,
                                               **kwargs)
@@ -163,9 +166,9 @@ def FoodSecurityProblem(PenMet = "prob", probF = 0.99, probS = 0.95, \
                 log.close()
                 os.rename("ModelLogs/tmp.txt", "ModelLogs/" + fn + ".txt")
         
-    # if not, it is calculated
+    # if it does, it is loaded
     else:            
-        printing("Loading results", prints = prints, logs_on = False)
+        printing("Loading results", console_output = console_output, logs_on = False)
         with open("ModelOutput/SavedRuns/" + fn + ".txt", "rb") as fp:
             pickle.load(fp) # info
             crop_alloc = pickle.load(fp)
@@ -198,8 +201,8 @@ def FoodSecurityProblem(PenMet = "prob", probF = 0.99, probS = 0.95, \
            VSS_value, crop_alloc_vss, meta_sol_vss, validation_values, fn)          
 
 def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
-                                rhoFini = None, rhoSini = None, prints = True, \
-                                validation = None, save = True, **kwargs):
+                  rhoFini = None, rhoSini = None, console_output = None, logs_on = None, \
+                 validation = None, save = True, **kwargs):
     """
     Function combines setting up and solving the model, calculating additional
     information, and saving the results.
@@ -228,9 +231,9 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
         will be calculated in GetPenalties, else this will be used as initial
         guess for the penalty which will give the correct probability for 
         solvency. The default is None.
-    prints : boolean, optional
-        whether output should be written to the console while running function.
-        The default is True.
+    console_output : boolean, optional
+        Specifying whether the progress should be documented thorugh console 
+        outputs. The default is defined in ModelCode/GeneralSettings.
     validation : None or int, optional
         if not None, the objevtice function will be re-evaluated for 
         validation with a higher sample size as given by this parameter. 
@@ -281,6 +284,7 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
         "total_penalties", "total_penalties_val", "deviation_penalties")
 
     """
+    
     # timing
     all_start  = tm.time()
     
@@ -303,20 +307,20 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
         
     # create dictionary of all settings (includes calculating or loading the
     # correct expected income)
-    printing("\nDefining Settings", prints = prints)
+    printing("\nDefining Settings", console_output = console_output)
     settings = DefaultSettingsExcept(**kwargs)
     
     # get parameters for the given settings
     if settings["expected_incomes"] is None:  
-         settings["expected_incomes"] = GetExpectedIncome(settings, prints = True)
-    printing("\nGetting parameters", prints = prints)
+         settings["expected_incomes"] = GetExpectedIncome(settings, console_output = console_output)
+    printing("\nGetting parameters", console_output = console_output)
     args, yield_information, population_information = SetParameters(settings)
     
     # get the right penalties
     if PenMet == "prob":
         rhoF, rhoS, necessary_debt, needed_import = GetPenalties(settings, args, \
                                         yield_information, probF, probS, \
-                                        rhoFini, rhoSini, prints = prints)
+                                        rhoFini, rhoSini, console_output = console_output)
         settings["import"] = needed_import
         if needed_import > 0:
             args["import"] = needed_import
@@ -327,22 +331,22 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
     
     # run the optimizer
     status, crop_alloc, meta_sol, prob, durations = \
-        SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS, prints = prints, logs_on = True)
+        SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS, console_output = console_output, logs_on = True)
         
     printing("\nResulting probabilities:\n" + \
     "     probF: " + str(np.round(meta_sol["prob_food_security"]*100, 2)) + "%\n" + \
-    "     probS: " + str(np.round(meta_sol["prob_staying_solvent"]*100, 2)) + "%", prints)
+    "     probS: " + str(np.round(meta_sol["prob_staying_solvent"]*100, 2)) + "%", console_output)
         
     # VSS
-    printing("\nCalculating VSS", prints = prints)
+    printing("\nCalculating VSS", console_output = console_output)
     crop_alloc_vss, meta_sol_vss = VSS(settings, args, rhoF, rhoS, probS)
     VSS_value = meta_sol_vss["exp_tot_costs"] - meta_sol["exp_tot_costs"]
     
     # out of sample validation
     if validation is not None:
-        printing("\nOut of sample validation", prints = prints)
+        printing("\nOut of sample validation", console_output = console_output)
         validation_values = OutOfSampleVal(crop_alloc, settings, rhoF, \
-                              rhoS, validation, meta_sol, probS, prints)
+                              rhoS, validation, meta_sol, probS, console_output)
             
     # saving results
     if save:
@@ -377,7 +381,7 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
     # timing
     all_end  = tm.time()   
     full_time = all_end - all_start
-    printing("\nTotal time: " + str(np.round(full_time, 2)) + "s", prints = prints)
+    printing("\nTotal time: " + str(np.round(full_time, 2)) + "s", console_output = console_output)
             
     # rename the temporal log file
     if logs_on:

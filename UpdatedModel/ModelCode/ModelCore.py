@@ -14,11 +14,10 @@ import gurobipy as gp
 from ModelCode.Auxiliary import printing
 from ModelCode.Auxiliary import flatten
 from ModelCode.MetaInformation import GetMetaInformation
-from ModelCode.GeneralSettings import logs_on
 
 # %% ############ IMPLEMENTING AND SOLVING LINEAR VERSION OF MODEL ############
 
-def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS = None, prints = True, logs_on = logs_on):
+def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS = None, console_output = None, logs_on = None):
     """
     Sets up and solves the linear form of the food security problem.
 
@@ -31,9 +30,9 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS = None, prints = 
         The penalty for shortcomings of the food demand.
     rhoS : float
         The penalty for insolvency.
-    prints : boolean, optional
+    console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is True.
+        outputs. The default is defined in ModelCode/GeneralSettings.
     logs_on : boolean, optional
         Specifying whether the progress should be documented in a log document.
         The default is defined in ModelCode/GeneralSettings.
@@ -53,7 +52,8 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS = None, prints = 
         sec.)
 
     """
-    printing("\nSolving Model", prints = prints, logs_on = logs_on)
+        
+    printing("\nSolving Model", console_output = console_output, logs_on = logs_on)
     
     start = tm.time()
     
@@ -174,13 +174,13 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS = None, prints = 
         #               str(meta_sol["num_years_with_losses"]) + \
         #               " years/clusters profits are negative."))
             
-    # printing("      " + "\u005F" * 21, prints = prints)
+    # printing("      " + "\u005F" * 21, console_output = console_output)
     printing("     Time      Setting up model: " + \
-            str(np.round(durations[0], 2)) + "s", prints = prints, logs_on = logs_on)
+            str(np.round(durations[0], 2)) + "s", console_output = console_output, logs_on = logs_on)
     printing("               Solving model: " + \
-            str(np.round(durations[1], 2)) + "s", prints = prints, logs_on = logs_on)
+            str(np.round(durations[1], 2)) + "s", console_output = console_output, logs_on = logs_on)
     printing("               Total: " + \
-            str(np.round(durations[2], 2)) + "s", prints = prints, logs_on = logs_on) 
-    # printing("      " + "\u0305 " * 21, prints = prints)           
+            str(np.round(durations[2], 2)) + "s", console_output = console_output, logs_on = logs_on) 
+    # printing("      " + "\u0305 " * 21, console_output = console_output)           
                 
     return(status, crop_alloc, meta_sol, prob, durations)
