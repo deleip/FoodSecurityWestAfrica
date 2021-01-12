@@ -10,6 +10,15 @@ from termcolor import colored
 from datetime import datetime
 
 def ReturnGeneralSettings():
+    """
+    Prints the current values of the general settings defined in 
+    ModelCode/GeneralSettings to the console.
+
+    Returns
+    -------
+    None.
+
+    """
     
     from ModelCode.GeneralSettings import accuracyF
     from ModelCode.GeneralSettings import accuracyS
@@ -51,6 +60,43 @@ def ModifyGeneralSettings(accuracyF = None, \
                           logs_on = None, \
                           console_output = None, \
                           figsize = None):
+    """
+    Updates the values for the given general settings by rewriting the
+    ModelCode/GeneralSettings.py file, keeping the last value that was given
+    for unspecified settings (i.e. None).
+
+    Parameters
+    ----------
+    accuracyF : float, optional
+        Accuracy demanded from the food demand probability as decimal places
+        (given as float, not as percentage). The default is None.
+    accuracyS : float, optional
+        Accuracy demanded from the solvency probability as decimal places
+        (given as float, not as percentage). The default is None.
+    shareDiffF : float, optional
+        Accuracy of the food security penalty given thorugh size of the 
+        accuracy interval: the size needs to be smaller than final rho/shareDiff. 
+        The default is None.
+    shareDiffS : float, optional
+        Accuracy of the solvency penalty given thorugh size of the 
+        accuracy interval: the size needs to be smaller than final rho/shareDiff. 
+        The default is None.
+    accuracy_debt : float, optional
+        Accuracy of debts used in the algorithm to find the right rhoS in
+        cases where probS cannot be reached (given as the share of the 
+        difference between debt_bottom and debt_top). The default is None.
+    logs_on : boolean, optional
+        Should model progress be logged?. The default is None.
+    console_output : boolean, optional
+        Should model progress be reported in console?. The default is None.
+    figsize : tuple, optional
+        figsize used for all figures. The default is None.
+
+    Returns
+    -------
+    None.
+
+    """
     
     from ModelCode.GeneralSettings import accuracyF as accuracyFbefore
     from ModelCode.GeneralSettings import accuracyS as accuracySbefore
@@ -130,24 +176,18 @@ def ModifyGeneralSettings(accuracyF = None, \
     else:
         report = report[:-2]
         print(report + ".")
-    
-    # # opening and closing all code files, such that the local settings will
-    # # be updated
-    # open("ModelCode/AnalysisAndComparison.txt", "a").close()
-    # open("ModelCode/Auxiliary.txt", "a").close()
-    # open("ModelCode/CompleteModelCall.txt", "a").close()
-    # open("ModelCode/ExpectedIncome.txt", "a").close()
-    # open("ModelCode/GetPenalties.txt", "a").close()
-    # open("ModelCode/GroupingClusters.txt", "a").close()
-    # open("ModelCode/GroupingClusters.txt", "a").close()
-    # open("ModelCode/GroupingClusters.txt", "a").close()
-    # open("ModelCode/GroupingClusters.txt", "a").close()
-    # open("ModelCode/GroupingClusters.txt", "a").close()
-    
-    
+   
     return(None)
 
 def ResetGeneralSettings():
+    """
+    Rewrites the ModelCode/GeneralSettings.py with the original values.
+
+    Returns
+    -------
+    None.
+
+    """
     
     settings = open("ModelCode/GeneralSettings.py", "w")
     settings.write("# Last modified " + str(datetime.now().strftime("%B %d, %Y, at %H:%M")) + "\n")

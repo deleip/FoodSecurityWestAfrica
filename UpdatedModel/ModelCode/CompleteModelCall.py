@@ -60,7 +60,22 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
         
     Returns
     -------
-    crop_alloc : np.array
+    settings : dict
+        The model input settings that were given by user. 
+    args : dict
+        Dictionary of arguments needed as direct model input.
+    AddInfo_CalcParameters : dict
+        Additional information from calculatings expected income and penalties
+        which are not needed as model input.
+    yield_information : dict
+        Information on the yield distributions for the considered clusters.
+    population_information : dict
+        Information on the population in the considered area.
+    status : int
+        status of solver (optimal: 2)
+    all_durations :  dict
+        Information on the duration of different steps of the model framework.
+    crop_alloc :  np.array
         gives the optimal crop areas for all years, crops, clusters
     meta_sol : dict 
         additional information about the model output ('exp_tot_costs', 
@@ -68,32 +83,14 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
         'fd_penalty', 'avg_fd_penalty', 'sol_penalty', 'final_fund', 
         'prob_staying_solvent', 'prob_food_security', 'payouts', 
         'yearly_fixed_costs', 'num_years_with_losses')
-    status : int
-        status of solver (optimal: 2)
-    durations : list
-        time for setting up the model, time for solving, and total time (in sec.)
-    settings : dict
-        the model settings that were used     
-    args : dict
-        Dictionary of arguments needed as model input.
-    yield_information : dict
-        Dictionary with information on the yield samples
-    population_information : dict
-        Dictionary with information on the population
-    rhoF : float
-        The penalty for food shortcomings (depending on PenMet either the one 
-        given or the one calculated to match the probability)    
-    rhoS : float 
-        The penalty for insolvency (depending on PenMet either the one 
-        given or the one calculated to match the probability)         
+    crop_alloc_vss : np.array
+        deterministic solution for optimal crop areas    
+    meta_sol_vss : dict
+        additional information on the deterministic solution  
     VSS_value : float
         VSS calculated as the difference between total costs using 
         deterministic solution for crop allocation and stochastic solution
-        for crop allocation         
-    crop_alloc_vss : np.array
-        deterministic solution for optimal crop areas        
-    meta_sol_vss : dict
-        additional information on the deterministic solution        
+        for crop allocation       
     validation_values : dict
         total costs and penalties for the model result and a higher sample 
         size for validation ("sample_size", "total_costs", "total_costs_val", 
@@ -116,7 +113,7 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
     if not os.path.isfile("ModelOutput/SavedRuns/" + fn + ".txt"):
         try:
            settings, args, AddInfo_CalcParameters, yield_information, \
-           population_information, status, durations, crop_alloc, meta_sol, \
+           population_information, status, all_durations, crop_alloc, meta_sol, \
            crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \
                                 OptimizeModel(settings,
                                               console_output = console_output,
@@ -142,7 +139,7 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
             yield_information = pickle.load(fp)
             population_information = pickle.load(fp)
             status = pickle.load(fp)
-            durations = pickle.load(fp)
+            all_durations = pickle.load(fp)
             crop_alloc = pickle.load(fp)
             crop_alloc_vss = pickle.load(fp)
             VSS_value = pickle.load(fp)
@@ -158,7 +155,7 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
                     k_using = settings["k_using"], max_areas = args["max_areas"])
     
     return(settings, args, AddInfo_CalcParameters, yield_information, \
-           population_information, status, durations, crop_alloc, meta_sol, \
+           population_information, status, all_durations, crop_alloc, meta_sol, \
            crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn)          
 
 def OptimizeModel(settings, console_output = None, logs_on = None, \
@@ -286,8 +283,8 @@ def OptimizeModel(settings, console_output = None, logs_on = None, \
     all_durations["MainModelRun"] = durations[2]
         
     printing("\nResulting probabilities:\n" + \
-    "     probF: " + str(np.round(meta_sol["prob_food_security"]*100, 2)) + "%\n" + \
-    "     probS: " + str(np.round(meta_sol["prob_staying_solvent"]*100, 2)) + "%", console_output)
+    "     probF: " + str(np.round(meta_sol["probF"]*100, 2)) + "%\n" + \
+    "     probS: " + str(np.round(meta_sol["probS"]*100, 2)) + "%", console_output)
         
     # VSS
     vss_start  = tm.time()
@@ -306,17 +303,18 @@ def OptimizeModel(settings, console_output = None, logs_on = None, \
     validation_end  = tm.time()
     all_durations["Validation"] = validation_end - validation_start
      
+    # add results to pandas overview
+    write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
+                    population_information, crop_alloc, \
+                    meta_sol, meta_sol_vss, VSS_value, validation_values, \
+                    console_output)
+        
     # timing
     all_end  = tm.time()   
     full_time = all_end - all_start
     printing("\nTotal time: " + str(np.round(full_time, 2)) + "s", console_output = console_output)
     all_durations["TotalTime"] = full_time
        
-    # add results to pandas overview
-    write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
-                    population_information, status, all_durations, crop_alloc, \
-                    meta_sol, meta_sol_vss, VSS_value, validation_values, \
-                    console_output = console_output)
     
     # saving results
     if save:

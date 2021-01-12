@@ -31,8 +31,10 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
         The penalty for shortcomings of the food demand. If None the values in 
         args are used. (This is used from within the GetPenalties function to
         easily change penalties while keeping other args the same.)
-    rhoS : float
-        The penalty for insolvency.
+    rhoS : float or None
+        The penalty for insolvency. If None the values in 
+        args are used. (This is used from within the GetPenalties function to
+        easily change penalties while keeping other args the same.)
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
         outputs. The default is defined in ModelCode/GeneralSettings.

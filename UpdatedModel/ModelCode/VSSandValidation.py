@@ -24,13 +24,12 @@ def VSS(settings, AddInfo_CalcParameters, args):
     ----------
     settings : dict
         Dictionary of settings as given by DefaultSettingsExcept().
+    AddInfo_CalcParameters : dict
+        Additional information from calculatings expected income and penalties
+        which are not needed as model input.
     args : dict
         Dictionary of arguments needed as model input (as given by 
         SetParameters()).
-    rhoF : float
-        The penalty for shortcomings of the food demand.
-    rhoS : float
-        The penalty for insolvency.
 
     Returns
     -------
@@ -70,18 +69,21 @@ def OutOfSampleVal(crop_alloc, settings, AddInfo_CalcParameters, rhoF, rhoS, \
         Optimal crop areas for all years, crops, clusters.
     settings : dict
         the model settings that were used     
+    AddInfo_CalcParameters : dict
+        Additional information from calculatings expected income and penalties
+        which are not needed as model input.
     rhoF : float
         The penalty for shortcomings of the food demand.
     rhoS : float
-        The penalty for insolvency.
-    expected_incomes : np.array 
-        expected income in secnario without government and probF = 95% for 
-        each clutser.               
-    M : int
-        Sample size used for validation.
+        The penalty for insolvency.   
+    meta_sol : dict 
+        additional information about the model output 
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
         outputs. The default is defined in ModelCode/GeneralSettings.
+    probS : float or None
+        demanded probability of keeping the solvency constraint if 
+        PenMet == "prob", None else.
 
     Yields
     ------

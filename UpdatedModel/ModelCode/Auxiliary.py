@@ -65,9 +65,6 @@ def printing(content, console_output = None, flush = True, logs_on = None):
     console_output : boolean, optional
         Whether message should be printed to console. 
         The default is defined in ModelCode/GeneralSettings.
-    LogFile : boolean, optional
-        Whether message should be printed to log file. If None, the same value
-        as console_output is used. The default is None.
     flush : bpolean, optional
         Whether to forcibly flush the stream. The default is True.
     logs_on : boolean, optional
@@ -104,8 +101,8 @@ def filename(settings, groupSize = "", groupAim = "", \
 
     Parameters
     ----------
-    settings : TYPE
-        DESCRIPTION.
+    settings : dict
+        Input settings for the model.
     groupSize : int
         in case loading data for e.g. all groups from a specific cluster 
         grouping, this is the size of the groups (relevant for filename of
@@ -118,6 +115,9 @@ def filename(settings, groupSize = "", groupAim = "", \
         in case loading data for e.g. all groups from a specific cluster 
         grouping, this states whether clusters within a group had to be 
         adjacent (relevant for filename of figures)
+    allNames : boolean
+        if True, also the names  for SettingsAffectingRhoF etc are returned.
+        Else only the filename for model outputs. Default is False.
         
     Returns
     -------
@@ -210,11 +210,58 @@ def filename(settings, groupSize = "", groupAim = "", \
 
 
 def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
-                    population_information, status, all_durations, crop_alloc, \
+                    population_information, crop_alloc, \
                     meta_sol, meta_sol_vss, VSS_value, validation_values, \
                     console_output):
+    """
+    Adds information on the model run to the current pandas csv.
     
-    # printing("Adding results to pandas", console_output = console_output)
+    Parameters
+    ----------
+    settings : dict
+        The model input settings that were given by user. 
+    args : dict
+        Dictionary of arguments needed as direct model input.
+    AddInfo_CalcParameters : dict
+        Additional information from calculatings expected income and penalties
+        which are not needed as model input.
+    yield_information : dict
+        Information on the yield distributions for the considered clusters.
+    population_information : dict
+        Information on the population in the considered area.
+        DESCRIPTION.
+    crop_alloc :  np.array
+        gives the optimal crop areas for all years, crops, clusters
+    meta_sol : dict 
+        additional information about the model output ('exp_tot_costs', 
+        'fix_costs', 'S', 'exp_incomes', 'profits', 'exp_shortcomings', 
+        'fd_penalty', 'avg_fd_penalty', 'sol_penalty', 'final_fund', 
+        'prob_staying_solvent', 'prob_food_security', 'payouts', 
+        'yearly_fixed_costs', 'num_years_with_losses')
+    meta_sol_vss : dict
+        additional information on the deterministic solution 
+    VSS_value : float
+        VSS calculated as the difference between total costs using 
+        deterministic solution for crop allocation and stochastic solution
+        for crop allocation       
+    validation_values : dict
+        total costs and penalties for the model result and a higher sample 
+        size for validation ("sample_size", "total_costs", "total_costs_val", 
+        "fd_penalty", "fd_penalty_val", "sol_penalty", "sol_penalty_val", 
+        "total_penalties", "total_penalties_val", "deviation_penalties")
+    console_output : boolean, optional
+        Specifying whether the progress should be documented thorugh console 
+        outputs. If None, the default as defined in ModelCode/GeneralSettings 
+        is used.
+
+    Returns
+    -------
+    None.
+
+    """
+ 
+    
+    printing("\nAdding results to pandas", console_output = console_output)
     if settings["PenMet"] == "prob":
         dict_for_pandas = {"Input probability food security": settings["probF"],
                            "Input probability solvency": settings["probS"],
@@ -237,7 +284,7 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                            "Expected income (to calculate guaranteed income)": AddInfo_CalcParameters["expected_incomes"],
                            "Penalty for food shortage": args["rhoF"],
                            "Penalty for insolvency": args["rhoS"],
-                           "Necessary debt (excluding food security constraint)": AddInfo_CalcParameters["neccessary_debt"],
+                           "Necessary debt (excluding food security constraint)": AddInfo_CalcParameters["necessary_debt"],
                            "Necessary debt (including food security constraint)": meta_sol["necessary_debt"],
                            "Probability for a catastrophic year": yield_information["prob_cat_year"],
                            "Share of samples with no catastrophe": yield_information["share_no_cat"],
@@ -268,6 +315,20 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
     return(None)
 
 def SetUpNewPandas(name_old_pandas):
+    """
+    Renames the current pandas csv according to the given name and sets up a
+    new current pandas csv.
+
+    Parameters
+    ----------
+    name_old_pandas : str
+        filenme for the csv.
+
+    Returns
+    -------
+    None.
+
+    """
     
     # save old panda
     current_panda = pd.read_csv("ModelOutput/Pandas/current_panda.csv")
@@ -280,6 +341,14 @@ def SetUpNewPandas(name_old_pandas):
     return(None)
 
 def CreateEmptyPanda():
+    """
+    Creating a new empty pandas object with the correct columns.
+
+    Returns
+    -------
+    None.
+
+    """
     
     colnames = ['Input probability food security', 
                 'Input probability solvency', 

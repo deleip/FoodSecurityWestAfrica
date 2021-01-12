@@ -108,10 +108,6 @@ def DefaultSettingsExcept(PenMet = "prob",
         The percentage that determines how high the guaranteed income will be 
         depending on the expected income of farmers in a scenario excluding
         the government. The default is 90%.
-    needed_import : float
-        If PenMet = "prob", this will be caluclated such that the probability
-        for food security can be reached. If PenMet = "penalties" this will 
-        not be changed from the input value. The default is 0.
     ini_fund : float
         The default is 0.
         
@@ -180,13 +176,16 @@ def SetParameters(settings, AddInfo_CalcParameters,\
                   console_output = None, logs_on = None):
     """
     
-    Based on the settings, this sets all parameters needed as input to the
-    model.    
+    Based on the settings, this sets most parameters that are needed as
+    input to the model.    
     
     Parameters
     ----------
     settings : dict
         Dictionary of settings as given by DefaultSettingsExcept().
+    AddInfo_CalcParameters : dict 
+        Additional information from calculatings expected income and penalties
+        which are not needed as model input.        
     wo_yields : boolean, optional
         If True, the function will do everything execept generating the yield
         samples (and return an empty list as placeholder for the ylds 

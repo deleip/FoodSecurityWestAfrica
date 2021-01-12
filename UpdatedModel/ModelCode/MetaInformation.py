@@ -91,8 +91,8 @@ def ObjectiveFunction(x, num_clusters, num_crops, N, \
     payouts : np.array of size (N, T, len(k_using))
         Payouts from the government to farmers in case of catastrope per year
         and cluster for each sample. 
-    yearly_fixed_costs : np.array of size (N, T) 
-        Total cultivation costs in each year for each sample.     
+    yearly_fixed_costs : np.array of size (N, T, len(k_using)) 
+        Total cultivation costs per cluster in each year for each sample.     
     """
 
     # preparing x for all realizations
@@ -160,7 +160,7 @@ def ObjectiveFunction(x, num_clusters, num_crops, N, \
         ini_fund + tax * np.nansum(P, axis = (1,2)) - \
           np.nansum(payouts, axis = (1,2)), # final fund per realization
         payouts, # government payouts (N, T, k)
-        np.nansum(fixed_costs, axis = 2), #  fixcosts (N, T)
+        np.nansum(fixed_costs, axis = 2), #  fixcosts (N, T, k)
         ) 
 
 def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
@@ -175,6 +175,22 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
         Dictionary of arguments needed as model input (as given by 
         SetParameters())
 
+  meta_sol = {"exp_tot_costs": exp_tot_costs,
+                "fix_costs": fix_costs,
+                "yearly_fixed_costs": yearly_fixed_costs,
+                "fd_penalty": fd_penalty,
+                "avg_fd_penalty": avg_fd_penalty,
+                "sol_penalty": sol_penalty,
+                "shortcomings": shortcomings,
+                "exp_shortcomings": exp_shortcomings,
+                "expected_incomes": exp_incomes,
+                "profits": profits,
+                "num_years_with_losses": num_years_with_losses,
+                "payouts": payouts,
+                "final_fund": final_fund,
+                "probF": prob_food_security,
+                "probS": prob_staying_solvent}
+
     Returns
     -------
     meta_sol : dict 
@@ -182,32 +198,36 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
         
         - exp_tot_costs: Final value of objective function, i.e. sum of 
           cultivation and penalty costs in 10^9$.
-        - fixcosts: Cultivation costs in 10^9$ for each yield sample (depends 
+        - fix_costs: Cultivation costs in 10^9$ for each yield sample (depends 
           only on the final year of simulation for each sample).
-        - shortcomings: Shortcoming of the food demand in 10^12kcal for each year in each 
-          sample.
-        - exp_income: Average profits of farmers in 10^9$ for each cluster in
-          each year.
-        - profits: Profits of farmers in 10^9$ per cluster and year for each
-          sample.
-        - avg_shortcomings: Average shortcoming of the food demand in 
-          10^12kcal in each year.
-        - fp_penalties: Penalty payed because of food shortages in each year 
+        - yearly_fixed_costs: Total cultivation costs per cluster in each 
+          year for each sample.   
+        - fp_penalty: Penalty payed because of food shortages in each year 
           for each sample.
         - avg_fp_penalties: Average penalty payed because of food shortages in 
           each year.
         - sol_penalties: Penalty payed because of insolvency in each sample.
-        - final_fund: The fund size after payouts in the catastrophic year for 
-          each sample.
-        - prob_staying_solvent: Probability for solvency of the government fund
-          after payouts.
-        - prob_food_security: Probability for meeting the food femand.
-        - payouts: Payouts from the government to farmers in case of catastrope 
-          per year and cluster for each sample. 
-        - yearly_fixed_costs: Total cultivation costs in each year for each 
-          sample.   
+        - shortcomings: Shortcoming of the food demand in 10^12kcal for each year in each 
+          sample.
+        - avg_shortcomings: Average shortcoming of the food demand in 
+          10^12kcal in each year.
+        - expected_incomes: Average profits of farmers in 10^9$ for each cluster in
+          each year.
+        - profits: Profits of farmers in 10^9$ per cluster and year for each
+          sample.
         - num_years_with_losses: Number of occurences where farmers of a 
           cluster have negative profits.
+        - payouts: Payouts from the government to farmers in case of catastrope 
+          per year and cluster for each sample. 
+        - final_fund: The fund size after payouts in the catastrophic year for 
+          each sample.
+        - probF: Probability for meeting the food femand.
+        - probS: Probability for solvency of the government fund
+          after payouts.
+        - add_needed_import: If probF is not None - additional import that is 
+          needed to meet the food demand in probF cases.
+        - necessary_debt: If probS is not None - debt that is necessary to cover
+          the payouts in probS of the cases.
 
     """
     
