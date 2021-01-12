@@ -135,10 +135,10 @@ for probF in [0.97, 0.99]:
                                                     N = 50000)
 # %%
 
-crop_alloc, meta_sol, status, durations, settings, args, \
-yield_information, population_information, rhoF, rhoS, VSS_value, \
-crop_alloc_vss, meta_sol_vss, validation_values, fn = \
-    FS.FoodSecurityProblem(validation = 50000,
-                           k_using = [6],
+settings, args, AddInfo_CalcParameters, yield_information, \
+population_information, status, durations, crop_alloc, meta_sol, \
+crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
+    FS.FoodSecurityProblem(validation_size = 50000,
+                           k_using = [2],
                            plotTitle = "(Aim: Dissimilar, Adjacent: Flase)",
-                           N = 10000)
+                           N = 5000)

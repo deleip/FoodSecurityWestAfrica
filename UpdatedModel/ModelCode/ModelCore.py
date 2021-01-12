@@ -17,7 +17,8 @@ from ModelCode.MetaInformation import GetMetaInformation
 
 # %% ############ IMPLEMENTING AND SOLVING LINEAR VERSION OF MODEL ############
 
-def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS = None, console_output = None, logs_on = None):
+def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
+                                       console_output = None, logs_on = None):
     """
     Sets up and solves the linear form of the food security problem.
 
@@ -26,8 +27,10 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS = None, console_o
     args : dict
         Dictionary of arguments needed as model input (as given by 
         SetParameters()).
-    rhoF : float
-        The penalty for shortcomings of the food demand.
+    rhoF : float or None
+        The penalty for shortcomings of the food demand. If None the values in 
+        args are used. (This is used from within the GetPenalties function to
+        easily change penalties while keeping other args the same.)
     rhoS : float
         The penalty for insolvency.
     console_output : boolean, optional
@@ -53,6 +56,11 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS = None, console_o
 
     """
         
+    if rhoF is None:
+        rhoF = args["rhoF"]
+    if rhoS is None:
+        rhoS = args["rhoS"]
+    
     printing("\nSolving Model", console_output = console_output, logs_on = logs_on)
     
     start = tm.time()
@@ -135,12 +143,6 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS = None, console_o
 
 # solving
     middle = tm.time()
-    
-    # prob.write("../ForPublication/TestingLinearization" \
-    #                                        + "/gurobipy_test.lp")
-    # prob.write("../ForPublication/TestingLinearization" \
-    #                                        + "/gurobipy_test.mps")
-    # return()
 
     prob.optimize()
     
@@ -166,21 +168,18 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS = None, console_o
                     crop_alloc[t, j, k] = prob.getVarByName("x[" + str(t) + \
                                         "," + str(j) + "," + str(k) + "]").X
                   
-        meta_sol = GetMetaInformation(crop_alloc, args, \
-                                                    rhoF, rhoS, probS)
+        meta_sol = GetMetaInformation(crop_alloc, args, rhoF, rhoS)
         
         # if meta_sol["num_years_with_losses"] > 0:
         #     warn.warn(str("Please notice that in " + \
         #               str(meta_sol["num_years_with_losses"]) + \
         #               " years/clusters profits are negative."))
             
-    # printing("      " + "\u005F" * 21, console_output = console_output)
     printing("     Time      Setting up model: " + \
             str(np.round(durations[0], 2)) + "s", console_output = console_output, logs_on = logs_on)
     printing("               Solving model: " + \
             str(np.round(durations[1], 2)) + "s", console_output = console_output, logs_on = logs_on)
     printing("               Total: " + \
-            str(np.round(durations[2], 2)) + "s", console_output = console_output, logs_on = logs_on) 
-    # printing("      " + "\u0305 " * 21, console_output = console_output)           
+            str(np.round(durations[2], 2)) + "s", console_output = console_output, logs_on = logs_on)       
                 
     return(status, crop_alloc, meta_sol, prob, durations)

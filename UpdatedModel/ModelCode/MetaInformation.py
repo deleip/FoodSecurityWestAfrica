@@ -132,7 +132,7 @@ def ObjectiveFunction(x, num_clusters, num_crops, N, \
                                      # it only covers up to guaranteed income.
                                      # -> this is not true any more!
     np.seterr(invalid='ignore')
-    payouts[(cat_clusters == 0) + (payouts < 0)] = 0
+    payouts[(~np.isnan(payouts) * (cat_clusters == 0)) + (payouts < 0)] = 0
     np.seterr(invalid='warn')
                 # no payout if there is no catastrophe, even if guaranteed 
                 # income is not reached
@@ -160,10 +160,10 @@ def ObjectiveFunction(x, num_clusters, num_crops, N, \
         ini_fund + tax * np.nansum(P, axis = (1,2)) - \
           np.nansum(payouts, axis = (1,2)), # final fund per realization
         payouts, # government payouts (N, T, k)
-        np.nansum(fixed_costs, axis = (2,3)), #  fixcosts (N, T)
+        np.nansum(fixed_costs, axis = 2), #  fixcosts (N, T)
         ) 
 
-def GetMetaInformation(crop_alloc, args, rhoF, rhoS, probS = None):
+def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
     """
     To get metainformation for final crop allocation after running model.
 
@@ -174,10 +174,6 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS, probS = None):
     args : dict
         Dictionary of arguments needed as model input (as given by 
         SetParameters())
-    rhoF : float
-        The penalty for shortcomings of the food demand.
-    rhoS : float
-        The penalty for insolvency.
 
     Returns
     -------
@@ -215,7 +211,6 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS, probS = None):
 
     """
     
-    
     # running the objective function with option meta = True to get 
     # intermediate results of the calculation
     exp_tot_costs, fix_costs, shortcomings, exp_incomes, profits, \
@@ -248,27 +243,31 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS, probS = None):
     np.seterr(invalid='warn')
     prob_food_security = 1 - np.nanmean(tmp)
     np.seterr(invalid='ignore')
-    num_years_with_losses = np.sum(profits<0)  
+    num_years_with_losses = np.sum(profits<0, axis = (0,1))
     np.seterr(invalid='warn')
     
     # group information into a dictionary
     meta_sol = {"exp_tot_costs": exp_tot_costs,
                 "fix_costs": fix_costs,
-                "shortcomings": shortcomings,
-                "exp_incomes": exp_incomes,
-                "profits": profits,
-                "exp_shortcomings": exp_shortcomings,
+                "yearly_fixed_costs": yearly_fixed_costs,
                 "fd_penalty": fd_penalty,
                 "avg_fd_penalty": avg_fd_penalty,
                 "sol_penalty": sol_penalty,
-                "final_fund": final_fund,
-                "prob_staying_solvent": prob_staying_solvent,
-                "prob_food_security": prob_food_security,
+                "shortcomings": shortcomings,
+                "exp_shortcomings": exp_shortcomings,
+                "expected_incomes": exp_incomes,
+                "profits": profits,
+                "num_years_with_losses": num_years_with_losses,
                 "payouts": payouts,
-                "yearly_fixed_costs": yearly_fixed_costs,
-                "num_years_with_losses": num_years_with_losses}
+                "final_fund": final_fund,
+                "probF": prob_food_security,
+                "probS": prob_staying_solvent}
     
-    if probS is not None:
-        meta_sol["necessary_debt"] = - np.quantile(meta_sol["final_fund"], 1 - probS)
+    if args["probF"] is not None:
+        meta_sol["add_needed_import"] = np.quantile(meta_sol["shortcomings"]\
+                 [~np.isnan(meta_sol["shortcomings"])].flatten(), args["probF"])
+    if args["probS"] is not None:
+        meta_sol["necessary_debt"] = - np.quantile(meta_sol["final_fund"], \
+                                                   1 - args["probS"])
     
     return(meta_sol)  

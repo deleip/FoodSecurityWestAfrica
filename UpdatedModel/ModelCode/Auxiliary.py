@@ -6,6 +6,9 @@ Created on Fri Jan  1 14:09:14 2021
 @author: Debbora Leip
 """
 import itertools as it
+import numpy as np
+import pandas as pd
+import os
 
 # %% ############################### AUXILIARY ################################  
 
@@ -94,8 +97,7 @@ def printing(content, console_output = None, flush = True, logs_on = None):
         
     return(None)
     
-def filename(settings, PenMet, validation, probF = 0.95, probS = 0.95, \
-             rhoF = None, rhoS = None, groupSize = "", groupAim = "", \
+def filename(settings, groupSize = "", groupAim = "", \
              adjacent = False, allNames = False):
     """
     Combines all settings to a single file name to save results.
@@ -104,26 +106,6 @@ def filename(settings, PenMet, validation, probF = 0.95, probS = 0.95, \
     ----------
     settings : TYPE
         DESCRIPTION.
-    PenMet : "prob" or "penalties"
-        "prob" if desired probabilities are given and penalties are to be 
-        calculated accordingly. "penalties" if input penalties are to be used
-        directly.
-    validation : None or int
-        if not None, the objevtice function will be re-evaluated for 
-        validation with a higher sample size as given by this parameter. 
-        The default is None.
-    probF : float
-        demanded probability of keeping the food demand constraint (only 
-        relevant if PenMet == "prob"). The default is 0.95.
-    probS : float
-        demanded probability of keeping the solvency constraint (only 
-        relevant if PenMet == "prob"). The default is 0.95.
-    rhoF : float
-        The penalty for shortcomings of the food demand (only relevant if 
-        PenMet == "penalties"). The default is None.
-    rhoS : float
-        The penalty for insolvency (only relevant if PenMet == "penalties").
-        The default is None.
     groupSize : int
         in case loading data for e.g. all groups from a specific cluster 
         grouping, this is the size of the groups (relevant for filename of
@@ -154,25 +136,25 @@ def filename(settings, PenMet, validation, probF = 0.95, probS = 0.95, \
         if type(settingsTmp[key]) is not list:
             settingsTmp[key] = [settingsTmp[key]]
         
-    if type(validation) is not list:
-        validationTmp = [validation]
+    if type(settings["validation_size"]) is not list:
+        validationTmp = [settings["validation_size"]]
     else:
-        validationTmp = validation
+        validationTmp = settings["validation_size"]
     
-    if PenMet == "prob":
-        if type(probF) is not list:
-            probFTmp = [probF]
+    if settings["PenMet"] == "prob":
+        if type(settings["probF"]) is not list:
+            probFTmp = [settings["probF"]]
         else:
-            probFTmp = probF
-        if type(probS) is not list:
-            probSTmp = [probS]
+            probFTmp = settings["probF"]
+        if type(settings["probS"]) is not list:
+            probSTmp = [settings["probS"]]
         else:
-            probSTmp = probS
+            probSTmp = settings["probS"]
         fn = "pF" + '_'.join(str(n) for n in probFTmp) + \
              "pS" + '_'.join(str(n) for n in probSTmp)
     else:
-        rhoFTmp = rhoF.copy()
-        rhoSTmp = rhoS.copy()
+        rhoFTmp = settings["rhoF"].copy()
+        rhoSTmp = settings["rhoS"].copy()
         if type(rhoFTmp) is not list:
             rhoFTmp = [rhoFTmp]
         if type(rhoSTmp) is not list:
@@ -210,7 +192,7 @@ def filename(settings, PenMet, validation, probF = 0.95, probS = 0.95, \
                 "pop_scenario" + str(settings["pop_scenario"]) +  \
                 "T" + str(settings["T"])
         SettingsMaxProbF = SettingsBasics + "N" + str(settings["N"])
-        SettingsAffectingRhoF = SettingsBasics + "probF" + str(probF) + \
+        SettingsAffectingRhoF = SettingsBasics + "probF" + str(settings["probF"]) + \
                 "N" + str(settings["N"])
         
         # all settings that affect the calculation of rhoS
@@ -219,9 +201,131 @@ def filename(settings, PenMet, validation, probF = 0.95, probS = 0.95, \
                 "tax" + str(settings["tax"]) + \
                 "perc_guaranteed" + str(settings["perc_guaranteed"])
         SettingsMaxProbS = SettingsBasics + "N" + str(settings["N"])
-        SettingsAffectingRhoS = SettingsBasics + "probS" + str(probS) + \
+        SettingsAffectingRhoS = SettingsBasics + "probS" + str(settings["probS"]) + \
                 "N" + str(settings["N"])
         return(fn, SettingsMaxProbF, SettingsAffectingRhoF, \
                SettingsMaxProbS, SettingsAffectingRhoS)
     
     return(fn)
+
+
+def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
+                    population_information, status, all_durations, crop_alloc, \
+                    meta_sol, meta_sol_vss, VSS_value, validation_values, \
+                    console_output):
+    
+    # printing("Adding results to pandas", console_output = console_output)
+    if settings["PenMet"] == "prob":
+        dict_for_pandas = {"Input probability food security": settings["probF"],
+                           "Input probability solvency": settings["probS"],
+                           "Number of clusters": settings["k"],
+                           "Used clusters": settings["k_using"],
+                           "Yield projection": settings["yield_projection"],
+                           "Simulation start": settings["sim_start"],
+                           "Population scenario": settings["pop_scenario"],
+                           "Risk level covered": settings["risk"],
+                           "Tax rate": settings["tax"],
+                           "Share of income that is guaranteed": settings["perc_guaranteed"],
+                           "Initial fund size": settings["ini_fund"],
+                           "Sample size": settings["N"],
+                           "Sample size for validation": settings["validation_size"],
+                           "Number of covered years": settings["T"],
+                           "Average food demand": np.mean(args["demand"]),
+                           "Import (excluding solvency constraint)": args["import"],
+                           "Import (excluding solvency constraint, including theoretical export)": AddInfo_CalcParameters["import"],
+                           "Additional import needed when including solvency constraint": meta_sol["add_needed_import"],
+                           "Expected income (to calculate guaranteed income)": AddInfo_CalcParameters["expected_incomes"],
+                           "Penalty for food shortage": args["rhoF"],
+                           "Penalty for insolvency": args["rhoS"],
+                           "Necessary debt (excluding food security constraint)": AddInfo_CalcParameters["neccessary_debt"],
+                           "Necessary debt (including food security constraint)": meta_sol["necessary_debt"],
+                           "Probability for a catastrophic year": yield_information["prob_cat_year"],
+                           "Share of samples with no catastrophe": yield_information["share_no_cat"],
+                           "Share of years/clusters with unprofitable rice yields": yield_information["share_rice_np"],
+                           "Share of years/clusters with unprofitable maize yields": yield_information["share_maize_np"],
+                           "Share of West Africa's population that is living in currently considered region (2015)": \
+                               population_information["pop_area_ratio2015"],
+                           "On average cultivated area per cluster": np.nanmean(crop_alloc, axis = (0,1)),
+                           "Average food demand penalty (over years and samples)": np.nanmean(meta_sol["fd_penalty"]),
+                           "Average solvency penalty (over samples)": np.mean(meta_sol["sol_penalty"]),
+                           "Average cultivation costs per cluster (over years and samples)": np.nanmean(meta_sol["yearly_fixed_costs"], axis = (0,1)),
+                           "Expected total costs": meta_sol["exp_tot_costs"],
+                           "Average food shortcomings (over years and samples)": np.nanmean(meta_sol["shortcomings"]),
+                           "Number of occurrences per cluster where farmers make losses": meta_sol["num_years_with_losses"],
+                           "Average income per cluster in final run (over years and samples)": np.nanmean(meta_sol["profits"], axis = (0,1)),
+                           "Average government payouts per cluster (over samples)": np.nanmean(np.nansum(meta_sol["payouts"], axis = 1), axis = 0),
+                           "Resulting probability for food security": meta_sol["probF"],
+                           "Resulting probability for solvency": meta_sol["probS"],
+                           "Resulting probability for food security for VSS": meta_sol_vss["probF"],
+                           "Resulting probability for solvency for VSS": meta_sol_vss["probS"],
+                           "Value of stochastic solution": VSS_value,
+                           "Validation value (deviation of total penalty costs)": validation_values["deviation_penalties"]}
+        
+        current_panda = pd.read_csv("ModelOutput/Pandas/current_panda.csv")
+        current_panda = current_panda.append(dict_for_pandas, ignore_index = True)
+        current_panda.to_csv("ModelOutput/Pandas/current_panda.csv", index = False)
+        
+    return(None)
+
+def SetUpNewPandas(name_old_pandas):
+    
+    # save old panda
+    current_panda = pd.read_csv("ModelOutput/Pandas/current_panda.csv")
+    current_panda.to_csv("ModelOutput/Pandas/" + name_old_pandas + ".csv", index = False)
+    
+    # create new empty panda
+    os.remove("ModelOutput/Pandas/current_panda.csv")
+    CreateEmptyPanda()
+    
+    return(None)
+
+def CreateEmptyPanda():
+    
+    colnames = ['Input probability food security', 
+                'Input probability solvency', 
+                'Number of clusters', 
+                'Used clusters', 
+                'Yield projection', 
+                'Simulation start', 
+                'Population scenario', 
+                'Risk level covered', 
+                'Tax rate', 
+                'Share of income that is guaranteed', 
+                'Initial fund size', 
+                'Sample size', 
+                'Sample size for validation', 
+                'Number of covered years', 
+                'Average food demand', 
+                'Import (excluding solvency constraint)', 
+                'Import (excluding solvency constraint, including theoretical export)', 
+                'Additional import needed when including solvency constraint', 
+                'Expected income (to calculate guaranteed income)', 
+                'Penalty for food shortage', 
+                'Penalty for insolvency', 
+                'Necessary debt (excluding food security constraint)', 
+                'Necessary debt (including food security constraint)', 
+                'Probability for a catastrophic year', 
+                'Share of samples with no catastrophe', 
+                'Share of years/clusters with unprofitable rice yields', 
+                'Share of years/clusters with unprofitable maize yields', 
+                'Share of West Africa\'s population that is living in currently considered region (2015)', 
+                'On average cultivated area per cluster', 
+                'Average food demand penalty (over years and samples)', 
+                'Average solvency penalty (over samples)', 
+                'Average cultivation costs per cluster (over years and samples)', 
+                'Expected total costs', 
+                'Average food shortcomings (over years and samples)', 
+                'Number of occurrences per cluster where farmers make losses', 
+                'Average income per cluster in final run (over years and samples)', 
+                'Average government payouts per cluster (over samples)', 
+                'Resulting probability for food security', 
+                'Resulting probability for solvency', 
+                'Resulting probability for food security for VSS', 
+                'Resulting probability for solvency for VSS', 
+                'Value of stochastic solution', 
+                'Validation value (deviation of total penalty costs)']
+    
+    new_panda = pd.DataFrame(columns = colnames)
+    new_panda.to_csv("ModelOutput/Pandas/current_panda.csv", index = False)
+
+    return(new_panda)

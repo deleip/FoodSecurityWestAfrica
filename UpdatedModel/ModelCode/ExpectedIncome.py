@@ -103,7 +103,7 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     settings_ExpIn["yield_projection"] = "fixed"
     settings_ExpIn["pop_scenario"] = "fixed"
     settings_ExpIn["T"] = 1
-    settings_ExpIn["expected_incomes"] = np.zeros(len(settings["k_using"]))
+    AddInfo_CalcParameters = {"expected_incomes": np.zeros(len(settings["k_using"]))}
     probF = 0.99
     
     # settings affecting the food demand penalty
@@ -138,7 +138,9 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     # food security, therefore we find the right penalty for probF = 95%.
     # As we want the income in a scenario without government, the final run of
     # GetRhoF (with rohS = 0) automatically is the right run
-    args, yield_information, population_information = SetParameters(settings_ExpIn, console_output = False, logs_on = False)
+    args, yield_information, population_information = \
+        SetParameters(settings_ExpIn, AddInfo_CalcParameters, \
+                      console_output = False, logs_on = False)
     
     rhoF, maxProbF, max_probS, needed_import, crop_alloc, meta_sol = \
            GetRhoF(args, yield_information, probF = probF, rhoFini = rhoFini, \
@@ -159,4 +161,4 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     with open("PenaltiesAndIncome/MaxProbSforAreaF.txt", "wb") as fp:    
          pickle.dump(dict_maxProbS, fp)
         
-    return(meta_sol["exp_incomes"].flatten())
+    return(meta_sol["expected_incomes"].flatten())

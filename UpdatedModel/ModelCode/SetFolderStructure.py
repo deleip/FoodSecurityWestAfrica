@@ -12,6 +12,8 @@ import pickle
 import shutil
 from termcolor import colored
 
+from ModelCode.Auxiliary import CreateEmptyPanda
+
 # %% ################ SETTING UP FOLDER STRUCTURE FOR RESULTS #################
 
 def CheckFolderStructure():
@@ -73,9 +75,15 @@ def CheckFolderStructure():
         
     if not os.path.isdir("ModelOutput"):
         os.mkdir("ModelOutput")
+    if not os.path.isdir("ModelOutput/SavedRuns"):
         os.mkdir("ModelOutput/SavedRuns")
+    if not os.path.exists("ModelOutput/validation.txt"):
         with open("ModelOutput/validation.txt", "wb") as fp:
             pickle.dump({}, fp)
+    if not os.path.isdir("ModelOutput/Pandas"):
+        os.mkdir("ModelOutput/Pandas")
+    if not os.path.exists("ModelOutput/Pandas/current_panda.csv"):
+        CreateEmptyPanda()
         
     if not os.path.isdir("PenaltiesAndIncome"):
             os.mkdir("PenaltiesAndIncome")

@@ -8,7 +8,6 @@ Created on Fri Jan  1 09:30:39 2021
 
 import os
 import pickle
-import sys
 import time as tm 
 import numpy as np
 from datetime import datetime
@@ -17,6 +16,7 @@ from termcolor import colored
 from ModelCode.SetFolderStructure import CheckFolderStructure
 from ModelCode.SettingsParameters import DefaultSettingsExcept
 from ModelCode.Auxiliary import filename
+from ModelCode.Auxiliary import write_to_pandas
 from ModelCode.PlottingModelOutput import PlotModelOutput
 from ModelCode.Auxiliary import printing
 from ModelCode.MetaInformation import GetMetaInformation
@@ -29,9 +29,8 @@ from ModelCode.VSSandValidation import OutOfSampleVal
 
 # %% ############## WRAPPING FUNCTIONS FOR FOOD SECURITY MODEL ################
 
-def FoodSecurityProblem(PenMet = "prob", probF = 0.99, probS = 0.95, \
-                        rhoF = None, rhoS = None, console_output = None, logs_on = None, \
-                        validation = None, save = True, plotTitle = None, \
+def FoodSecurityProblem(console_output = None, logs_on = None, \
+                        save = True, plotTitle = None, \
                         **kwargs):
     """
         
@@ -44,35 +43,13 @@ def FoodSecurityProblem(PenMet = "prob", probF = 0.99, probS = 0.95, \
 
     Parameters
     ----------
-    PenMet : "prob" or "penalties", optional
-        "prob" if desired probabilities are given and penalties are to be 
-        calculated accordingly. "penalties" if input penalties are to be used
-        directly. The default is "prob".
-    probF : float, optional
-        demanded probability of keeping the food demand constraint (only 
-        relevant if PenMet == "prob"). The default is 0.99.
-    probS : float, optional
-        demanded probability of keeping the solvency constraint (only 
-        relevant if PenMet == "prob"). The default is 0.95.
-    rhoF : float or None, optional 
-        If PenMet == "penalties", this is the value that will be used for rhoF.
-        if PenMet == "prob" and rhoF is None, a initial guess for rhoF will 
-        be calculated in GetPenalties, else this will be used as initial guess 
-        for the penalty which will give the correct probability for reaching 
-        food demand. The default is None.
-    rhoS : float or None, optional 
-        If PenMet == "penalties", this is the value that will be used for rhoS.
-        if PenMet == "prob" and rhoS is None, a initial guess for rhoS will 
-        be calculated in GetPenalties, else this will be used as initial guess 
-        for the penalty which will give the correct probability for solvency.
-        The default is None.
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is defined in ModelCode/GeneralSettings.
-    validation : None or int, optional
-        if not None, the objevtice function will be re-evaluated for 
-        validation with a higher sample size as given by this parameter. 
-        The default is None.
+        outputs. If None, the default as defined in ModelCode/GeneralSettings 
+        is used.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log file.
+        If None, the default as defined in ModelCode/GeneralSettings is used.
     save : boolean, optional
         whether the results should be saved. The default is True.
     plotTitle : str or None
@@ -133,31 +110,19 @@ def FoodSecurityProblem(PenMet = "prob", probF = 0.99, probS = 0.95, \
     settings = DefaultSettingsExcept(**kwargs)
     
     # get filename of model results
-    fn = filename(settings, PenMet, validation, probF, probS, rhoF, rhoS)
-    
-    # check modus (probabilities or penalties given?)
-    if PenMet == "penalties":
-        probS = None
-        probF = None
-    elif PenMet != "prob":
-        sys.exit("A non-valid penalty method was chosen (PenMet must " + \
-                 "be either \"prob\" or \"penalties\").")
+    fn = filename(settings)
     
     # if model output does not exist yet it is calculated
     if not os.path.isfile("ModelOutput/SavedRuns/" + fn + ".txt"):
         try:
-            crop_alloc, meta_sol, status, durations, settings, args, \
-            yield_information, population_information, rhoF, rhoS, VSS_value, \
-            crop_alloc_vss, meta_sol_vss, validation_values = \
-                                OptimizeModel(PenMet = PenMet,  
-                                              probF = probF, 
-                                              probS = probS, 
-                                              rhoFini = rhoF,
-                                              rhoSini = rhoS,
+           settings, args, AddInfo_CalcParameters, yield_information, \
+           population_information, status, durations, crop_alloc, meta_sol, \
+           crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \
+                                OptimizeModel(settings,
                                               console_output = console_output,
-                                              validation = validation,
                                               save = save,
-                                              **kwargs)
+                                              logs_on = logs_on,
+                                              plotTitle = plotTitle,)
         except KeyboardInterrupt:
             print(colored("\nThe model run was interupted by the user.", "red"), flush = True)
             if logs_on:
@@ -171,24 +136,20 @@ def FoodSecurityProblem(PenMet = "prob", probF = 0.99, probS = 0.95, \
         printing("Loading results", console_output = console_output, logs_on = False)
         with open("ModelOutput/SavedRuns/" + fn + ".txt", "rb") as fp:
             pickle.load(fp) # info
-            crop_alloc = pickle.load(fp)
             settings = pickle.load(fp)
             args = pickle.load(fp)
+            AddInfo_CalcParameters = pickle.load(fp)
             yield_information = pickle.load(fp)
             population_information = pickle.load(fp)
-            rhoF = pickle.load(fp)
-            rhoS = pickle.load(fp)
             status = pickle.load(fp)
             durations = pickle.load(fp)
-            VSS_value = pickle.load(fp)
+            crop_alloc = pickle.load(fp)
             crop_alloc_vss = pickle.load(fp)
+            VSS_value = pickle.load(fp)
             validation_values = pickle.load(fp)
-            if PenMet == "prob":
-                probF = pickle.load(fp)
-                probS = pickle.load(fp)
                 
-        meta_sol = GetMetaInformation(crop_alloc, args, rhoF, rhoS, probS)
-        meta_sol_vss =  GetMetaInformation(crop_alloc_vss, args, rhoF, rhoS, probS)
+        meta_sol = GetMetaInformation(crop_alloc, args, args["rhoF"], args["rhoS"])
+        meta_sol_vss =  GetMetaInformation(crop_alloc_vss, args, args["rhoF"], args["rhoS"])
         
     # if a plottitle is provided, crop allocations over time are plotted
     if plotTitle is not None:
@@ -196,52 +157,32 @@ def FoodSecurityProblem(PenMet = "prob", probF = 0.99, probS = 0.95, \
                     file = fn, crop_alloc = crop_alloc, k = settings["k"], \
                     k_using = settings["k_using"], max_areas = args["max_areas"])
     
-    return(crop_alloc, meta_sol, status, durations, settings, args, \
-           yield_information, population_information, rhoF, rhoS, \
-           VSS_value, crop_alloc_vss, meta_sol_vss, validation_values, fn)          
+    return(settings, args, AddInfo_CalcParameters, yield_information, \
+           population_information, status, durations, crop_alloc, meta_sol, \
+           crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn)          
 
-def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
-                  rhoFini = None, rhoSini = None, console_output = None, logs_on = None, \
-                 validation = None, save = True, **kwargs):
+def OptimizeModel(settings, console_output = None, logs_on = None, \
+                  save = True, plotTitle = None):
     """
     Function combines setting up and solving the model, calculating additional
     information, and saving the results.
 
     Parameters
     ----------
-    PenMet : "prob" or "penalties", optional
-        "prob" if desired probabilities are given and penalties are to be 
-        calculated accordingly. "penalties" if input penalties are to be used
-        directly. The default is "prob".
-    probF : float, optional
-        demanded probability of keeping the food demand constraint (only 
-        relevant if PenMet == "prob"). The default is 0.99.
-    probS : float, optional
-        demanded probability of keeping the solvency constraint (only 
-        relevant if PenMet == "prob"). The default is 0.95.
-    rhoFini : float or None, optional
-        If PenMet == "penalties", this is the value that will be used for rhoF.
-        if PenMet == "prob" and rhoFini is None, a initial guess for rhoFini 
-        will be calculated in GetPenalties, else this will be used as initial 
-        guess for the penalty which will give the correct probability for 
-        reaching food demand. The default is None.
-    rhoSini : float or None, optional
-        If PenMet == "penalties", this is the value that will be used for rhoS.
-        if PenMet == "prob" and rhoSini is None, a initial guess for rhoSini 
-        will be calculated in GetPenalties, else this will be used as initial
-        guess for the penalty which will give the correct probability for 
-        solvency. The default is None.
+    settings : dict
+        All input settings for the model framework.
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is defined in ModelCode/GeneralSettings.
-    validation : None or int, optional
-        if not None, the objevtice function will be re-evaluated for 
-        validation with a higher sample size as given by this parameter. 
-        The default is None.
+        outputs. If None, the default as defined in ModelCode/GeneralSettings 
+        is used.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log file.
+        If None, the default as defined in ModelCode/GeneralSettings is used.
     save : boolean, optional
         whether the results should be saved. The default is True.
-    **kwargs
-        settings for the model, passed to DefaultSettingsExcept()
+    plotTitle : str or None
+        If not None, a plot of the resulting crop allocations will be made 
+        with that title and saved to Figures/CropAllocs.
 
     Returns
     -------
@@ -287,101 +228,118 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
     
     # timing
     all_start  = tm.time()
+    all_durations = {}
     
     # initialize log file
+    if logs_on is None:
+        from ModelCode.GeneralSettings import logs_on
+        
     if logs_on:
         if os.path.exists("ModelLogs/tmp.txt"):
             os.remove("ModelLogs/tmp.txt")
         log = open("ModelLogs/tmp.txt", "a")
-        log.write("Model started " + str(datetime.now().strftime("%B %d, %Y, at %H:%M")))
-        log.write("\n\nModel Input: PenMet = " + str(PenMet) + 
-                  "\n             probF = " + str(probF) + 
-                  "\n             probS = " + str(probS) + 
-                  "\n             rhoF = " + str(rhoFini) + 
-                  "\n             rhoS = " + str(rhoSini) + 
-                  "\n             validation = " + str(validation) + 
-                  "\n             save = " + str(save))
-        for key in kwargs.keys():
-            log.write("\n             " + key + " = " + str(kwargs[key]))
+        log.write("Model started " + str(datetime.now().strftime("%B %d, %Y, at %H:%M")) + "\n")
+        log.write("\nModel Settings: ")
+        for key in settings.keys():
+            log.write(key + " = " + str(settings[key]) + "\n                ")
+        log.write("save = " + str(save) + "\n                ")
+        log.write("plotTitle = " + str(plotTitle))
         log.close()
-        
-    # create dictionary of all settings (includes calculating or loading the
-    # correct expected income)
-    printing("\nDefining Settings", console_output = console_output)
-    settings = DefaultSettingsExcept(**kwargs)
     
     # get parameters for the given settings
-    if settings["expected_incomes"] is None:  
-         settings["expected_incomes"] = GetExpectedIncome(settings, console_output = console_output)
+    ex_income_start  = tm.time()
+    exp_incomes = GetExpectedIncome(settings, console_output = console_output)
+    AddInfo_CalcParameters = {"expected_incomes": exp_incomes}
+    ex_income_end  = tm.time()
+    all_durations["GetExpectedIncome"] = ex_income_end - ex_income_start
     printing("\nGetting parameters", console_output = console_output)
-    args, yield_information, population_information = SetParameters(settings)
+    args, yield_information, population_information = \
+                    SetParameters(settings, AddInfo_CalcParameters)
     
     # get the right penalties
-    if PenMet == "prob":
+    penalties_start  = tm.time()
+    if settings["PenMet"] == "prob":
         rhoF, rhoS, necessary_debt, needed_import = GetPenalties(settings, args, \
-                                        yield_information, probF, probS, \
-                                        rhoFini, rhoSini, console_output = console_output)
-        settings["import"] = needed_import
+                                        yield_information, console_output = console_output)
+        args["rhoF"] = rhoF
+        args["rhoS"] = rhoS
+        
+        AddInfo_CalcParameters["necessary_debt"] = necessary_debt
+        AddInfo_CalcParameters["import"] = needed_import
         if needed_import > 0:
             args["import"] = needed_import
-        settings["neccessary_debt"] = necessary_debt
     else:
-        rhoF = rhoFini
-        rhoS = rhoSini
+        args["rhoF"] = settings["rhoF"]
+        args["rhoS"] = settings["rhoS"]
+        
+        AddInfo_CalcParameters["necessary_debt"] = None
+        AddInfo_CalcParameters["import"] = None
+    penalties_end  = tm.time()
+    all_durations["GetPenalties"] = penalties_end - penalties_start
     
+        
     # run the optimizer
     status, crop_alloc, meta_sol, prob, durations = \
-        SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, probS, console_output = console_output, logs_on = True)
+        SolveReducedcLinearProblemGurobiPy(args, \
+                                           console_output = console_output, \
+                                           logs_on = True)
+    all_durations["MainModelRun"] = durations[2]
         
     printing("\nResulting probabilities:\n" + \
     "     probF: " + str(np.round(meta_sol["prob_food_security"]*100, 2)) + "%\n" + \
     "     probS: " + str(np.round(meta_sol["prob_staying_solvent"]*100, 2)) + "%", console_output)
         
     # VSS
+    vss_start  = tm.time()
     printing("\nCalculating VSS", console_output = console_output)
-    crop_alloc_vss, meta_sol_vss = VSS(settings, args, rhoF, rhoS, probS)
+    crop_alloc_vss, meta_sol_vss = VSS(settings, AddInfo_CalcParameters, args)
     VSS_value = meta_sol_vss["exp_tot_costs"] - meta_sol["exp_tot_costs"]
+    vss_end  = tm.time()
+    all_durations["VSS"] = vss_end - vss_start
     
     # out of sample validation
-    if validation is not None:
+    validation_start  = tm.time()
+    if settings["validation_size"] is not None:
         printing("\nOut of sample validation", console_output = console_output)
-        validation_values = OutOfSampleVal(crop_alloc, settings, rhoF, \
-                              rhoS, validation, meta_sol, probS, console_output)
-            
-    # saving results
-    if save:
-        fn = filename(settings, PenMet, validation, probF, probS, rhoFini, rhoSini)
-        
-        info = ["crop_alloc", "settings", "args","meta_sol", "rhoF", "rhoS", \
-                "status", "durations", "VSS_value", "crop_alloc_vss", \
-                "meta_sol_vss", "validation_values"]
-        # args.pop("ylds")
-        # args.pop("cat_clusters")
-        if PenMet == "prob":
-            info.append("probF")
-            info.append("probS")
-        with open("ModelOutput/SavedRuns/" + fn + ".txt", "wb") as fp:
-            pickle.dump(info, fp)
-            pickle.dump(crop_alloc, fp)
-            pickle.dump(settings, fp)
-            pickle.dump(args, fp)
-            pickle.dump(yield_information, fp)
-            pickle.dump(population_information, fp)
-            pickle.dump(rhoF, fp)
-            pickle.dump(rhoS, fp)
-            pickle.dump(status, fp)
-            pickle.dump(durations, fp)
-            pickle.dump(VSS_value, fp)
-            pickle.dump(crop_alloc_vss, fp)
-            pickle.dump(validation_values, fp)
-            if PenMet == "prob":
-                pickle.dump(probF, fp)
-                pickle.dump(probS, fp)
+        validation_values = OutOfSampleVal(crop_alloc, settings, AddInfo_CalcParameters, args["rhoF"], \
+                              args["rhoS"], meta_sol, args["probS"], console_output)
+    validation_end  = tm.time()
+    all_durations["Validation"] = validation_end - validation_start
      
     # timing
     all_end  = tm.time()   
     full_time = all_end - all_start
     printing("\nTotal time: " + str(np.round(full_time, 2)) + "s", console_output = console_output)
+    all_durations["TotalTime"] = full_time
+       
+    # add results to pandas overview
+    write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
+                    population_information, status, all_durations, crop_alloc, \
+                    meta_sol, meta_sol_vss, VSS_value, validation_values, \
+                    console_output = console_output)
+    
+    # saving results
+    if save:
+        fn = filename(settings)
+        
+        info = ["settings", "args", "yield_information", "population_information", \
+                "status", "durations", "crop_alloc", "crop_alloc_vss", \
+                "VSS_value", "validation_values"]
+            
+        with open("ModelOutput/SavedRuns/" + fn + ".txt", "wb") as fp:
+            pickle.dump(info, fp)
+            pickle.dump(settings, fp)
+            pickle.dump(args, fp)
+            pickle.dump(AddInfo_CalcParameters, fp)
+            pickle.dump(yield_information, fp)
+            pickle.dump(population_information, fp)
+            pickle.dump(status, fp)
+            pickle.dump(all_durations, fp)
+            pickle.dump(crop_alloc, fp)
+            pickle.dump(crop_alloc_vss, fp)
+            pickle.dump(VSS_value, fp)
+            pickle.dump(validation_values, fp)
+     
             
     # rename the temporal log file
     if logs_on:
@@ -392,6 +350,6 @@ def OptimizeModel(PenMet = "prob", probF = 0.99, probS = 0.95, \
             fn = fn + "_" + str(i)
         os.rename("ModelLogs/tmp.txt", "ModelLogs/" + fn + ".txt") 
         
-    return(crop_alloc, meta_sol, status, durations, settings, args, yield_information, \
-           population_information, rhoF, rhoS, VSS_value, crop_alloc_vss, meta_sol_vss, \
-           validation_values)          
+    return(settings, args, AddInfo_CalcParameters, yield_information, \
+           population_information, status, all_durations, crop_alloc, meta_sol, \
+           crop_alloc_vss, meta_sol_vss, VSS_value, validation_values)          

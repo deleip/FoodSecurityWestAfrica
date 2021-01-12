@@ -17,9 +17,8 @@ from ModelCode.ModelCore import SolveReducedcLinearProblemGurobiPy
 
 # %% ########################## WRAPPING FUNCTION #############################
 
-def GetPenalties(settings, args, yield_information, probF, probS, \
-                 rhoFini = None, rhoSini = None, console_output = None, \
-                 logs_on = None):
+def GetPenalties(settings, args, yield_information, \
+                 console_output = None,  logs_on = None):
     """
     Given the probabilities probF and probS this either loads or calculates
     the corresponding penalties. Penalties are calculated with the respective
@@ -34,27 +33,12 @@ def GetPenalties(settings, args, yield_information, probF, probS, \
         Dictionary of arguments needed as model input.  
     yield_information : dict
         Information on theon the yield distributions.
-    probF : float
-        demanded probability of keeping the food demand constraint (only 
-        relevant if PenMet == "prob"). 
-    probS : float
-        demanded probability of keeping the solvency constraint (only 
-        relevant if PenMet == "prob"). 
-    rhoFini : float or None 
-        If PenMet == "penalties", this is the value that will be used for rhoF.
-        if PenMet == "prob" and rhoFini is None, a initial guess for rhoF will 
-        be calculated in GetPenalties, else this will be used as initial guess 
-        for the penalty which will give the correct probability for reaching 
-        food demand. The default is None.
-    rhoSini : float or None 
-        If PenMet == "penalties", this is the value that will be used for rhoS.
-        if PenMet == "prob" and rhoSini is None, a initial guess for rhoS will 
-        be calculated in GetPenalties, else this will be used as initial guess 
-        for the penalty which will give the correct probability for solvency.
-        The default is None.
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
         outputs. The default is defined in ModelCode/GeneralSettings.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log file.
+        If None, the default as defined in ModelCode/GeneralSettings is used.
 
     Returns
     -------
@@ -70,6 +54,12 @@ def GetPenalties(settings, args, yield_information, probF, probS, \
         food seecurity probF (when using only rhoF and setting rhoS = 0)
     """
             
+    # extract some settings (that were originally passed on directly...)
+    probF = args["probF"]
+    probS = args["probS"]
+    rhoFini = settings["rhoF"]
+    rhoSini = settings["rhoS"]
+    
     if probF == 0:
         rhoF = 0
     else:   
@@ -105,7 +95,7 @@ def GetPenalties(settings, args, yield_information, probF, probS, \
             printing("Fetching rhoF", console_output = console_output)
             rhoF = dict_rhoFs[SettingsAffectingRhoF]
             needed_import = dict_imports[SettingsAffectingRhoF]
-            if needed_import == 0:
+            if needed_import <= 0:
                 printing("     rhoF: " + str(rhoF) + ", no import needed", \
                          console_output = console_output)    
             else:
@@ -177,7 +167,11 @@ def GetPenalties(settings, args, yield_information, probF, probS, \
             printing("\nFetching rhoS", console_output = console_output)
             rhoS = dict_rhoSs[SettingsAffectingRhoS]
             necessary_debt = dict_necDebt[SettingsAffectingRhoS]
-            printing("     rhoS: " + str(rhoS) + ", necessary debt: " + \
+            if necessary_debt <= 0:
+                printing("     rhoS: " + str(rhoS) + ", no debt needed", \
+                         console_output = console_output)  
+            else:
+                printing("     rhoS: " + str(rhoS) + ", necessary debt: " + \
                      str(np.round(necessary_debt, 4)) + " 10^9$", \
                      console_output = console_output)
         else:
@@ -295,10 +289,6 @@ def CheckOptimalProbF(args, other, probF, accuracy, console_output = None, logs_
         Amount of food that needs to imported to reach the probability for
         food seecurity probF.    
     """
-        
-    # checking for import
-    if args["import"] != 0:
-        sys.exit("There is already a positive import value!")
     
     # find best crop per cluster (based on average yields)
     yld_means = other["yld_means"]  # t/ha
@@ -323,8 +313,7 @@ def CheckOptimalProbF(args, other, probF, accuracy, console_output = None, logs_
               console_output = console_output, logs_on = logs_on)
     
     # check if it is high enough (shortcomings given as demand - production (- import))
-    needed_import = np.quantile(meta_sol["shortcomings"]\
-                 [~np.isnan(meta_sol["shortcomings"])].flatten(), probF)
+    needed_import = meta_sol["add_needed_import"]
     if max_probF >= probF:
         printing("     Desired probF (" + str(np.round(probF * 100, accuracy - 1)) \
                              + "%) can be reached\n", console_output = console_output, logs_on = logs_on)
@@ -370,7 +359,7 @@ def CheckOptimalProbS(args, other, probS, accuracy, console_output = None):
             
     # try for rhoS = 1e9 (as a proxy for rhoS = inf)
     status, crop_alloc, meta_sol, prob, durations = \
-         SolveReducedcLinearProblemGurobiPy(args, 0, 1e9, probS, console_output = False, logs_on = False)   
+         SolveReducedcLinearProblemGurobiPy(args, 0, 1e9, console_output = False, logs_on = False)   
     
     # get resulting probabilities
     max_probS = meta_sol["prob_staying_solvent"]
@@ -636,7 +625,6 @@ def GetRhoS_Wrapper(args, other, probS, rhoSini, checkedGuess, file, \
     if maxProbS >= probS:
         printing("     Finding corresponding penalty\n", console_output)
         rhoS = GetRhoS(args, probS, rhoSini, checkedGuess, shareDiff, accuracy, console_output)
-        necessary_debt = 0
     # if probS cannot be reached find rhoS that minimizes the debt that is
     # necessary for the government to provide payouts in probS of the samples
     else:
@@ -705,13 +693,13 @@ def GetRhoS(args, probS, rhoSini, checkedGuess, shareDiff, accuracy, console_out
         if not checkedGuess:
             printing("     Checking guess from run with other N", console_output = console_output)
             status, crop_alloc, meta_sol, prob, durations = \
-                            SolveReducedcLinearProblemGurobiPy(args, 0, rhoSini, probS, console_output = False, logs_on = False)  
+                            SolveReducedcLinearProblemGurobiPy(args, 0, rhoSini, console_output = False, logs_on = False)  
             ReportProgressFindingRho(rhoSini, meta_sol, accuracy, durations, \
                                      "S", prefix = "Guess: ", console_output = console_output)
             if np.round(meta_sol["prob_staying_solvent"], accuracy) == probS:
                 rhoScheck = rhoSini - rhoSini/shareDiff
                 status, crop_alloc, meta_sol, prob, durations = \
-                    SolveReducedcLinearProblemGurobiPy(args, 0, rhoScheck, probS, console_output = False, logs_on = False)  
+                    SolveReducedcLinearProblemGurobiPy(args, 0, rhoScheck, console_output = False, logs_on = False)  
                 ReportProgressFindingRho(rhoScheck, meta_sol, accuracy, durations, \
                                          "S", prefix = "Check: ", console_output = console_output)
                 if np.round(meta_sol["prob_staying_solvent"], accuracy) < probS:
@@ -732,7 +720,7 @@ def GetRhoS(args, probS, rhoSini, checkedGuess, shareDiff, accuracy, console_out
     
     # calculate results for initial guess
     status, crop_alloc, meta_sol, prob, durations = \
-                    SolveReducedcLinearProblemGurobiPy(args, 0, rhoSini, probS, console_output = False, logs_on = False)    
+                    SolveReducedcLinearProblemGurobiPy(args, 0, rhoSini, console_output = False, logs_on = False)    
                   
     # remember guess
     rhoSold = rhoSini
@@ -753,7 +741,7 @@ def GetRhoS(args, probS, rhoSini, checkedGuess, shareDiff, accuracy, console_out
         
         # solve model for guess
         status, crop_alloc, meta_sol, prob, durations = \
-           SolveReducedcLinearProblemGurobiPy(args, 0, rhoSnew, probS, console_output = False, logs_on = False)
+           SolveReducedcLinearProblemGurobiPy(args, 0, rhoSnew, console_output = False, logs_on = False)
         
         # We want to find the lowest penalty for which we get the right probability.
         # The accuracy interval is always the difference between the lowest 
@@ -854,7 +842,7 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, checkedGuess, \
     
     # checking for rhoS = 0
     status, crop_alloc, meta_sol, prob, durations = \
-        SolveReducedcLinearProblemGurobiPy(args, 0, 0, probS, console_output = False, logs_on = False) 
+        SolveReducedcLinearProblemGurobiPy(args, 0, 0, console_output = False, logs_on = False) 
     debt_bottom = meta_sol["necessary_debt"]
     
     # the demanded accuracy in the debt is given as a share of the difference
@@ -870,7 +858,7 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, checkedGuess, \
         if checkedGuess:
             printing("     We have a rhoS from a different N that was already double-checked!", console_output = console_output, logs_on = logs_on)
             status, crop_alloc, meta_sol, prob, durations = \
-                SolveReducedcLinearProblemGurobiPy(args, 0, rhoSini, probS, console_output = False, logs_on = False) 
+                SolveReducedcLinearProblemGurobiPy(args, 0, rhoSini, console_output = False, logs_on = False) 
             necessary_debt = meta_sol["necessary_debt"]
             ReportProgressFindingRho(rhoSini, meta_sol, accuracy, durations, \
                                      "S", debt = necessary_debt, prefix = "", console_output = console_output)
@@ -905,7 +893,7 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, checkedGuess, \
     # checking for high rhoS
     rhoSnew = 100
     status, crop_alloc, meta_sol, prob, durations = \
-        SolveReducedcLinearProblemGurobiPy(args, 0, rhoSnew, probS, console_output = False, logs_on = False) 
+        SolveReducedcLinearProblemGurobiPy(args, 0, rhoSnew, console_output = False, logs_on = False) 
     necessary_debt = meta_sol["necessary_debt"]
  
     # update information
@@ -931,7 +919,7 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, checkedGuess, \
         
         # calculate for new guess
         status, crop_alloc, meta_sol, prob, durations = \
-            SolveReducedcLinearProblemGurobiPy(args, 0, rhoSnew, probS, console_output = False, logs_on = False) 
+            SolveReducedcLinearProblemGurobiPy(args, 0, rhoSnew, console_output = False, logs_on = False) 
         necessary_debt = meta_sol["necessary_debt"]
         
         # update information
@@ -959,7 +947,7 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, checkedGuess, \
                     
             # calculating results for first point
             status, crop_alloc, meta_sol1, prob, durations1 = \
-                SolveReducedcLinearProblemGurobiPy(args, 0, rhoSnew1, probS, console_output = False, logs_on = False) 
+                SolveReducedcLinearProblemGurobiPy(args, 0, rhoSnew1, console_output = False, logs_on = False) 
             necessary_debt1 = meta_sol1["necessary_debt"]
         
             # plot
@@ -987,7 +975,7 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, checkedGuess, \
                 
             # calculating results for second point
             status, crop_alloc, meta_sol2, prob, durations2 = \
-                SolveReducedcLinearProblemGurobiPy(args, 0, rhoSnew2, probS, console_output = False, logs_on = False) 
+                SolveReducedcLinearProblemGurobiPy(args, 0, rhoSnew2, console_output = False, logs_on = False) 
             necessary_debt2 = meta_sol2["necessary_debt"] 
         
             # plot
@@ -1079,7 +1067,7 @@ def CheckRhoSiniDebt(args, probS, rhoSini, debt_top, debt_bottom, shareDiff, acc
     if rhoSini != 0:
         printing("     Checking guess from run with other N", console_output = console_output)
         status, crop_alloc, meta_sol, prob, durations = \
-            SolveReducedcLinearProblemGurobiPy(args, 0, rhoSini, probS, console_output = False, logs_on = False) 
+            SolveReducedcLinearProblemGurobiPy(args, 0, rhoSini, console_output = False, logs_on = False) 
         necessary_debt = meta_sol["necessary_debt"]
         ReportProgressFindingRho(rhoSini, meta_sol, accuracy, durations, \
                                  "S", debt = necessary_debt, prefix = "Guess: ", console_output = console_output)
@@ -1087,7 +1075,7 @@ def CheckRhoSiniDebt(args, probS, rhoSini, debt_top, debt_bottom, shareDiff, acc
         if necessary_debt == debt_top:
             rhoScheck = rhoSini - rhoSini/shareDiff
             status, crop_alloc, meta_sol, prob, durations = \
-                SolveReducedcLinearProblemGurobiPy(args, 0, rhoScheck, probS, console_output = False, logs_on = False) 
+                SolveReducedcLinearProblemGurobiPy(args, 0, rhoScheck, console_output = False, logs_on = False) 
             necessary_debt_check = meta_sol["necessary_debt"]
             ReportProgressFindingRho(rhoScheck, meta_sol, accuracy, durations, \
                                      "S", debt = necessary_debt_check, prefix = "Check: ", console_output = console_output)
@@ -1100,13 +1088,13 @@ def CheckRhoSiniDebt(args, probS, rhoSini, debt_top, debt_bottom, shareDiff, acc
             rhoScheck2 = rhoSini + rhoSini/shareDiff
             
             status, crop_alloc, meta_sol, prob, durations = \
-                SolveReducedcLinearProblemGurobiPy(args, 0, rhoScheck1, probS, console_output = False, logs_on = False) 
+                SolveReducedcLinearProblemGurobiPy(args, 0, rhoScheck1, console_output = False, logs_on = False) 
             necessary_debt_check1 = meta_sol["necessary_debt"]
             ReportProgressFindingRho(rhoScheck1, meta_sol, accuracy, durations, \
                                      "S", debt = necessary_debt_check1, prefix = "Check 1: ", console_output = console_output)
                 
             status, crop_alloc, meta_sol, prob, durations = \
-                SolveReducedcLinearProblemGurobiPy(args, 0, rhoScheck2, probS, console_output = False, logs_on = False) 
+                SolveReducedcLinearProblemGurobiPy(args, 0, rhoScheck2, console_output = False, logs_on = False) 
             necessary_debt_check2 = meta_sol["necessary_debt"]
             ReportProgressFindingRho(rhoScheck2, meta_sol, accuracy, durations, \
                                      "S", debt = necessary_debt_check2, prefix = "Check 2: ", console_output = console_output)

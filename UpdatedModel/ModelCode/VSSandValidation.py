@@ -15,7 +15,7 @@ from ModelCode.Auxiliary import printing
 
 # %% #################### VALUE OF THE STOCHASTIC SOLUTION ####################  
  
-def VSS(settings, args, rhoF, rhoS, probS = None):
+def VSS(settings, AddInfo_CalcParameters, args):
     """
     Calculating expected total costs using the optimal crop area allocation 
     assuming expected yield values as yield realization.
@@ -44,21 +44,22 @@ def VSS(settings, args, rhoF, rhoS, probS = None):
     """
     # get arguments to calculate deterministic solution (in particular the 
     # expected yields instead of yield samples)
-    args_vss, yield_information, population_information = SetParameters(settings, VSS = True, console_output = False, logs_on = False)
+    args_vss, yield_information, population_information = \
+        SetParameters(settings, AddInfo_CalcParameters, VSS = True, console_output = False, logs_on = False)
     
     # solve model for the expected yields
     status, crop_alloc_vss, meta_sol, prob, durations = \
-                SolveReducedcLinearProblemGurobiPy(args_vss, rhoF, rhoS, probS, console_output = False, logs_on = False)
+                SolveReducedcLinearProblemGurobiPy(args_vss, args["rhoF"], args["rhoS"], console_output = False, logs_on = False)
                 
     # get information of using VSS solution in stochastic setting
-    meta_sol_vss = GetMetaInformation(crop_alloc_vss, args, rhoF, rhoS, probS)
+    meta_sol_vss = GetMetaInformation(crop_alloc_vss, args, args["rhoF"], args["rhoS"])
     return(crop_alloc_vss, meta_sol_vss)      
     
 
 # %% ################### OUT OF SAMLE VALIDATION OF RESULT ####################  
 
-def OutOfSampleVal(crop_alloc, settings, rhoF, rhoS, \
-                   M, meta_sol, probS = None, console_output = None):
+def OutOfSampleVal(crop_alloc, settings, AddInfo_CalcParameters, rhoF, rhoS, \
+                   meta_sol, probS = None, console_output = None):
     """
     For validation, the objective function is re-evaluate, using the optimal
     crop allocation but a higher sample size.    
@@ -89,21 +90,21 @@ def OutOfSampleVal(crop_alloc, settings, rhoF, rhoS, \
 
     """
     
-    # printing("      " + "\u005F" * 21, console_output = console_output)
     # higher sample size
     settings_val = settings.copy()
-    settings_val["N"] = M
+    settings_val["N"] = settings["validation_size"]
     # get yield samples
     printing("     Getting parameters and yield samples", console_output = console_output)
-    args, yield_information, population_information = SetParameters(settings_val, \
-                                            console_output = False, logs_on = False)
+    args, yield_information, population_information = \
+                SetParameters(settings_val, AddInfo_CalcParameters, \
+                              console_output = False, logs_on = False)
     
     # run objective function for higher sample size
     printing("     Objective function", console_output = console_output)
-    meta_sol_val = GetMetaInformation(crop_alloc, args, rhoF, rhoS, probS)
+    meta_sol_val = GetMetaInformation(crop_alloc, args, rhoF, rhoS)
     
     # create dictionary with validation information
-    validation_values = {"sample_size": M,
+    validation_values = {"sample_size": settings["validation_size"],
                "total_costs": meta_sol["exp_tot_costs"], 
                "total_costs_val": meta_sol_val["exp_tot_costs"],
                "fd_penalty": np.nanmean(np.sum(meta_sol["fd_penalty"], axis = 1)),
@@ -123,7 +124,7 @@ def OutOfSampleVal(crop_alloc, settings, rhoF, rhoS, \
         
     val_name = str(len(settings["k_using"])) + "of" + \
                 str(settings["k"]) + "_N" + str(settings["N"]) + \
-                "_M" + str(M)
+                "_M" + str(settings["validation_size"])
                 
     if val_name in val_dict.keys():
         tmp = val_dict[val_name]
