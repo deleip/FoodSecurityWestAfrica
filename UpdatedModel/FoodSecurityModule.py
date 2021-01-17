@@ -36,6 +36,9 @@ from ModelCode.AnalysisAndComparison import GetResultsToCompare
 
 from ModelCode.Auxiliary import filename
 from ModelCode.Auxiliary import MakeList
+from ModelCode.PandaFunctions import OpenPanda
+from ModelCode.PandaFunctions import ReadFromPanda
+from ModelCode.PandaFunctions import PandaToPlot_GetResults
 
 # set up folder structure (if not already done)
 CheckFolderStructure()

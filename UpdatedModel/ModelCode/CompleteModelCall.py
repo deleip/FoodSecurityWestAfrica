@@ -16,7 +16,7 @@ from termcolor import colored
 from ModelCode.SetFolderStructure import CheckFolderStructure
 from ModelCode.SettingsParameters import DefaultSettingsExcept
 from ModelCode.Auxiliary import filename
-from ModelCode.Auxiliary import write_to_pandas
+from ModelCode.PandaFunctions import write_to_pandas
 from ModelCode.PlottingModelOutput import PlotModelOutput
 from ModelCode.Auxiliary import printing
 from ModelCode.MetaInformation import GetMetaInformation
@@ -302,13 +302,13 @@ def OptimizeModel(settings, console_output = None, logs_on = None, \
                               args["rhoS"], meta_sol, args["probS"], console_output)
     validation_end  = tm.time()
     all_durations["Validation"] = validation_end - validation_start
-     
+
     # add results to pandas overview
     write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                     population_information, crop_alloc, \
                     meta_sol, meta_sol_vss, VSS_value, validation_values, \
-                    console_output)
-        
+                    console_output)     
+            
     # timing
     all_end  = tm.time()   
     full_time = all_end - all_start
@@ -338,7 +338,6 @@ def OptimizeModel(settings, console_output = None, logs_on = None, \
             pickle.dump(VSS_value, fp)
             pickle.dump(validation_values, fp)
      
-            
     # rename the temporal log file
     if logs_on:
         if os.path.exists("ModelLogs/" + fn  + ".txt"):

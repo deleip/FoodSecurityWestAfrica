@@ -455,14 +455,14 @@ def GetRhoF(args, yield_information, probF, rhoFini, checkedGuess, \
             status, crop_alloc, meta_sol, prob, durations = \
                             SolveReducedcLinearProblemGurobiPy(args_tmp, rhoFini, 0, console_output = False, logs_on = False) 
             ReportProgressFindingRho(rhoFini, meta_sol, accuracy, durations, \
-                                     "F", prefix = "Guess: ", console_output = console_output, logs_on = logs_on) 
+                                     "F", prefix = "Guess - ", console_output = console_output, logs_on = logs_on) 
             if np.round(meta_sol["probF"], accuracy) == probF:
                 rhoFcheck = rhoFini - rhoFini/shareDiff
                 status, crop_alloc_check, meta_sol_check, prob, durations = \
                     SolveReducedcLinearProblemGurobiPy(args_tmp, rhoFcheck, 0, console_output = False, logs_on = False)  
                 ReportProgressFindingRho(rhoFcheck, meta_sol_check, accuracy, durations, \
-                                         "F", prefix = "Check: ", console_output = console_output, logs_on = logs_on) 
-                if np.round(meta_sol_check["prob_food_security"], accuracy) < probF:
+                                         "F", prefix = "Check - ", console_output = console_output, logs_on = logs_on) 
+                if np.round(meta_sol_check["probF"], accuracy) < probF:
                     printing("     Cool, that worked!", console_output = console_output, logs_on = logs_on)
                     printing("\n     Final rhoF: " + str(rhoFini), console_output = console_output, logs_on = logs_on)
                     return(rhoFini, maxProbF, maxProbS, needed_import, crop_alloc, meta_sol)    
@@ -678,13 +678,13 @@ def GetRhoS(args, probS, rhoSini, checkedGuess, shareDiff, accuracy, console_out
             status, crop_alloc, meta_sol, prob, durations = \
                             SolveReducedcLinearProblemGurobiPy(args, 0, rhoSini, console_output = False, logs_on = False)  
             ReportProgressFindingRho(rhoSini, meta_sol, accuracy, durations, \
-                                     "S", prefix = "Guess: ", console_output = console_output)
+                                     "S", prefix = "Guess - ", console_output = console_output)
             if np.round(meta_sol["probS"], accuracy) == probS:
                 rhoScheck = rhoSini - rhoSini/shareDiff
                 status, crop_alloc, meta_sol, prob, durations = \
                     SolveReducedcLinearProblemGurobiPy(args, 0, rhoScheck, console_output = False, logs_on = False)  
                 ReportProgressFindingRho(rhoScheck, meta_sol, accuracy, durations, \
-                                         "S", prefix = "Check: ", console_output = console_output)
+                                         "S", prefix = "Check - ", console_output = console_output)
                 if np.round(meta_sol["probS"], accuracy) < probS:
                     printing("     Cool, that worked!", console_output = console_output)
                     return(rhoSini)    
@@ -1047,20 +1047,22 @@ def CheckRhoSiniDebt(args, probS, rhoSini, debt_top, debt_bottom, shareDiff, acc
             SolveReducedcLinearProblemGurobiPy(args, 0, rhoSini, console_output = False, logs_on = False) 
         necessary_debt = meta_sol["necessary_debt"]
         ReportProgressFindingRho(rhoSini, meta_sol, accuracy, durations, \
-                                 "S", debt = necessary_debt, prefix = "Guess: ", console_output = console_output)
-            
-        if necessary_debt == debt_top:
+                                 "S", debt = necessary_debt, prefix = "Guess - ", console_output = console_output)
+         
+        # if solution was in the top part
+        if  np.abs(necessary_debt - debt_top) < accuracy_diff_debt:
             rhoScheck = rhoSini - rhoSini/shareDiff
             status, crop_alloc, meta_sol, prob, durations = \
                 SolveReducedcLinearProblemGurobiPy(args, 0, rhoScheck, console_output = False, logs_on = False) 
             necessary_debt_check = meta_sol["necessary_debt"]
             ReportProgressFindingRho(rhoScheck, meta_sol, accuracy, durations, \
-                                     "S", debt = necessary_debt_check, prefix = "Check: ", console_output = console_output)
+                                     "S", debt = necessary_debt_check, prefix = "Check - ", console_output = console_output)
                 
             if (necessary_debt_check - debt_top) > accuracy_diff_debt:
                 return(rhoSini, necessary_debt)
             
-        elif necessary_debt != debt_bottom:          
+        # if solution was in the valley
+        elif np.abs(necessary_debt - debt_bottom) < accuracy_diff_debt: 
             rhoScheck1 = rhoSini - rhoSini/shareDiff
             rhoScheck2 = rhoSini + rhoSini/shareDiff
             
@@ -1068,13 +1070,13 @@ def CheckRhoSiniDebt(args, probS, rhoSini, debt_top, debt_bottom, shareDiff, acc
                 SolveReducedcLinearProblemGurobiPy(args, 0, rhoScheck1, console_output = False, logs_on = False) 
             necessary_debt_check1 = meta_sol["necessary_debt"]
             ReportProgressFindingRho(rhoScheck1, meta_sol, accuracy, durations, \
-                                     "S", debt = necessary_debt_check1, prefix = "Check 1: ", console_output = console_output)
+                                     "S", debt = necessary_debt_check1, prefix = "Check 1 - ", console_output = console_output)
                 
             status, crop_alloc, meta_sol, prob, durations = \
                 SolveReducedcLinearProblemGurobiPy(args, 0, rhoScheck2, console_output = False, logs_on = False) 
             necessary_debt_check2 = meta_sol["necessary_debt"]
             ReportProgressFindingRho(rhoScheck2, meta_sol, accuracy, durations, \
-                                     "S", debt = necessary_debt_check2, prefix = "Check 2: ", console_output = console_output)
+                                     "S", debt = necessary_debt_check2, prefix = "Check 2 - ", console_output = console_output)
                 
             if necessary_debt_check1 > necessary_debt and \
                 necessary_debt_check2 > necessary_debt:
@@ -1378,6 +1380,7 @@ def GetInitialGuess(dictGuesses, name, N):
     # initialize values
     Ns = []
     Files = []
+    rhos = []
     rhoBest = None
     checked = False
     
@@ -1386,22 +1389,23 @@ def GetInitialGuess(dictGuesses, name, N):
         if file.startswith(name + "N"):
             Ns.append(int(file[len(name)+1:]))
             Files.append(file)
+            rhos.append(dictGuesses[file])
                 
     # get rho from the case with the highest N
     if len(Files) != 0:
         Files = [f for _,f in sorted(zip(Ns, Files))]
+        rhos = [rho for _,rho in sorted(zip(Ns, rhos))]
         Ns = sorted(Ns)
-        rhoBest = dictGuesses[Files[-1]]
+        rhoBest = rhos[-1]
     
-    # if the difference between the two highest N is big enough (at least
-    # double), we check for second best guess for rho. If that is already the 
-    # same as for the highest N, we assume that it won't chenge anymore and we
-    # don't do any checks.
-    if len(Files) > 1:
-        if Ns[-1]/Ns[-2] >= 2:
-            scndRho = dictGuesses[Files[-2]]
-            if (scndRho == rhoBest) and (Ns[-2] < N):
+    # if the difference between the lowest N and highest N giving rhoBest 
+    # is big enough (at least double), we assume that the penalty won't chenge
+    # anymore and we don't do any checks.
+    for i in range(0, len(rhos)):
+        if rhos[i] == rhoBest:
+            if (Ns[-1]/Ns[i] >= 2) and (Ns[i] < N):
                 checked = True
+            break
         
     return(rhoBest, checked)
 

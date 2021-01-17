@@ -40,10 +40,10 @@ for s in [1, 2, 3, 5]:
 # %% ##### 2. DEFAULT RUN FOR ADJACENT CLUSTER GROUPS OF SIZE 1, 2, 3, 5  #####
 
 # group size, sample size N, validation sample size M
-comb = [(1, 10000, 100000),
-        #(2, 30000, 200000),
+comb = [(1, 100000, 200000),
+        #(2, 20000, 150000),
         #(3, 50000, 200000),
-        #(5, 200000, 400000)
+        #(5, 400000, 600000)
         ]
 
 for size, N, M in comb:
@@ -52,7 +52,7 @@ for size, N, M in comb:
                       + str(size) + aim + ".txt", "rb") as fp:
                 BestGrouping = pickle.load(fp)
                 
-        for cluster_active in BestGrouping[1:]:
+        for cluster_active in BestGrouping:
             print("\u2017"*49)
             print("Aim: " + aim + ", size: " + str(size) + ", clusters: " + str(cluster_active))
             print("\u033F "*49)

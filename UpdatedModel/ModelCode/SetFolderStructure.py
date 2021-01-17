@@ -12,7 +12,7 @@ import pickle
 import shutil
 from termcolor import colored
 
-from ModelCode.Auxiliary import CreateEmptyPanda
+from ModelCode.PandaFunctions import CreateEmptyPanda
 
 # %% ################ SETTING UP FOLDER STRUCTURE FOR RESULTS #################
 
