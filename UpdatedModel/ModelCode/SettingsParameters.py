@@ -126,11 +126,11 @@ def DefaultSettingsExcept(PenMet = "prob",
     if type(k_using) is tuple:
         k_using = list(k_using)
         
+    if k_using == "all":
+        k_using = list(range(1, k + 1))
+        
     k_using_tmp = k_using.copy()
     
-
-    if k_using_tmp == "all":
-        k_using_tmp = list(range(1, k + 1))
     
     # This will always be True except when the function is called from 
     # GetResultsToCompare() for multiple subsets of clusters 

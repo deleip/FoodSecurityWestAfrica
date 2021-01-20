@@ -9,6 +9,7 @@ import pandas as pd
 import os
 import sys
 import pickle
+import matplotlib.pyplot as plt
 
 from ModelCode.Auxiliary import printing
 
@@ -154,49 +155,8 @@ def CreateEmptyPanda():
 
     """
     
-    colnames = ['Input probability food security', 
-                'Input probability solvency', 
-                'Number of clusters', 
-                'Used clusters', 
-                'Yield projection', 
-                'Simulation start', 
-                'Population scenario', 
-                'Risk level covered', 
-                'Tax rate', 
-                'Share of income that is guaranteed', 
-                'Initial fund size', 
-                'Sample size', 
-                'Sample size for validation', 
-                'Number of covered years', 
-                'Average food demand', 
-                'Import (excluding solvency constraint)', 
-                'Import (excluding solvency constraint, including theoretical export)', 
-                'Additional import needed when including solvency constraint', 
-                'Expected income (to calculate guaranteed income)', 
-                'Penalty for food shortage', 
-                'Penalty for insolvency', 
-                'Necessary debt (excluding food security constraint)', 
-                'Necessary debt (including food security constraint)', 
-                'Probability for a catastrophic year', 
-                'Share of samples with no catastrophe', 
-                'Share of years/clusters with unprofitable rice yields', 
-                'Share of years/clusters with unprofitable maize yields', 
-                'Share of West Africa\'s population that is living in currently considered region (2015)', 
-                'On average cultivated area per cluster', 
-                'Average food demand penalty (over years and samples)', 
-                'Average solvency penalty (over samples)', 
-                'Average cultivation costs per cluster (over years and samples)', 
-                'Expected total costs', 
-                'Average food shortcomings (over years and samples)', 
-                'Number of occurrences per cluster where farmers make losses', 
-                'Average income per cluster in final run (over years and samples)', 
-                'Average government payouts per cluster (over samples)', 
-                'Resulting probability for food security', 
-                'Resulting probability for solvency', 
-                'Resulting probability for food security for VSS', 
-                'Resulting probability for solvency for VSS', 
-                'Value of stochastic solution', 
-                'Validation value (deviation of total penalty costs)']
+    with open("ModelOutput/Pandas/ColumnNames.txt", "rb") as fp:
+        colnames = pickle.load(fp)
     
     new_panda = pd.DataFrame(columns = colnames)
     new_panda.to_csv("ModelOutput/Pandas/current_panda.csv", index = False)
@@ -220,51 +180,14 @@ def OpenPanda(file = "current_panda"):
         return(res)
     
     
-    dict_convert =  {"Input probability food security": float,
-                    "Input probability solvency": float,
-                    "Number of clusters": int,
-               #     "Used clusters": __ConvertListsInts,
-                    "Used clusters": str,
-                    "Yield projection": str,
-                    "Simulation start": int,
-                    "Population scenario": str,
-                    "Risk level covered": float,
-                    "Tax rate": float,
-                    "Share of income that is guaranteed": float,
-                    "Initial fund size": float,
-                    "Sample size": int,
-                    "Sample size for validation": int,
-                    "Number of covered years": int,
-                    "Average food demand": float,
-                    "Import (excluding solvency constraint)": float,
-                    "Import (excluding solvency constraint, including theoretical export)": float,
-                    "Additional import needed when including solvency constraint": float,
-                    "Expected income (to calculate guaranteed income)": __ConvertListsFloats,
-                    "Penalty for food shortage": float,
-                    "Penalty for insolvency": float,
-                    "Necessary debt (excluding food security constraint)": float,
-                    "Necessary debt (including food security constraint)": float,
-                    "Probability for a catastrophic year": float,
-                    "Share of samples with no catastrophe": float,
-                    "Share of years/clusters with unprofitable rice yields": float,
-                    "Share of years/clusters with unprofitable maize yields": float,
-                    "Share of West Africa's population that is living in currently considered region (2015)": \
-                        float,
-                    "On average cultivated area per cluster": __ConvertListsFloats,
-                    "Average food demand penalty (over years and samples)": float,
-                    "Average solvency penalty (over samples)": float,
-                    "Average cultivation costs per cluster (over years and samples)": __ConvertListsFloats,
-                    "Expected total costs": float,
-                    "Average food shortcomings (over years and samples)": float,
-                    "Number of occurrences per cluster where farmers make losses": __ConvertListsInts,
-                    "Average income per cluster in final run (over years and samples)": __ConvertListsFloats,
-                    "Average government payouts per cluster (over samples)": __ConvertListsFloats,
-                    "Resulting probability for food security": float,
-                    "Resulting probability for solvency": float,
-                    "Resulting probability for food security for VSS": float,
-                    "Resulting probability for solvency for VSS": float,
-                    "Value of stochastic solution": float,
-                    "Validation value (deviation of total penalty costs)": float}
+    with open("ModelOutput/Pandas/ColumnTypes.txt", "rb") as fp:
+        dict_convert = pickle.load(fp)
+        
+    for key in dict_convert.keys():
+        if dict_convert[key] == "list of floats":
+            dict_convert[key] = __ConvertListsFloats
+        elif dict_convert[key] == "list of ints":
+            dict_convert[key] = __ConvertListsInts
         
     panda = pd.read_csv("ModelOutput/Pandas/current_panda.csv", converters = dict_convert)
     
@@ -427,3 +350,206 @@ def PandaToPlot_GetResults(file = "current_panda",
         res = res.append(__ExtractResPanda(panda_tmp, out_type, output_var, size))
             
     return(res)
+
+def PlotPandaMedian(panda_file = "current_panda", 
+                    output_var = None,
+                    grouping_aim = "Dissimilar",
+                    adjacent = False,
+                    figsize = None,
+                    subplots = True,
+                    plt_file = None,
+                    **kwargs):
+    
+    if figsize is None:
+        from ModelCode.GeneralSettings import figsize
+    
+    with open("ModelOutput/Pandas/ColumnUnits.txt", "rb") as fp:
+        units = pickle.load(fp)
+    
+    res = PandaToPlot_GetResults(panda_file, output_var, "median", grouping_aim, adjacent, **kwargs)
+    
+    if output_var is str:
+        output_var = [output_var]
+    
+    if subplots:
+        fig = plt.figure(figsize = figsize)
+        fig.subplots_adjust(bottom=0.2, top=0.9, left=0.1, right=0.9,
+                    wspace=0.2, hspace=0.35)
+        rows = int(np.floor(np.sqrt(len(output_var))))
+        cols = int(np.ceil(np.sqrt(len(output_var))))
+    
+    for idx, var in enumerate(output_var):
+        if subplots:
+            fig.add_subplot(rows, cols, idx + 1)
+            plt.suptitle("Development depending on colaboration of clusters", \
+                  fontsize = 24)
+        else:
+            fig = plt.figure(figsize = figsize)
+            plt.title("Development depending on colaboration of clusters", \
+                  fontsize = 24, pad = 15)
+        plt.scatter([1, 2, 3, 4], res[var + " - Maximum"], marker = "^", label = "Maximum")
+        plt.scatter([1, 2, 3, 4], res[var + " - Median"], marker = "X", label = "Median")
+        plt.scatter([1, 2, 3, 4], res[var + " - Minimum"], label = "Minimum")
+        plt.xticks([1, 2, 3, 4, 5], [9, 5, 3, 2, 1], fontsize = 16)
+        plt.yticks(fontsize = 16)
+        plt.xlabel("Number of different cluster groups", fontsize = 20)
+        plt.ylabel(var + " " + units[var], fontsize = 20)
+        plt.legend(fontsize = 20)
+        
+    if plt_file is not None:
+        fig.savefig("Figures/PandaPlots/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
+        
+    return(None)
+    
+
+def OverViewCurrentPandaVariables():
+    
+    with open("ModelOutput/Pandas/ColumnNames.txt", "rb") as fp:
+        colnames = pickle.load(fp)
+            
+    return(colnames)
+    
+def SetUpPandaDicts():
+    units = {"Input probability food security": "",
+        "Input probability solvency": "",
+        "Number of clusters": "",
+        "Used clusters": "",
+        "Yield projection": "",
+        "Simulation start": "[Year]",
+        "Population scenario": "",
+        "Risk level covered": "",
+        "Tax rate": "",
+        "Share of income that is guaranteed": "",
+        "Initial fund size": "[$10^9\,\$$]",
+        "Sample size": "",
+        "Sample size for validation": "",
+        "Number of covered years": "",
+        "Average food demand": "[$10^{12}\,kcal$]",
+        "Import (excluding solvency constraint)": "[$10^{12}\,kcal$]",
+        "Import (excluding solvency constraint, including theoretical export)": "[$10^{12}\,kcal$]",
+        "Additional import needed when including solvency constraint": "[$10^{12}\,kcal$]",
+        "Expected income (to calculate guaranteed income)": "[$10^9\,\$$]",
+        "Penalty for food shortage": "[$\$/10^3\,kcal$]",
+        "Penalty for insolvency": "[$\$/\$$]",
+        "Necessary debt (excluding food security constraint)": "[$10^9\,\$$]",
+        "Necessary debt (including food security constraint)": "[$10^9\,\$$]",
+        "Probability for a catastrophic year": "",
+        "Share of samples with no catastrophe": "",
+        "Share of years/clusters with unprofitable rice yields": "",
+        "Share of years/clusters with unprofitable maize yields": "",
+        "Share of West Africa's population that is living in currently considered region (2015)": "",
+        "On average cultivated area per cluster": "[$10^9\,ha$]",
+        "Average food demand penalty (over years and samples)": "[$10^9\,\$$]",
+        "Average solvency penalty (over samples)": "[$10^9\,\$$]",
+        "Average cultivation costs per cluster (over years and samples)": "[$10^9\,\$$]",
+        "Expected total costs": "[$10^9\,\$$]",
+        "Average food shortcomings (over years and samples)": "[$10^{12}\,kcal$]",
+        "Number of occurrences per cluster where farmers make losses": "",
+        "Average income per cluster in final run (over years and samples)": "[$10^9\,\$$]",
+        "Average government payouts per cluster (over samples)": "[$10^9\,\$$]",
+        "Resulting probability for food security": "",
+        "Resulting probability for solvency": "",
+        "Resulting probability for food security for VSS": "",
+        "Resulting probability for solvency for VSS": "",
+        "Value of stochastic solution": "[$10^9\,\$$]",
+        "Validation value (deviation of total penalty costs)": ""}    
+    
+    convert =  {"Input probability food security": float,
+         "Input probability solvency": float,
+         "Number of clusters": int,
+         "Used clusters": str,
+         "Yield projection": str,
+         "Simulation start": int,
+         "Population scenario": str,
+         "Risk level covered": float,
+         "Tax rate": float,
+         "Share of income that is guaranteed": float,
+         "Initial fund size": float,
+         "Sample size": int,
+         "Sample size for validation": int,
+         "Number of covered years": int,
+         "Average food demand": float,
+         "Import (excluding solvency constraint)": float,
+         "Import (excluding solvency constraint, including theoretical export)": float,
+         "Additional import needed when including solvency constraint": float,
+         "Expected income (to calculate guaranteed income)": "list of floats",
+         "Penalty for food shortage": float,
+         "Penalty for insolvency": float,
+         "Necessary debt (excluding food security constraint)": float,
+         "Necessary debt (including food security constraint)": float,
+         "Probability for a catastrophic year": float,
+         "Share of samples with no catastrophe": float,
+         "Share of years/clusters with unprofitable rice yields": float,
+         "Share of years/clusters with unprofitable maize yields": float,
+         "Share of West Africa's population that is living in currently considered region (2015)": \
+             float,
+         "On average cultivated area per cluster": "list of floats",
+         "Average food demand penalty (over years and samples)": float,
+         "Average solvency penalty (over samples)": float,
+         "Average cultivation costs per cluster (over years and samples)": "list of floats",
+         "Expected total costs": float,
+         "Average food shortcomings (over years and samples)": float,
+         "Number of occurrences per cluster where farmers make losses": "list of ints",
+         "Average income per cluster in final run (over years and samples)": "list of floats",
+         "Average government payouts per cluster (over samples)": "list of floats",
+         "Resulting probability for food security": float,
+         "Resulting probability for solvency": float,
+         "Resulting probability for food security for VSS": float,
+         "Resulting probability for solvency for VSS": float,
+         "Value of stochastic solution": float,
+         "Validation value (deviation of total penalty costs)": float}
+        
+    colnames = ['Input probability food security', 
+        'Input probability solvency', 
+        'Number of clusters', 
+        'Used clusters', 
+        'Yield projection', 
+        'Simulation start', 
+        'Population scenario', 
+        'Risk level covered', 
+        'Tax rate', 
+        'Share of income that is guaranteed', 
+        'Initial fund size', 
+        'Sample size', 
+        'Sample size for validation', 
+        'Number of covered years', 
+        'Average food demand', 
+        'Import (excluding solvency constraint)', 
+        'Import (excluding solvency constraint, including theoretical export)', 
+        'Additional import needed when including solvency constraint', 
+        'Expected income (to calculate guaranteed income)', 
+        'Penalty for food shortage', 
+        'Penalty for insolvency', 
+        'Necessary debt (excluding food security constraint)', 
+        'Necessary debt (including food security constraint)', 
+        'Probability for a catastrophic year', 
+        'Share of samples with no catastrophe', 
+        'Share of years/clusters with unprofitable rice yields', 
+        'Share of years/clusters with unprofitable maize yields', 
+        'Share of West Africa\'s population that is living in currently considered region (2015)', 
+        'On average cultivated area per cluster', 
+        'Average food demand penalty (over years and samples)', 
+        'Average solvency penalty (over samples)', 
+        'Average cultivation costs per cluster (over years and samples)', 
+        'Expected total costs', 
+        'Average food shortcomings (over years and samples)', 
+        'Number of occurrences per cluster where farmers make losses', 
+        'Average income per cluster in final run (over years and samples)', 
+        'Average government payouts per cluster (over samples)', 
+        'Resulting probability for food security', 
+        'Resulting probability for solvency', 
+        'Resulting probability for food security for VSS', 
+        'Resulting probability for solvency for VSS', 
+        'Value of stochastic solution', 
+        'Validation value (deviation of total penalty costs)']
+    
+    with open("ModelOutput/Pandas/ColumnUnits.txt", "wb") as fp:
+        pickle.dump(units, fp)
+        
+    with open("ModelOutput/Pandas/ColumnNames.txt", "wb") as fp:
+        pickle.dump(colnames, fp)
+        
+    with open("ModelOutput/Pandas/ColumnTypes.txt", "wb") as fp:
+        pickle.dump(convert, fp)
+        
+    return(None)

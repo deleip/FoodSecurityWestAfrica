@@ -13,6 +13,7 @@ import shutil
 from termcolor import colored
 
 from ModelCode.PandaFunctions import CreateEmptyPanda
+from ModelCode.PandaFunctions import SetUpPandaDicts
 
 # %% ################ SETTING UP FOLDER STRUCTURE FOR RESULTS #################
 
@@ -39,6 +40,8 @@ def CheckFolderStructure():
         os.mkdir("Figures/CompareCropAllocsRiskPooling")
     if not os.path.isdir("Figures/rhoSvsDebts"):
         os.mkdir("Figures/rhoSvsDebts")
+    if not os.path.isdir("Figures/PandaPlots"):
+        os.mkdir("Figures/PandaPlots")
         
     if not os.path.isdir("InputData"):
         warn.warn("You are missing the input data")
@@ -82,6 +85,8 @@ def CheckFolderStructure():
             pickle.dump({}, fp)
     if not os.path.isdir("ModelOutput/Pandas"):
         os.mkdir("ModelOutput/Pandas")
+    if not os.path.exists("ModelOutput/Pandas/ColumnNames.txt"):
+        SetUpPandaDicts()
     if not os.path.exists("ModelOutput/Pandas/current_panda.csv"):
         CreateEmptyPanda()
         

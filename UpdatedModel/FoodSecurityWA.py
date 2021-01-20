@@ -40,13 +40,24 @@ for s in [1, 2, 3, 5]:
 # %% ##### 2. DEFAULT RUN FOR ADJACENT CLUSTER GROUPS OF SIZE 1, 2, 3, 5  #####
 
 # group size, sample size N, validation sample size M
-comb = [(1, 100000, 200000),
-        #(2, 20000, 150000),
-        #(3, 50000, 200000),
-        #(5, 400000, 600000)
+comb = [#(1, 100000, 200000),
+       # (2, 40000, 150000),
+       # (3, 250000, 400000),
+        #(5, 400000, 600000),
+        ("all", 100000, 200000)
         ]
 
 for size, N, M in comb:
+    if size == "all":
+        settings, args, AddInfo_CalcParameters, yield_information, \
+        population_information, status, durations, crop_alloc, meta_sol, \
+        crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
+            FS.FoodSecurityProblem(validation_size = M,
+                                   plotTitle = "All clusters",
+                                   k_using = size,
+                                   N = N)
+        continue
+    
     for aim in ["Dissimilar"]:    
         with open("InputData/Clusters/ClusterGroups/GroupingSize" \
                       + str(size) + aim + ".txt", "rb") as fp:

@@ -39,6 +39,8 @@ from ModelCode.Auxiliary import MakeList
 from ModelCode.PandaFunctions import OpenPanda
 from ModelCode.PandaFunctions import ReadFromPanda
 from ModelCode.PandaFunctions import PandaToPlot_GetResults
+from ModelCode.PandaFunctions import PlotPandaMedian
+from ModelCode.PandaFunctions import OverViewCurrentPandaVariables
 
 # set up folder structure (if not already done)
 CheckFolderStructure()
