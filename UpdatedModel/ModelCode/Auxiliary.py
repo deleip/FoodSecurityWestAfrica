@@ -51,7 +51,7 @@ def MakeList(grouping):
                 res.append(gr[i])
     return(res)        
     
-def printing(content, prints = True, LogFile = None, flush = True):
+def printing(content, console_output = None, flush = True, logs_on = None):
     """
     Function to only print progress report to console if chosen.
 
@@ -59,63 +59,47 @@ def printing(content, prints = True, LogFile = None, flush = True):
     ----------
     content : str
         Message that is to be printed.
-    prints : boolean, optional
-        Whether message should be printed to console. The default is True.
-    LogFile : boolean, optional
-        Whether message should be printed to log file. If None, the same value
-        as prints is used. The default is None.
+    console_output : boolean, optional
+        Whether message should be printed to console. 
+        The default is defined in ModelCode/GeneralSettings.
     flush : bpolean, optional
         Whether to forcibly flush the stream. The default is True.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log document.
+        The default is defined in ModelCode/GeneralSettings.
 
     Returns
     -------
     None.
 
     """
+    
+    if console_output is None:
+        from ModelCode.GeneralSettings import console_output
+    if logs_on is None:
+        from ModelCode.GeneralSettings import logs_on
+    
     # output to consoole
-    if prints:
+    if console_output:
         print(content, flush = flush)
     
     # output to log file
-    if LogFile is None:
-        LogFile = prints
-    if LogFile:
+    if logs_on:
         log = open("ModelLogs/tmp.txt", "a")
         log.write("\n" + content)
         log.close()
         
     return(None)
     
-def filename(settings, PenMet, validation, probF = 0.95, probS = 0.95, \
-             rhoF = None, rhoS = None, groupSize = "", groupAim = "", \
+def filename(settings, groupSize = "", groupAim = "", \
              adjacent = False, allNames = False):
     """
     Combines all settings to a single file name to save results.
 
     Parameters
     ----------
-    settings : TYPE
-        DESCRIPTION.
-    PenMet : "prob" or "penalties"
-        "prob" if desired probabilities are given and penalties are to be 
-        calculated accordingly. "penalties" if input penalties are to be used
-        directly.
-    validation : None or int
-        if not None, the objevtice function will be re-evaluated for 
-        validation with a higher sample size as given by this parameter. 
-        The default is None.
-    probF : float
-        demanded probability of keeping the food demand constraint (only 
-        relevant if PenMet == "prob"). The default is 0.95.
-    probS : float
-        demanded probability of keeping the solvency constraint (only 
-        relevant if PenMet == "prob"). The default is 0.95.
-    rhoF : float
-        The penalty for shortcomings of the food demand (only relevant if 
-        PenMet == "penalties"). The default is None.
-    rhoS : float
-        The penalty for insolvency (only relevant if PenMet == "penalties").
-        The default is None.
+    settings : dict
+        Input settings for the model.
     groupSize : int
         in case loading data for e.g. all groups from a specific cluster 
         grouping, this is the size of the groups (relevant for filename of
@@ -128,6 +112,9 @@ def filename(settings, PenMet, validation, probF = 0.95, probS = 0.95, \
         in case loading data for e.g. all groups from a specific cluster 
         grouping, this states whether clusters within a group had to be 
         adjacent (relevant for filename of figures)
+    allNames : boolean
+        if True, also the names  for SettingsAffectingRhoF etc are returned.
+        Else only the filename for model outputs. Default is False.
         
     Returns
     -------
@@ -146,25 +133,25 @@ def filename(settings, PenMet, validation, probF = 0.95, probS = 0.95, \
         if type(settingsTmp[key]) is not list:
             settingsTmp[key] = [settingsTmp[key]]
         
-    if type(validation) is not list:
-        validationTmp = [validation]
+    if type(settings["validation_size"]) is not list:
+        validationTmp = [settings["validation_size"]]
     else:
-        validationTmp = validation
+        validationTmp = settings["validation_size"]
     
-    if PenMet == "prob":
-        if type(probF) is not list:
-            probFTmp = [probF]
+    if settings["PenMet"] == "prob":
+        if type(settings["probF"]) is not list:
+            probFTmp = [settings["probF"]]
         else:
-            probFTmp = probF
-        if type(probS) is not list:
-            probSTmp = [probS]
+            probFTmp = settings["probF"]
+        if type(settings["probS"]) is not list:
+            probSTmp = [settings["probS"]]
         else:
-            probSTmp = probS
+            probSTmp = settings["probS"]
         fn = "pF" + '_'.join(str(n) for n in probFTmp) + \
              "pS" + '_'.join(str(n) for n in probSTmp)
     else:
-        rhoFTmp = rhoF.copy()
-        rhoSTmp = rhoS.copy()
+        rhoFTmp = settings["rhoF"].copy()
+        rhoSTmp = settings["rhoS"].copy()
         if type(rhoFTmp) is not list:
             rhoFTmp = [rhoFTmp]
         if type(rhoSTmp) is not list:
@@ -202,7 +189,7 @@ def filename(settings, PenMet, validation, probF = 0.95, probS = 0.95, \
                 "pop_scenario" + str(settings["pop_scenario"]) +  \
                 "T" + str(settings["T"])
         SettingsMaxProbF = SettingsBasics + "N" + str(settings["N"])
-        SettingsAffectingRhoF = SettingsBasics + "probF" + str(probF) + \
+        SettingsAffectingRhoF = SettingsBasics + "probF" + str(settings["probF"]) + \
                 "N" + str(settings["N"])
         
         # all settings that affect the calculation of rhoS
@@ -211,9 +198,10 @@ def filename(settings, PenMet, validation, probF = 0.95, probS = 0.95, \
                 "tax" + str(settings["tax"]) + \
                 "perc_guaranteed" + str(settings["perc_guaranteed"])
         SettingsMaxProbS = SettingsBasics + "N" + str(settings["N"])
-        SettingsAffectingRhoS = SettingsBasics + "probS" + str(probS) + \
+        SettingsAffectingRhoS = SettingsBasics + "probS" + str(settings["probS"]) + \
                 "N" + str(settings["N"])
         return(fn, SettingsMaxProbF, SettingsAffectingRhoF, \
                SettingsMaxProbS, SettingsAffectingRhoS)
     
     return(fn)
+

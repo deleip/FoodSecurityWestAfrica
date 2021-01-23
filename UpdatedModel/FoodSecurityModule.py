@@ -6,10 +6,12 @@ Created on Fri Jan  1 14:35:49 2021
 @author: Debbora Leip
 """
 # get all functions 
-from ModelCode.GeneralSettings import ReturnGeneralSettings
-from ModelCode.GeneralSettings import ChangeGeneralSettings
+from ModelCode.ModifyGeneralSettings import ReturnGeneralSettings
+from ModelCode.ModifyGeneralSettings import ModifyGeneralSettings
+from ModelCode.ModifyGeneralSettings import ResetGeneralSettings
 
 from ModelCode.SetFolderStructure import CheckFolderStructure
+from ModelCode.SetFolderStructure import CleanFolderStructure
 
 from ModelCode.GroupingClusters import GroupingClusters
 from ModelCode.GroupingClusters import VisualizeClusterGroups
@@ -33,6 +35,12 @@ from ModelCode.AnalysisAndComparison import CompareCropAllocRiskPooling
 from ModelCode.AnalysisAndComparison import GetResultsToCompare
 
 from ModelCode.Auxiliary import filename
+from ModelCode.Auxiliary import MakeList
+from ModelCode.PandaFunctions import OpenPanda
+from ModelCode.PandaFunctions import ReadFromPanda
+from ModelCode.PandaFunctions import PandaToPlot_GetResults
+from ModelCode.PandaFunctions import PlotPandaMedian
+from ModelCode.PandaFunctions import OverViewCurrentPandaVariables
 
 # set up folder structure (if not already done)
 CheckFolderStructure()

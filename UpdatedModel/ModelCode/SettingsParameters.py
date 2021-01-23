@@ -10,25 +10,30 @@ from scipy.special import comb
 import scipy.stats as stats
 import pickle
 import pandas as pd
+import sys
 
 from ModelCode.Auxiliary import printing
 
 # %% ############# FUNCTIONS TO GET INPUT FOR FOOD SECURITY MODEL #############
 
-def DefaultSettingsExcept(k = 9,     
+def DefaultSettingsExcept(PenMet = "prob",
+                          probF = 0.99,
+                          probS = 0.95, 
+                          rhoF = None,
+                          rhoS = None,
+                          k = 9,     
                           k_using = [3],
                           num_crops = 2,
                           yield_projection = "fixed",   
                           sim_start = 2017,
                           pop_scenario = "fixed",
                           risk = 0.05,                          
-                          N = 3500, 
+                          N = 10000, 
+                          validation_size = None,
                           T = 25,
                           seed = 201120,
                           tax = 0.01,
                           perc_guaranteed = 0.9,
-                          expected_incomes = None,
-                          needed_import = 0,
                           ini_fund = 0):     
     """
     Using the default for all settings not specified, this creates a 
@@ -36,6 +41,28 @@ def DefaultSettingsExcept(k = 9,
 
     Parameters
     ----------
+    PenMet : "prob" or "penalties", optional
+        "prob" if desired probabilities are given and penalties are to be 
+        calculated accordingly. "penalties" if input penalties are to be used
+        directly. The default is "prob".
+    probF : float, optional
+        demanded probability of keeping the food demand constraint (only 
+        relevant if PenMet == "prob"). The default is 0.99.
+    probS : float, optional
+        demanded probability of keeping the solvency constraint (only 
+        relevant if PenMet == "prob"). The default is 0.95.
+    rhoF : float or None, optional 
+        If PenMet == "penalties", this is the value that will be used for rhoF.
+        if PenMet == "prob" and rhoF is None, a initial guess for rhoF will 
+        be calculated in GetPenalties, else this will be used as initial guess 
+        for the penalty which will give the correct probability for reaching 
+        food demand. The default is None.
+    rhoS : float or None, optional 
+        If PenMet == "penalties", this is the value that will be used for rhoS.
+        if PenMet == "prob" and rhoS is None, a initial guess for rhoS will 
+        be calculated in GetPenalties, else this will be used as initial guess 
+        for the penalty which will give the correct probability for solvency.
+        The default is None.
     k : int, optional
         Number of clusters in which the area is to be devided. 
         The default is 9.
@@ -66,7 +93,11 @@ def DefaultSettingsExcept(k = 9,
         considered as catastrophic. The default is 5%.
     N : int, optional
         Number of yield samples to be used to approximate the expected value
-        in the original objective function. The default is 3500.
+        in the original objective function. The default is 10000.
+    validation_size : None or int, optional
+        if not None, the objevtice function will be re-evaluated for 
+        validation with a higher sample size as given by this parameter. 
+        The default is None.
     T : int, optional
         Number of years to cover in the simulation. The default is 25.
     seed : int, optional
@@ -77,18 +108,8 @@ def DefaultSettingsExcept(k = 9,
         The percentage that determines how high the guaranteed income will be 
         depending on the expected income of farmers in a scenario excluding
         the government. The default is 90%.
-    expected_incomes : "None" or a np.array of shape (len(k_using),), optional
-        If None, the expected income will be calculated by solving the model
-        for the corresponding scenario without government. I an array is given,
-        this will be assumed to have the correct values. The default is None.
-    needed_import : float
-        If PenMet = "prob", this will be caluclated such that the probability
-        for food security can be reached. If PenMet = "penalties" this will 
-        not be changed from the input value. The default is 0.
     ini_fund : float
-        If PenMet = "prob", this will be caluclated such that the probability
-        for solvency can be reached. If PenMet = "penalties" this will 
-        not be changed from the input value. The default is 0.
+        The default is 0.
         
         
     Returns
@@ -105,20 +126,33 @@ def DefaultSettingsExcept(k = 9,
     if type(k_using) is tuple:
         k_using = list(k_using)
         
+    if k_using == "all":
+        k_using = list(range(1, k + 1))
+        
     k_using_tmp = k_using.copy()
     
-
-    if k_using_tmp == "all":
-        k_using_tmp = list(range(1, k + 1))
     
     # This will always be True except when the function is called from 
     # GetResultsToCompare() for multiple subsets of clusters 
     # (e.g. k_using = [(1,2),(3,6)])
     if sum([type(i) is int for i in k_using_tmp]) == len(k_using_tmp):
         k_using_tmp.sort()
-            
+   
+    # check modus (probabilities or penalties given?)
+    if PenMet == "penalties":
+        probS = None
+        probF = None
+    elif PenMet != "prob":
+        sys.exit("A non-valid penalty method was chosen (PenMet must " + \
+                 "be either \"prob\" or \"penalties\").")     
+        
     # create dictionary of settings
-    settings =  {"k": k,
+    settings =  {"PenMet": PenMet,
+                 "probF": probF,
+                 "probS": probS,
+                 "rhoF": rhoF,
+                 "rhoS": rhoS,
+                 "k": k,
                  "k_using": k_using_tmp,
                  "num_crops": num_crops,
                  "yield_projection": yield_projection,
@@ -126,28 +160,32 @@ def DefaultSettingsExcept(k = 9,
                  "pop_scenario": pop_scenario,
                  "risk": risk,
                  "N": N,
+                 "validation_size": validation_size,
                  "T": T,
                  "seed": seed, 
                  "tax": tax,
                  "perc_guaranteed": perc_guaranteed,
-                 "expected_incomes": expected_incomes,
-                 "import": needed_import,
                  "ini_fund": ini_fund}   
      
 
     # return dictionary of all settings
     return(settings)
 
-def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
+def SetParameters(settings, AddInfo_CalcParameters,\
+                  wo_yields = False, VSS = False, \
+                  console_output = None, logs_on = None):
     """
     
-    Based on the settings, this sets all parameters needed as input to the
-    model.    
+    Based on the settings, this sets most parameters that are needed as
+    input to the model.    
     
     Parameters
     ----------
     settings : dict
         Dictionary of settings as given by DefaultSettingsExcept().
+    AddInfo_CalcParameters : dict 
+        Additional information from calculatings expected income and penalties
+        which are not needed as model input.        
     wo_yields : boolean, optional
         If True, the function will do everything execept generating the yield
         samples (and return an empty list as placeholder for the ylds 
@@ -157,9 +195,12 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
         returned and all clusters will be indicated as non-catastrophic by 
         cat_clusters, as needed to calculate the deterministic solution on 
         which the VSS is based. The default is False.
-    prints : boolean, optional
+    console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is True.
+        outputs. The default is defined in ModelCode/GeneralSettings.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log document.
+        The default is defined in ModelCode/GeneralSettings.
 
     Returns
     -------
@@ -242,7 +283,14 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
     seed = settings["seed"]
     tax = settings["tax"]
     perc_guaranteed = settings["perc_guaranteed"]
-    expected_incomes = settings["expected_incomes"]
+    expected_incomes = AddInfo_CalcParameters["expected_incomes"]
+    
+    if "needed_import" in AddInfo_CalcParameters.keys():
+        n_import = AddInfo_CalcParameters["needed_import"]
+        if n_import < 0:
+            n_import = 0
+    else:
+        n_import = 0
     
 # 1. get cluster information (clusters given by k-Medoids on SPEI data) 
     with open("InputData/Clusters/Clustering/kMediods" + \
@@ -425,8 +473,6 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
                             total_pop_ratios[(sim_start-1950): \
                                                 (sim_start-1950+T)]) \
                             .swapaxes(0,1)
-    printing("     Guaranteed income per cluster (in first year): " + str(np.round(guaranteed_income[0,:].flatten(), 3)), prints)
-
           
 # 10. prices for selling crops, per crop and cluster
     with open("InputData//Prices/CountryAvgFarmGatePrices.txt", "rb") as fp:    
@@ -483,9 +529,11 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
 
     # get yield realizations:
     # what is the probability of a catastrophic year for given settings?
-    printing("\nOverview on yield samples", prints = prints)
+    printing("\nOverview on yield samples", console_output = console_output, logs_on = logs_on)
     prob_cat_year = RiskForCatastrophe(risk, len(k_using))
-    printing("     Prob for catastrophic year: " + str(np.round(prob_cat_year*100, 2)) + "%", prints = prints)    
+    printing("     Prob for catastrophic year: " + \
+             str(np.round(prob_cat_year*100, 2)) + "%", \
+             console_output = console_output, logs_on = logs_on)    
     # create realizations of presence of catastrophic yields and corresponding
     # yield distributions
     np.random.seed(seed)
@@ -495,23 +543,30 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
                            yield_projection, VSS, wo_yields)
     # probability to not have a catastrophe
     no_cat = np.sum(terminal_years == -1) / N
-    printing("     Share of samples without catastrophe: " + str(np.round(no_cat*100, 2)), prints = prints) 
+    printing("     Share of samples without catastrophe: " + str(np.round(no_cat*100, 2)), \
+              console_output = console_output, logs_on = logs_on) 
     # share of non-profitable crops
     share_rice_np = np.sum(ylds[:,:,0,:] < y_profit[0,:])/np.sum(~np.isnan(ylds[:,:,0,:]))
     printing("     Share of cases with rice yields too low to provide profit: " + \
-             str(np.round(share_rice_np * 100, 2)), prints = prints)
+             str(np.round(share_rice_np * 100, 2)), console_output = console_output, \
+             logs_on = logs_on)
     share_maize_np = np.sum(ylds[:,:,1,:] < y_profit[1,:])/np.sum(~np.isnan(ylds[:,:,1,:]))
     printing("     Share of cases with maize yields too low to provide profit: " + \
-             str(np.round(share_maize_np * 100, 2)), prints = prints)
+             str(np.round(share_maize_np * 100, 2)), console_output = console_output, \
+             logs_on = logs_on)
     # in average more profitable crop
     exp_profit = yld_means * prices - costs
     avg_time_profit = np.nanmean(exp_profit, axis = 0)
-    more_profit = np.argmax(avg_time_profit)
-    printing("     On average more profit: " + crops[more_profit], prints = prints)
+    more_profit = np.argmax(avg_time_profit, axis = 0) # per cluster
+    printing("     On average more profit (per cluster): " + \
+             str([crops[i] for i in more_profit]), \
+             console_output = console_output, logs_on = logs_on)
     # in average more productive crop
     avg_time_production = np.nanmean(yld_means, axis = 0)
-    more_food = np.argmax(avg_time_production)
-    printing("     On average higher productivity: " + crops[more_food] + "\n", prints = prints)
+    more_food = np.argmax(avg_time_production, axis = 0)
+    printing("     On average higher productivity (per cluster): " + \
+             str([crops[i] for i in more_food]) + "\n", \
+             console_output = console_output, logs_on = logs_on)
     
 # 14. group output into different dictionaries
     # arguments that are given to the objective function by the solver
@@ -524,15 +579,16 @@ def SetParameters(settings, wo_yields = False, VSS = False, prints = True):
             "ylds": ylds,
             "costs": costs,
             "demand": demand,
-            "import": settings["import"],
             "ini_fund": settings["ini_fund"],
+            "import": n_import,
             "tax": tax,
             "prices": prices,
             "T": T,
-            "expected_incomes": expected_incomes,
             "guaranteed_income": guaranteed_income,
             "crop_cal": crop_cal,
-            "max_areas": max_areas}
+            "max_areas": max_areas,
+            "probF": settings["probF"],
+            "probS": settings["probS"]}
         
     # information not needed by the solver but potentially interesting 
     yield_information = {"slopes": slopes,

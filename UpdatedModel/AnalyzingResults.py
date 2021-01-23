@@ -5,18 +5,22 @@ Created on Sat Dec 12 11:45:49 2020
 @author: leip
 """
 
-from os import chdir 
+# set the right directory
+import os
+dir_path = os.path.dirname(os.path.realpath(__file__))
+os.chdir(dir_path)
+
+# import all project related functions
+import FoodSecurityModule as FS  
+
+# import other modules
 import numpy as np
-import matplotlib.pyplot as plt
 import pickle
 from termcolor import colored
 import pandas as pd
 
-chdir('/home/debbora/git_environment/FoodSecurityWestAfrica/UpdatedModel')
-# chdir("H:\ForPublication/NewModel")
-
-import FunctionsStoOpt as StoOpt
-StoOpt.CheckFolderStructure()
+# set up folder structure (if not already done)
+FS.CheckFolderStructure()
 
 # %%
 
@@ -27,7 +31,7 @@ comb = [("tax", [0.01, 0.03, 0.05], 0.85, 0.05),
 
 for (ResType, tax, perc_guaranteed, risk) in comb:
     CropAllocs, MaxAreas, labels, fn = \
-        StoOpt.GetResultsToCompare(ResType = ResType,
+        FS.GetResultsToCompare(ResType = ResType,
                                    probF = 0.95,
                                    probS = 0.9,
                                    k = 9,
@@ -38,7 +42,7 @@ for (ResType, tax, perc_guaranteed, risk) in comb:
                                    perc_guaranteed = perc_guaranteed,
                                    risk = risk)
     try:
-        StoOpt.CompareCropAllocs(CropAllocs = CropAllocs,
+        FS.CompareCropAllocs(CropAllocs = CropAllocs,
                                  MaxAreas = MaxAreas,
                                  labels = labels,
                                  title = "Representative Cluster",
@@ -51,7 +55,7 @@ for (ResType, tax, perc_guaranteed, risk) in comb:
 
 # %%
 
-aim = "Similar"
+aim = "Dissimilar"
 with open("InputData/Clusters/ClusterGroups/GroupingSize" \
               + str(2) + aim + ".txt", "rb") as fp:
         BestGrouping = pickle.load(fp)
@@ -59,18 +63,14 @@ with open("InputData/Clusters/ClusterGroups/GroupingSize" \
 for cluster_active in BestGrouping:
     print(cluster_active)
     CropAllocsPool, MaxAreasPool, labelsPool, fnPool = \
-        StoOpt.GetResultsToCompare(ResType = "k_using",
-                                   probF = 0.99,
-                                   probS = 0.95,
-                                   k = 9,
-                                   k_using = cluster_active,
-                                   N = 75000,
-                                   validation = 200000,
-                                   tax = 0.03,
-                                   perc_guaranteed = 0.85,
-                                   risk = 0.05)
+        FS.GetResultsToCompare(k_using = cluster_active,
+                                N = 75000,
+                                validation = 200000,
+                                tax = 0.03,
+                                perc_guaranteed = 0.85,
+                                risk = 0.05)
     CropAllocsIndep, MaxAreasIndep, labelsIndep, fnIndep = \
-        StoOpt.GetResultsToCompare(ResType = "k_using",
+        FS.GetResultsToCompare(ResType = "k_using",
                                    probF = 0.95,
                                    probS = 0.85,
                                    k = 9,
@@ -81,7 +81,7 @@ for cluster_active in BestGrouping:
                                    perc_guaranteed = 0.75,
                                    risk = 0.05)
     try:
-        StoOpt.CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, 
+        FS.CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, 
                                            MaxAreasPool, MaxAreasIndep, 
                                            labelsPool, labelsIndep, 
                                            filename = fnIndep,
@@ -91,41 +91,34 @@ for cluster_active in BestGrouping:
         
 # %%
 
-aim = "Similar"
+comb = [(1, 15000, 100000),
+        (2, 30000, 200000),
+        (3, 50000, 200000),
+        (5, 800000, 300000)
+        ]
+aim = "Dissimilar"
 with open("InputData/Clusters/ClusterGroups/GroupingSize" \
-              + str(2) + aim + ".txt", "rb") as fp:
-        BestGrouping = pickle.load(fp)
+              + str(comb[0][0]) + aim + ".txt", "rb") as fp:
+        BestGrouping1 = pickle.load(fp)
+with open("InputData/Clusters/ClusterGroups/GroupingSize" \
+              + str(comb[1][0]) + aim + ".txt", "rb") as fp:
+        BestGrouping2 = pickle.load(fp)
     
-CropAllocsPool, MaxAreasPool, labelsPool, fnPool = \
-    StoOpt.GetResultsToCompare(ResType = "k_using",
-                               probF = 0.99,
-                               probS = 0.95,
-                               k = 9,
-                               k_using = BestGrouping,
-                               N = 75000,
-                               validation = 200000,
-                               tax = 0.03,
-                               perc_guaranteed = 0.85,
-                               risk = 0.05)
 CropAllocsIndep, MaxAreasIndep, labelsIndep, fnIndep = \
-    StoOpt.GetResultsToCompare(ResType = "k_using",
-                               probF = 0.99,
-                               probS = 0.95,
-                               k = 9,
-                               k_using = StoOpt.MakeList(BestGrouping),
-                               N = 200000,
-                               validation = 50000,
-                               tax = 0.03,
-                               perc_guaranteed = 0.85,
-                               risk = 0.05)
-try:
-    StoOpt.CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, 
+    FS.GetResultsToCompare(k_using = BestGrouping1,
+                            N = comb[0][1],
+                            validation = comb[0][2])
+CropAllocsPool, MaxAreasPool, labelsPool, fnPool = \
+    FS.GetResultsToCompare(k_using = BestGrouping2,
+                            N = comb[1][1],
+                            validation = comb[1][2])
+
+FS.CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, 
                                        MaxAreasPool, MaxAreasIndep, 
                                        labelsPool, labelsIndep, 
                                        filename = fnPool,
                                        title = str(BestGrouping))
-except:
-    print("Nothing to plot")
+
 
         
 # %%
@@ -145,7 +138,7 @@ for size, N, M in comb:
                       + str(size) + aim + ".txt", "rb") as fp:
                 BestGrouping = pickle.load(fp)
         CropAllocs, MaxAreas, labels, fn = \
-            StoOpt.GetResultsToCompare(ResType = "k_using",
+            FS.GetResultsToCompare(ResType = "k_using",
                                        probF = 0.99,
                                        probS = 0.95,
                                        k = 9,
@@ -160,7 +153,7 @@ for size, N, M in comb:
                                        groupAim = aim)
         print(fn)
         try:
-            StoOpt.CompareCropAllocs(CropAllocs = CropAllocs,
+            FS.CompareCropAllocs(CropAllocs = CropAllocs,
                                      MaxAreas = MaxAreas,
                                      labels = labels,
                                      title = "Groups of size " + str(size) + " (" + aim + "ity)",
@@ -174,7 +167,7 @@ for size, N, M in comb:
 # %% 
         
 CropAllocs, MaxAreas, labels, fn = \
-    StoOpt.GetResultsToCompare(ResType = "k_using",
+    FS.GetResultsToCompare(ResType = "k_using",
                                probF = 0.95,
                                probS = 0.85,
                                k = 9,
@@ -185,7 +178,7 @@ CropAllocs, MaxAreas, labels, fn = \
                                perc_guaranteed = 0.75,
                                risk = 0.05)       
 try:
-    StoOpt.CompareCropAllocs(CropAllocs = CropAllocs,
+    FS.CompareCropAllocs(CropAllocs = CropAllocs,
                              MaxAreas = MaxAreas,
                              labels = labels,
                              title = "Single cluster (lower probabilities)",
@@ -221,7 +214,7 @@ for size, N, M in comb:
                 crop_alloc, meta_sol, status, durations, settings, args, \
                 rhoF, rhoS, VSS_value, crop_alloc_vss, meta_sol_vss, \
                     validation_values, fn = \
-                        StoOpt.FoodSecurityProblem(probF = 0.99,
+                        FS.FoodSecurityProblem(probF = 0.99,
                                                    probS = 0.95,
                                                    k = 9,
                                                    k_using = gr,
@@ -233,7 +226,7 @@ for size, N, M in comb:
                 penalties["rhoF"].append(rhoF)
                 penalties["rhoS"].append(rhoS)
                 index.append(str(gr))
-            except StoOpt.PenaltyException as e:
+            except FS.PenaltyException as e:
                 penalties["rhoF"].append(np.nan)
                 penalties["rhoS"].append(np.nan)
                 index.append(str(gr))

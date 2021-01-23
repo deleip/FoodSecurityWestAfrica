@@ -16,7 +16,7 @@ from ModelCode.GetPenalties import GetRhoF
 
 # %% ############### FUNCTIONS RUNNING MODEL TO GET EXP INCOME ################
 
-def GetExpectedIncome(settings, prints = True):
+def GetExpectedIncome(settings, console_output = None):
     """
     Either loading expected income if it was already calculated for these 
     settings, or calling the function to calculate the expected income. 
@@ -25,9 +25,9 @@ def GetExpectedIncome(settings, prints = True):
     ----------
     settings : dict
         Dictionary of settings as given by DefaultSettingsExcept().
-    prints : boolean, optional
+    console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is True.
+        outputs. The default is defined in ModelCode/GeneralSettings.
 
     Returns
     -------
@@ -35,7 +35,8 @@ def GetExpectedIncome(settings, prints = True):
         The expected income of farmers in a scenario where the government is
         not involved.
 
-    """     
+    """   
+        
     # not all settings affect the expected income (as no government is 
     # included)
     SettingsAffectingGuaranteedIncome = "k" + str(settings["k"]) + \
@@ -50,12 +51,12 @@ def GetExpectedIncome(settings, prints = True):
     
     # if expected income was already calculated for these settings, fetch it
     if SettingsAffectingGuaranteedIncome in dict_incomes.keys():
-        printing("\nFetching expected income", prints = prints)
+        printing("\nFetching expected income", console_output = console_output)
         expected_incomes = dict_incomes[SettingsAffectingGuaranteedIncome]
     # else calculate (and save) it
     else:
         expected_incomes = CalcExpectedIncome(settings, \
-                                 SettingsAffectingGuaranteedIncome)
+                        SettingsAffectingGuaranteedIncome, console_output = console_output)
         dict_incomes[SettingsAffectingGuaranteedIncome] = expected_incomes
         with open("PenaltiesAndIncome/ExpectedIncomes.txt", "wb") as fp:    
              pickle.dump(dict_incomes, fp)
@@ -63,10 +64,14 @@ def GetExpectedIncome(settings, prints = True):
     if np.sum(expected_incomes < 0) > 0:
         sys.exit("Negative expected income")
         
+    printing("     Expected income per cluster in " + \
+             str(settings["sim_start"] - 1) + ": " + \
+             str(np.round(expected_incomes, 3)), console_output = console_output)
+        
     return(expected_incomes)
        
 def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
-                       prints = True):
+                       console_output = None):
     """
     Calculating the expected income in the scenario corresponding to the 
     settings but without government.
@@ -78,9 +83,9 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     SettingsAffectingGuaranteedIncome : str
         Combining all settings that influence the expected income, used to 
         save the result for further runs.
-    prints : boolean, optional
+    console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is True.
+        outputs. The default is defined in ModelCode/GeneralSettings.
 
     Returns
     -------
@@ -89,7 +94,8 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
         not involved.
 
     """
-    printing("\nCalculating expected income ", prints = prints)
+    
+    printing("\nCalculating expected income ", console_output = console_output)
     settings_ExpIn = settings.copy()
 
     # change some settings: we are interested in the expected income in 2016
@@ -97,7 +103,7 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     settings_ExpIn["yield_projection"] = "fixed"
     settings_ExpIn["pop_scenario"] = "fixed"
     settings_ExpIn["T"] = 1
-    settings_ExpIn["expected_incomes"] = np.zeros(len(settings["k_using"]))
+    AddInfo_CalcParameters = {"expected_incomes": np.zeros(len(settings["k_using"]))}
     probF = 0.99
     
     # settings affecting the food demand penalty
@@ -126,16 +132,19 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
         dict_maxProbF = pickle.load(fp)
     with open("PenaltiesAndIncome/MaxProbSforAreaF.txt", "rb") as fp:    
         dict_maxProbS = pickle.load(fp)
-    rhoFini = GetInitialGuess(dict_rhoFs, SettingsFirstGuess)
+    rhoFini, checkedGuess = GetInitialGuess(dict_rhoFs, SettingsFirstGuess, settings["N"])
     
     # we assume that without government farmers aim for 95% probability of 
     # food security, therefore we find the right penalty for probF = 95%.
     # As we want the income in a scenario without government, the final run of
     # GetRhoF (with rohS = 0) automatically is the right run
-    args, yield_information, population_information = SetParameters(settings_ExpIn, prints = False)
+    args, yield_information, population_information = \
+        SetParameters(settings_ExpIn, AddInfo_CalcParameters, \
+                      console_output = False, logs_on = False)
     
     rhoF, maxProbF, max_probS, needed_import, crop_alloc, meta_sol = \
-           GetRhoF(args, yield_information, probF = probF, rhoFini = rhoFini, prints = False) 
+           GetRhoF(args, yield_information, probF = probF, rhoFini = rhoFini, \
+                   checkedGuess = checkedGuess, console_output = False, logs_on = False) 
           
     dict_rhoFs[SettingsAffectingRhoF] = rhoF
     dict_imports[SettingsAffectingRhoF] = needed_import
@@ -152,4 +161,4 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     with open("PenaltiesAndIncome/MaxProbSforAreaF.txt", "wb") as fp:    
          pickle.dump(dict_maxProbS, fp)
         
-    return(meta_sol["exp_incomes"].flatten())
+    return(meta_sol["expected_incomes"].flatten())
