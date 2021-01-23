@@ -16,7 +16,7 @@ from termcolor import colored
 from ModelCode.SetFolderStructure import CheckFolderStructure
 from ModelCode.SettingsParameters import DefaultSettingsExcept
 from ModelCode.Auxiliary import filename
-from ModelCode.PandaFunctions import write_to_pandas
+from ModelCode.PandaGeneration import write_to_pandas
 from ModelCode.PlottingModelOutput import PlotModelOutput
 from ModelCode.Auxiliary import printing
 from ModelCode.MetaInformation import GetMetaInformation
@@ -30,7 +30,7 @@ from ModelCode.VSSandValidation import OutOfSampleVal
 # %% ############## WRAPPING FUNCTIONS FOR FOOD SECURITY MODEL ################
 
 def FoodSecurityProblem(console_output = None, logs_on = None, \
-                        save = True, plotTitle = None, \
+                        save = True, plotTitle = None, panda_file = "current_panda", \
                         **kwargs):
     """
         
@@ -119,7 +119,8 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
                                               console_output = console_output,
                                               save = save,
                                               logs_on = logs_on,
-                                              plotTitle = plotTitle,)
+                                              plotTitle = plotTitle,
+                                              panda_file = panda_file)
         except KeyboardInterrupt:
             print(colored("\nThe model run was interupted by the user.", "red"), flush = True)
             if logs_on:
@@ -158,7 +159,7 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
            population_information, status, all_durations, crop_alloc, meta_sol, \
            crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn)          
 
-def OptimizeModel(settings, console_output = None, logs_on = None, \
+def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
                   save = True, plotTitle = None):
     """
     Function combines setting up and solving the model, calculating additional
@@ -307,7 +308,7 @@ def OptimizeModel(settings, console_output = None, logs_on = None, \
     write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                     population_information, crop_alloc, \
                     meta_sol, meta_sol_vss, VSS_value, validation_values, \
-                    console_output)     
+                    console_output, panda_file)     
             
     # timing
     all_end  = tm.time()   
@@ -350,3 +351,6 @@ def OptimizeModel(settings, console_output = None, logs_on = None, \
     return(settings, args, AddInfo_CalcParameters, yield_information, \
            population_information, status, all_durations, crop_alloc, meta_sol, \
            crop_alloc_vss, meta_sol_vss, VSS_value, validation_values)          
+
+
+

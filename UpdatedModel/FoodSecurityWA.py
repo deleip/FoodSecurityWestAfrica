@@ -44,7 +44,7 @@ comb = [#(1, 100000, 200000),
        # (2, 40000, 150000),
        # (3, 250000, 400000),
         #(5, 400000, 600000),
-        ("all", 100000, 200000)
+        ("all", 300000, 500000)
         ]
 
 for size, N, M in comb:
@@ -148,7 +148,7 @@ for probF in [0.97, 0.99]:
 settings, args, AddInfo_CalcParameters, yield_information, \
 population_information, status, durations, crop_alloc, meta_sol, \
 crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
-    FS.FoodSecurityProblem(validation_size = 50000,
+    FS.FoodSecurityProblem(validation_size = 100000,
                            k_using = [2],
-                           plotTitle = "(Aim: Dissimilar, Adjacent: Flase)",
-                           N = 5000)
+                           #plotTitle = "(Aim: Dissimilar, Adjacent: Flase)",
+                           N = 10000)

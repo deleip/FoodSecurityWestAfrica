@@ -7,9 +7,8 @@ Created on Sun Jan 17 19:05:23 2021
 import numpy as np
 import pandas as pd
 import os
-import sys
 import pickle
-import matplotlib.pyplot as plt
+from termcolor import colored
 
 from ModelCode.Auxiliary import printing
 
@@ -18,7 +17,7 @@ from ModelCode.Auxiliary import printing
 def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                     population_information, crop_alloc, \
                     meta_sol, meta_sol_vss, VSS_value, validation_values, \
-                    console_output):
+                    console_output, file):
     """
     Adds information on the model run to the current pandas csv.
     
@@ -70,6 +69,7 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
     if settings["PenMet"] == "prob":
         dict_for_pandas = {"Input probability food security": settings["probF"],
                            "Input probability solvency": settings["probS"],
+                           "Number of crops": settings["num_crops"],
                            "Number of clusters": settings["k"],
                            "Used clusters": settings["k_using"],
                            "Yield projection": settings["yield_projection"],
@@ -86,6 +86,7 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                            "Import (excluding solvency constraint)": args["import"],
                            "Import (excluding solvency constraint, including theoretical export)": AddInfo_CalcParameters["import"],
                            "Additional import needed when including solvency constraint": meta_sol["add_needed_import"],
+                           "Total import needed when including solvency constraint": args["import"] + meta_sol["add_needed_import"],
                            "Expected income (to calculate guaranteed income)": list(AddInfo_CalcParameters["expected_incomes"]),
                            "Penalty for food shortage": args["rhoF"],
                            "Penalty for insolvency": args["rhoS"],
@@ -98,9 +99,11 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                            "Share of West Africa's population that is living in currently considered region (2015)": \
                                population_information["pop_area_ratio2015"],
                            "On average cultivated area per cluster": list(np.nanmean(crop_alloc, axis = (0,1))),
+                           "Average yearly total cultivated area": np.nanmean(np.nansum(crop_alloc, axis = (1,2))),
                            "Average food demand penalty (over years and samples)": np.nanmean(meta_sol["fd_penalty"]),
                            "Average solvency penalty (over samples)": np.mean(meta_sol["sol_penalty"]),
                            "Average cultivation costs per cluster (over years and samples)": list(np.nanmean(meta_sol["yearly_fixed_costs"], axis = (0,1))),
+                           "Average total cultivation costs": np.nanmean(np.nansum(meta_sol["yearly_fixed_costs"], axis = (1,2))),
                            "Expected total costs": meta_sol["exp_tot_costs"],
                            "Average food shortcomings (over years and samples)": np.nanmean(meta_sol["shortcomings"]),
                            "Number of occurrences per cluster where farmers make losses": list(meta_sol["num_years_with_losses"]),
@@ -111,15 +114,28 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                            "Resulting probability for food security for VSS": meta_sol_vss["probF"],
                            "Resulting probability for solvency for VSS": meta_sol_vss["probS"],
                            "Value of stochastic solution": VSS_value,
-                           "Validation value (deviation of total penalty costs)": validation_values["deviation_penalties"]}
+                           "Validation value (deviation of total penalty costs)": validation_values["deviation_penalties"],
+                           "Seed (for yield generation)": settings["seed"]}
+            
+        if not os.path.exists("ModelOutput/Pandas/" + file + ".csv"):
+            CreateEmptyPanda(file)
         
-        current_panda = pd.read_csv("ModelOutput/Pandas/current_panda.csv")
+        current_panda = pd.read_csv("ModelOutput/Pandas/" + file + ".csv")
         current_panda = current_panda.append(dict_for_pandas, ignore_index = True)
-        current_panda.to_csv("ModelOutput/Pandas/current_panda.csv", index = False)
         
+        saved = False
+        while saved == False:
+            try:
+                current_panda.to_csv("ModelOutput/Pandas/" + file + ".csv", index = False)
+            except PermissionError:
+                print(colored("Could not save updated panda.", "cyan"))
+                print(colored("Please close the corresponding csv if currently open.", "cyan"))
+                continue
+            saved = True
+            
     return(None)
 
-def SetUpNewPandas(name_old_pandas):
+def SetUpNewCurrentPandas(name_old_pandas):
     """
     Renames the current pandas csv according to the given name and sets up a
     new current pandas csv.
@@ -145,7 +161,7 @@ def SetUpNewPandas(name_old_pandas):
     
     return(None)
 
-def CreateEmptyPanda():
+def CreateEmptyPanda(file = "current_panda"):
     """
     Creating a new empty pandas object with the correct columns.
 
@@ -159,9 +175,9 @@ def CreateEmptyPanda():
         colnames = pickle.load(fp)
     
     new_panda = pd.DataFrame(columns = colnames)
-    new_panda.to_csv("ModelOutput/Pandas/current_panda.csv", index = False)
+    new_panda.to_csv("ModelOutput/Pandas/" + file + ".csv", index = False)
 
-    return(new_panda)
+    return(None)
 
 def OpenPanda(file = "current_panda"):
  
@@ -179,228 +195,28 @@ def OpenPanda(file = "current_panda"):
             res.append(float(arg[j]))
         return(res)
     
+    # open panda without conversion
+    panda = pd.read_csv("ModelOutput/Pandas/" + file + ".csv")
     
+    # get conversion for all columns that could be in the file
     with open("ModelOutput/Pandas/ColumnTypes.txt", "rb") as fp:
         dict_convert = pickle.load(fp)
         
+    # get the subset of columns available in the demanded panda file
+    dict_convert = {k:dict_convert[k] for k in  panda.columns.to_list()}
+        
+    # substitute conversions that need local function
     for key in dict_convert.keys():
         if dict_convert[key] == "list of floats":
             dict_convert[key] = __ConvertListsFloats
         elif dict_convert[key] == "list of ints":
             dict_convert[key] = __ConvertListsInts
         
-    panda = pd.read_csv("ModelOutput/Pandas/current_panda.csv", converters = dict_convert)
+    # re-read panda with conversions
+    panda = pd.read_csv("ModelOutput/Pandas/" + file + ".csv", converters = dict_convert)
     
     return(panda)
-
-
-def ReadFromPandaSingleClusterGroup(file = "current_panda", 
-                 output_var = None,
-                 probF = 0.99,
-                 probS = 0.95, 
-                 rhoF = None,
-                 rhoS = None,
-                 k = 9,     
-                 k_using = [3],
-                 yield_projection = "fixed",   
-                 sim_start = 2017,
-                 pop_scenario = "fixed",
-                 risk = 0.05,       
-                 tax = 0.01,       
-                 perc_guaranteed = 0.9,
-                 ini_fund = 0,            
-                 N = None, 
-                 validation_size = None,
-                 T = 25,
-                 seed = 201120):
-    
-    if output_var is None:
-        sys.exit("Please probide an output variable.")
-    
-    panda = OpenPanda(file = file)
-    
-    if type(output_var) is str:
-        output_var = [output_var]
-        
-    
-    output_var_fct = output_var.copy()
-    output_var_fct.insert(0, "Used clusters")
-    tmp = output_var_fct.copy()
-    tmp.append("Sample size")
-    tmp.append("Sample size for validation")
-    sub_panda = panda[tmp]\
-                    [list((panda.loc[:, "Input probability food security"] == probF) & \
-                     (panda.loc[:, "Input probability solvency"] == probS) & \
-                     (panda.loc[:, "Number of clusters"] == k) & \
-                     (panda.loc[:, "Used clusters"] == k_using) & \
-                     (panda.loc[:, "Yield projection"] == yield_projection) & \
-                     (panda.loc[:, "Simulation start"] == sim_start) & \
-                     (panda.loc[:, "Population scenario"] == pop_scenario) & \
-                     (panda.loc[:, "Risk level covered"] == risk) & \
-                     (panda.loc[:, "Tax rate"] == tax) & \
-                     (panda.loc[:, "Share of income that is guaranteed"] == perc_guaranteed) & \
-                     (panda.loc[:, "Initial fund size"] == ini_fund) & \
-                     (panda.loc[:, "Number of covered years"] == T))]
-                  
-    # no results for these settings
-    if sub_panda.empty:
-        sys.exit("Requested data is not available.")
-        
-    # finding right sample size
-    if N is not None:
-        sub_panda = sub_panda[output_var_fct][sub_panda["Sample size"] == N]
-        # nor results for right sample siize
-        if sub_panda.empty:
-            sys.exit("Reyuested data is not available.")
-        return(sub_panda)
-        
-    # results for highest sample size for these settings
-    sub_panda = sub_panda[sub_panda["Sample size"] == max(sub_panda["Sample size"])]
-    # if multiple runs for highest sample size, find highest validation sample size
-    if len(sub_panda) == 1:
-        sub_panda = sub_panda[output_var_fct][sub_panda["Sample size for validation"] == \
-                                          max(sub_panda["Sample size for validation"])]
-    else:
-        sub_panda = sub_panda[output_var_fct]
-                
-    return(sub_panda)
-    
-def ReadFromPanda(file = "current_panda", 
-                 output_var = None,
-                 k_using = [3],
-                 **kwargs):
-    
-    if output_var is None:
-        sys.exit("Please probide an output variable.")
-    elif type(output_var) is str:
-        output_var = [output_var]
-
-        
-    # prepare cluster groups
-    if type(k_using) is tuple:
-       k_using = [str(list(k_using))]
-    elif (type(k_using) is list) and (type(k_using[0]) is not int):
-        k_using = [str(list(k_using_tmp)) for k_using_tmp in k_using]
-    elif type(k_using) is int:
-        k_using = [str([k_using])]
-    else:
-        k_using = [str(k_using)]
-    
-    sub_panda = pd.DataFrame()
-    for k_using_tmp in k_using:
-        sub_panda = sub_panda.append(ReadFromPandaSingleClusterGroup(file = file, \
-                                                        output_var = output_var, \
-                                                        k_using = k_using_tmp, \
-                                                        **kwargs))
-        
-    return(sub_panda)
-            
-
-def __ExtractResPanda(sub_panda, out_type, output_var, size):
-
-    output_var_fct = output_var.copy()
-    
-    if out_type == "agg":
-        output_var_fct.insert(0, "Group size")
-        res = pd.DataFrame(columns = output_var_fct, index = [size])
-        res.iloc[0,0] = size
-        res.iloc[0,1:] = sub_panda[output_var].sum()
-        res = res.add_suffix(" - Aggregated over all groups")
-        res.rename(columns = {"Group size - Aggregated over all groups": \
-                              "Group size"}, inplace = True)
-        return(res)
-    
-    if out_type == "median":
-        colnames = ["Group size"]
-        for var in output_var_fct:
-            colnames.append(var + " - Minimum")
-            colnames.append(var + " - Median")
-            colnames.append(var + " - Maximum")
-        res = pd.DataFrame(columns = colnames, index = [size])
-        res.iloc[0,0] = size
-        for idx, var in enumerate(output_var_fct):
-            res.iloc[0, idx*3 + 1] = sub_panda[var].min()
-            res.iloc[0, idx*3 + 2] = sub_panda[var].median()
-            res.iloc[0, idx*3 + 3] = sub_panda[var].max()
-        return(res)
-
-def PandaToPlot_GetResults(file = "current_panda", 
-                           output_var = None,
-                           out_type = "agg", # or median
-                           grouping_aim = "Dissimilar",
-                           adjacent = False,
-                           **kwargs):
-    
-    add = ""
-    if adjacent:
-        add = "Adj"
-       
-    res = pd.DataFrame()
-    
-    for size in [1,2,3,5]:
-        with open("InputData/Clusters/ClusterGroups/GroupingSize" \
-                      + str(size) + grouping_aim + add + ".txt", "rb") as fp:
-                BestGrouping = pickle.load(fp)
-    
-        panda_tmp = ReadFromPanda(file = file, \
-                                  output_var = output_var, \
-                                  k_using = BestGrouping, \
-                                  **kwargs)
-            
-        res = res.append(__ExtractResPanda(panda_tmp, out_type, output_var, size))
-            
-    return(res)
-
-def PlotPandaMedian(panda_file = "current_panda", 
-                    output_var = None,
-                    grouping_aim = "Dissimilar",
-                    adjacent = False,
-                    figsize = None,
-                    subplots = True,
-                    plt_file = None,
-                    **kwargs):
-    
-    if figsize is None:
-        from ModelCode.GeneralSettings import figsize
-    
-    with open("ModelOutput/Pandas/ColumnUnits.txt", "rb") as fp:
-        units = pickle.load(fp)
-    
-    res = PandaToPlot_GetResults(panda_file, output_var, "median", grouping_aim, adjacent, **kwargs)
-    
-    if output_var is str:
-        output_var = [output_var]
-    
-    if subplots:
-        fig = plt.figure(figsize = figsize)
-        fig.subplots_adjust(bottom=0.2, top=0.9, left=0.1, right=0.9,
-                    wspace=0.2, hspace=0.35)
-        rows = int(np.floor(np.sqrt(len(output_var))))
-        cols = int(np.ceil(np.sqrt(len(output_var))))
-    
-    for idx, var in enumerate(output_var):
-        if subplots:
-            fig.add_subplot(rows, cols, idx + 1)
-            plt.suptitle("Development depending on colaboration of clusters", \
-                  fontsize = 24)
-        else:
-            fig = plt.figure(figsize = figsize)
-            plt.title("Development depending on colaboration of clusters", \
-                  fontsize = 24, pad = 15)
-        plt.scatter([1, 2, 3, 4], res[var + " - Maximum"], marker = "^", label = "Maximum")
-        plt.scatter([1, 2, 3, 4], res[var + " - Median"], marker = "X", label = "Median")
-        plt.scatter([1, 2, 3, 4], res[var + " - Minimum"], label = "Minimum")
-        plt.xticks([1, 2, 3, 4, 5], [9, 5, 3, 2, 1], fontsize = 16)
-        plt.yticks(fontsize = 16)
-        plt.xlabel("Number of different cluster groups", fontsize = 20)
-        plt.ylabel(var + " " + units[var], fontsize = 20)
-        plt.legend(fontsize = 20)
-        
-    if plt_file is not None:
-        fig.savefig("Figures/PandaPlots/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
-        
-    return(None)
-    
+   
 
 def OverViewCurrentPandaVariables():
     
@@ -412,6 +228,7 @@ def OverViewCurrentPandaVariables():
 def SetUpPandaDicts():
     units = {"Input probability food security": "",
         "Input probability solvency": "",
+        "Number of crops": "",
         "Number of clusters": "",
         "Used clusters": "",
         "Yield projection": "",
@@ -428,6 +245,7 @@ def SetUpPandaDicts():
         "Import (excluding solvency constraint)": "[$10^{12}\,kcal$]",
         "Import (excluding solvency constraint, including theoretical export)": "[$10^{12}\,kcal$]",
         "Additional import needed when including solvency constraint": "[$10^{12}\,kcal$]",
+        "Total import needed when including solvency constraint": "[$10^{12}\,kcal$]",
         "Expected income (to calculate guaranteed income)": "[$10^9\,\$$]",
         "Penalty for food shortage": "[$\$/10^3\,kcal$]",
         "Penalty for insolvency": "[$\$/\$$]",
@@ -439,9 +257,11 @@ def SetUpPandaDicts():
         "Share of years/clusters with unprofitable maize yields": "",
         "Share of West Africa's population that is living in currently considered region (2015)": "",
         "On average cultivated area per cluster": "[$10^9\,ha$]",
+        "Average yearly total cultivated area": "[$10^9\,ha$]",
         "Average food demand penalty (over years and samples)": "[$10^9\,\$$]",
         "Average solvency penalty (over samples)": "[$10^9\,\$$]",
         "Average cultivation costs per cluster (over years and samples)": "[$10^9\,\$$]",
+        "Average total cultivation costs": "[$10^9\,\$$]",
         "Expected total costs": "[$10^9\,\$$]",
         "Average food shortcomings (over years and samples)": "[$10^{12}\,kcal$]",
         "Number of occurrences per cluster where farmers make losses": "",
@@ -452,12 +272,14 @@ def SetUpPandaDicts():
         "Resulting probability for food security for VSS": "",
         "Resulting probability for solvency for VSS": "",
         "Value of stochastic solution": "[$10^9\,\$$]",
-        "Validation value (deviation of total penalty costs)": ""}    
+        "Validation value (deviation of total penalty costs)": "",
+        "Seed (for yield generation)": ""}    
     
     convert =  {"Input probability food security": float,
          "Input probability solvency": float,
+         "Number of crops": int,
          "Number of clusters": int,
-         "Used clusters": str,
+         "Used clusters": "list of ints",
          "Yield projection": str,
          "Simulation start": int,
          "Population scenario": str,
@@ -472,6 +294,7 @@ def SetUpPandaDicts():
          "Import (excluding solvency constraint)": float,
          "Import (excluding solvency constraint, including theoretical export)": float,
          "Additional import needed when including solvency constraint": float,
+         "Total import needed when including solvency constraint": float,
          "Expected income (to calculate guaranteed income)": "list of floats",
          "Penalty for food shortage": float,
          "Penalty for insolvency": float,
@@ -484,9 +307,11 @@ def SetUpPandaDicts():
          "Share of West Africa's population that is living in currently considered region (2015)": \
              float,
          "On average cultivated area per cluster": "list of floats",
+        "Average yearly total cultivated area": float,
          "Average food demand penalty (over years and samples)": float,
          "Average solvency penalty (over samples)": float,
          "Average cultivation costs per cluster (over years and samples)": "list of floats",
+         "Average total cultivation costs": float,
          "Expected total costs": float,
          "Average food shortcomings (over years and samples)": float,
          "Number of occurrences per cluster where farmers make losses": "list of ints",
@@ -497,10 +322,12 @@ def SetUpPandaDicts():
          "Resulting probability for food security for VSS": float,
          "Resulting probability for solvency for VSS": float,
          "Value of stochastic solution": float,
-         "Validation value (deviation of total penalty costs)": float}
+         "Validation value (deviation of total penalty costs)": float,
+         "Seed (for yield generation)": int}
         
     colnames = ['Input probability food security', 
         'Input probability solvency', 
+        'Number of crops',
         'Number of clusters', 
         'Used clusters', 
         'Yield projection', 
@@ -517,6 +344,7 @@ def SetUpPandaDicts():
         'Import (excluding solvency constraint)', 
         'Import (excluding solvency constraint, including theoretical export)', 
         'Additional import needed when including solvency constraint', 
+        'Total import needed when including solvency constraint', 
         'Expected income (to calculate guaranteed income)', 
         'Penalty for food shortage', 
         'Penalty for insolvency', 
@@ -528,9 +356,11 @@ def SetUpPandaDicts():
         'Share of years/clusters with unprofitable maize yields', 
         'Share of West Africa\'s population that is living in currently considered region (2015)', 
         'On average cultivated area per cluster', 
+        'Average yearly total cultivated area',
         'Average food demand penalty (over years and samples)', 
         'Average solvency penalty (over samples)', 
         'Average cultivation costs per cluster (over years and samples)', 
+        'Average total cultivation costs',
         'Expected total costs', 
         'Average food shortcomings (over years and samples)', 
         'Number of occurrences per cluster where farmers make losses', 
@@ -541,7 +371,8 @@ def SetUpPandaDicts():
         'Resulting probability for food security for VSS', 
         'Resulting probability for solvency for VSS', 
         'Value of stochastic solution', 
-        'Validation value (deviation of total penalty costs)']
+        'Validation value (deviation of total penalty costs)',
+        'Seed (for yield generation)']
     
     with open("ModelOutput/Pandas/ColumnUnits.txt", "wb") as fp:
         pickle.dump(units, fp)
@@ -553,3 +384,4 @@ def SetUpPandaDicts():
         pickle.dump(convert, fp)
         
     return(None)
+

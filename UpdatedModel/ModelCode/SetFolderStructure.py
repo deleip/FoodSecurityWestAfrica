@@ -12,8 +12,8 @@ import pickle
 import shutil
 from termcolor import colored
 
-from ModelCode.PandaFunctions import CreateEmptyPanda
-from ModelCode.PandaFunctions import SetUpPandaDicts
+from ModelCode.PandaGeneration import SetUpPandaDicts
+from ModelCode.PandaGeneration import CreateEmptyPanda
 
 # %% ################ SETTING UP FOLDER STRUCTURE FOR RESULTS #################
 
@@ -42,6 +42,8 @@ def CheckFolderStructure():
         os.mkdir("Figures/rhoSvsDebts")
     if not os.path.isdir("Figures/PandaPlots"):
         os.mkdir("Figures/PandaPlots")
+    if not os.path.isdir("Figures/PandaPlots/DevelopmentColaboration"):
+        os.mkdir("Figures/PandaPlots/DevelopmentColaboration")
         
     if not os.path.isdir("InputData"):
         warn.warn("You are missing the input data")

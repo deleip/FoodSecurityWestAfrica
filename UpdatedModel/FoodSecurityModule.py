@@ -36,11 +36,15 @@ from ModelCode.AnalysisAndComparison import GetResultsToCompare
 
 from ModelCode.Auxiliary import filename
 from ModelCode.Auxiliary import MakeList
-from ModelCode.PandaFunctions import OpenPanda
-from ModelCode.PandaFunctions import ReadFromPanda
-from ModelCode.PandaFunctions import PandaToPlot_GetResults
-from ModelCode.PandaFunctions import PlotPandaMedian
-from ModelCode.PandaFunctions import OverViewCurrentPandaVariables
+from ModelCode.PandaGeneration import OpenPanda
+from ModelCode.PandaGeneration import SetUpNewCurrentPandas
+from ModelCode.PandaGeneration import OverViewCurrentPandaVariables
+from ModelCode.PandaHandling import ReadFromPanda
+from ModelCode.PandaHandling import PandaToPlot_GetResults
+from ModelCode.PandaHandling import PlotPandaMedian
+from ModelCode.PandaHandling import PlotPandaAggregate
+from ModelCode.PandaHandling import UpdatePandaWithAddInfo
+from ModelCode.PandaHandling import MainPandaPlotsFixedSettings
 
 # set up folder structure (if not already done)
 CheckFolderStructure()
