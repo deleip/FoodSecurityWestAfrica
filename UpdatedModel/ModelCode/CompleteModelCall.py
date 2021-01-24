@@ -15,7 +15,7 @@ from termcolor import colored
 
 from ModelCode.SetFolderStructure import CheckFolderStructure
 from ModelCode.SettingsParameters import DefaultSettingsExcept
-from ModelCode.Auxiliary import filename
+from ModelCode.Auxiliary import GetFilename
 from ModelCode.PandaGeneration import write_to_pandas
 from ModelCode.PlottingModelOutput import PlotModelOutput
 from ModelCode.Auxiliary import printing
@@ -107,7 +107,7 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
     settings = DefaultSettingsExcept(**kwargs)
     
     # get filename of model results
-    fn = filename(settings)
+    fn = GetFilename(settings)
     
     # if model output does not exist yet it is calculated
     if not os.path.isfile("ModelOutput/SavedRuns/" + fn + ".txt"):
@@ -132,22 +132,11 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
     # if it does, it is loaded
     else:            
         printing("Loading results", console_output = console_output, logs_on = False)
-        with open("ModelOutput/SavedRuns/" + fn + ".txt", "rb") as fp:
-            pickle.load(fp) # info
-            settings = pickle.load(fp)
-            args = pickle.load(fp)
-            AddInfo_CalcParameters = pickle.load(fp)
-            yield_information = pickle.load(fp)
-            population_information = pickle.load(fp)
-            status = pickle.load(fp)
-            all_durations = pickle.load(fp)
-            crop_alloc = pickle.load(fp)
-            crop_alloc_vss = pickle.load(fp)
-            VSS_value = pickle.load(fp)
-            validation_values = pickle.load(fp)
-                
-        meta_sol = GetMetaInformation(crop_alloc, args, args["rhoF"], args["rhoS"])
-        meta_sol_vss =  GetMetaInformation(crop_alloc_vss, args, args["rhoF"], args["rhoS"])
+        
+        settings, args, AddInfo_CalcParameters, yield_information, \
+        population_information, status, all_durations, crop_alloc, meta_sol, \
+        crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \
+            LoadModelResults(fn)
         
     # if a plottitle is provided, crop allocations over time are plotted
     if plotTitle is not None:
@@ -305,10 +294,11 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     all_durations["Validation"] = validation_end - validation_start
 
     # add results to pandas overview
+    fn = GetFilename(settings)
     write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                     population_information, crop_alloc, \
                     meta_sol, meta_sol_vss, VSS_value, validation_values, \
-                    console_output, panda_file)     
+                    fn, console_output, panda_file)     
             
     # timing
     all_end  = tm.time()   
@@ -319,8 +309,6 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     
     # saving results
     if save:
-        fn = filename(settings)
-        
         info = ["settings", "args", "yield_information", "population_information", \
                 "status", "durations", "crop_alloc", "crop_alloc_vss", \
                 "VSS_value", "validation_values"]
@@ -353,4 +341,24 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
            crop_alloc_vss, meta_sol_vss, VSS_value, validation_values)          
 
 
-
+def LoadModelResults(filename):
+    with open("ModelOutput/SavedRuns/" + filename + ".txt", "rb") as fp:
+        pickle.load(fp) # info
+        settings = pickle.load(fp)
+        args = pickle.load(fp)
+        AddInfo_CalcParameters = pickle.load(fp)
+        yield_information = pickle.load(fp)
+        population_information = pickle.load(fp)
+        status = pickle.load(fp)
+        all_durations = pickle.load(fp)
+        crop_alloc = pickle.load(fp)
+        crop_alloc_vss = pickle.load(fp)
+        VSS_value = pickle.load(fp)
+        validation_values = pickle.load(fp)
+            
+    meta_sol = GetMetaInformation(crop_alloc, args, args["rhoF"], args["rhoS"])
+    meta_sol_vss =  GetMetaInformation(crop_alloc_vss, args, args["rhoF"], args["rhoS"])
+    
+    return(settings, args, AddInfo_CalcParameters, yield_information, \
+           population_information, status, all_durations, crop_alloc, meta_sol, \
+           crop_alloc_vss, meta_sol_vss, VSS_value, validation_values) 

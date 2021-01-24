@@ -91,7 +91,7 @@ def printing(content, console_output = None, flush = True, logs_on = None):
         
     return(None)
     
-def filename(settings, groupSize = "", groupAim = "", \
+def GetFilename(settings, groupSize = "", groupAim = "", \
              adjacent = False, allNames = False):
     """
     Combines all settings to a single file name to save results.
@@ -128,7 +128,10 @@ def filename(settings, groupSize = "", groupAim = "", \
         settingsTmp["k_using"] = list(settingsTmp["k_using"])
     if type(settingsTmp["k_using"]) is list:
         settingsTmp["k_using"] = MakeList(settingsTmp["k_using"])
-        
+    
+    if sorted(settingsTmp["k_using"]) == list(range(1, settingsTmp["k"] + 1)):
+        settingsTmp["k_using"] = ["All"]
+    
     for key in settingsTmp.keys():
         if type(settingsTmp[key]) is not list:
             settingsTmp[key] = [settingsTmp[key]]

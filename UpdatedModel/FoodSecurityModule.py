@@ -33,8 +33,9 @@ from ModelCode.PlottingModelOutput import PlotModelOutput
 from ModelCode.AnalysisAndComparison import CompareCropAllocs
 from ModelCode.AnalysisAndComparison import CompareCropAllocRiskPooling
 from ModelCode.AnalysisAndComparison import GetResultsToCompare
+from ModelCode.AnalysisAndComparison import CropAreasDependingOnColaboration
 
-from ModelCode.Auxiliary import filename
+from ModelCode.Auxiliary import GetFilename
 from ModelCode.Auxiliary import MakeList
 from ModelCode.PandaGeneration import OpenPanda
 from ModelCode.PandaGeneration import SetUpNewCurrentPandas

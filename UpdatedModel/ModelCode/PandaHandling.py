@@ -12,7 +12,7 @@ import pickle
 import matplotlib.pyplot as plt
 from textwrap import wrap
 
-from ModelCode.CompleteModelCall import FoodSecurityProblem
+from ModelCode.CompleteModelCall import LoadModelResults
 from ModelCode.PandaGeneration import OpenPanda
 from ModelCode.PandaGeneration import CreateEmptyPanda
 from ModelCode.PandaGeneration import write_to_pandas
@@ -20,7 +20,7 @@ from ModelCode.PandaGeneration import SetUpPandaDicts
 
 # %% ############## FUNCTIONS DEALING WITH THE RESULTS PANDA CSV ##############
 
-def UpdatePandaWithAddInfo(OldFile, console_output = None):
+def UpdatePandaWithAddInfo(OldFile = "current_panda", console_output = None):
     
     os.remove("ModelOutput/Pandas/ColumnUnits.txt")
     os.remove("ModelOutput/Pandas/ColumnNames.txt")
@@ -40,41 +40,18 @@ def UpdatePandaWithAddInfo(OldFile, console_output = None):
     for i in range(0, len(oldPanda)):
         if console_output:
             sys.stdout.write("\r     Updating row " + str(i + 1) + " of " + str(len(oldPanda)))
-        
-        if oldPanda.at[i,'Input probability food security'] is None:
-            PenMet = "penalties"
-        else:
-            PenMet = "prob"
+            
+        filename = oldPanda.at[i,'Filename for full results']
         
         settings, args, AddInfo_CalcParameters, yield_information, \
         population_information, status, durations, crop_alloc, meta_sol, \
-        crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
-            FoodSecurityProblem(console_output = False,
-                                logs_on = False,
-                                PenMet = PenMet,
-                                probF = oldPanda.at[i,'Input probability food security'],
-                                probS = oldPanda.at[i,'Input probability solvency'], 
-                                rhoF = oldPanda.at[i,'Penalty for food shortage'],
-                                rhoS = oldPanda.at[i,'Penalty for insolvency'],
-                                k = oldPanda.at[i,'Number of clusters'],     
-                                k_using = oldPanda.at[i,'Used clusters'],
-                                num_crops = oldPanda.at[i,'Number of crops'],
-                                yield_projection = oldPanda.at[i,'Yield projection'],   
-                                sim_start = oldPanda.at[i,'Simulation start'],
-                                pop_scenario = oldPanda.at[i,'Population scenario'],
-                                risk = oldPanda.at[i,'Risk level covered'],                          
-                                N = oldPanda.at[i,'Sample size'], 
-                                validation_size = oldPanda.at[i,'Sample size for validation'],
-                                T = oldPanda.at[i,'Number of covered years'],
-                                seed = oldPanda.at[i,'Seed (for yield generation)'],
-                                tax = oldPanda.at[i,'Tax rate'],
-                                perc_guaranteed = oldPanda.at[i,'Share of income that is guaranteed'],
-                                ini_fund = oldPanda.at[i,'Initial fund size'])
+        crop_alloc_vs, meta_sol_vss, VSS_value, validation_values = \
+            LoadModelResults(filename)
             
         write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                         population_information, crop_alloc, \
                         meta_sol, meta_sol_vss, VSS_value, validation_values, \
-                        console_output = False, file = OldFile + "_updated")
+                        filename, console_output = False, file = OldFile + "_updated")
 
     # remove old panda file
     os.remove("ModelOutput/Pandas/" + OldFile + ".csv")
@@ -85,24 +62,24 @@ def UpdatePandaWithAddInfo(OldFile, console_output = None):
     return(None)
 
 def ReadFromPandaSingleClusterGroup(file = "current_panda", 
-                 output_var = None,
-                 probF = 0.99,
-                 probS = 0.95, 
-                 rhoF = None,
-                 rhoS = None,
-                 k = 9,     
-                 k_using = [3],
-                 yield_projection = "fixed",   
-                 sim_start = 2017,
-                 pop_scenario = "fixed",
-                 risk = 0.05,       
-                 tax = 0.01,       
-                 perc_guaranteed = 0.9,
-                 ini_fund = 0,            
-                 N = None, 
-                 validation_size = None,
-                 T = 25,
-                 seed = 201120):
+                                     output_var = None,
+                                     probF = 0.99,
+                                     probS = 0.95, 
+                                     rhoF = None,
+                                     rhoS = None,
+                                     k = 9,     
+                                     k_using = [3],
+                                     yield_projection = "fixed",   
+                                     sim_start = 2017,
+                                     pop_scenario = "fixed",
+                                     risk = 0.05,       
+                                     tax = 0.01,       
+                                     perc_guaranteed = 0.9,
+                                     ini_fund = 0,            
+                                     N = None, 
+                                     validation_size = None,
+                                     T = 25,
+                                     seed = 201120):
         
     if output_var is None:
         sys.exit("Please probide an output variable.")
@@ -114,7 +91,6 @@ def ReadFromPandaSingleClusterGroup(file = "current_panda",
     
     if type(output_var) is str:
         output_var = [output_var]
-        
     
     output_var_fct = output_var.copy()
     output_var_fct.insert(0, "Used clusters")
@@ -182,13 +158,13 @@ def ReadFromPanda(file = "current_panda",
         
     # prepare cluster groups
     if type(k_using) is tuple:
-       k_using = [list(k_using)]
+       k_using = [sorted(list(k_using))]
     elif (type(k_using) is list) and (type(k_using[0]) is not int):
-        k_using = [list(k_using_tmp) for k_using_tmp in k_using]
+        k_using = [sorted(list(k_using_tmp)) for k_using_tmp in k_using]
     elif type(k_using) is int:
         k_using = [[k_using]]
     else:
-        k_using = [k_using]
+        k_using = [sorted(k_using)]
     
     sub_panda = pd.DataFrame()
     for k_using_tmp in k_using:
@@ -354,7 +330,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
         plt.ylim((min_y, res[var + " - Aggregated over all groups"].max()*1.1))
         plt.yticks(fontsize = 16)
         plt.xlabel("Number of different cluster groups", fontsize = 20)
-        plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 16)
+        plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
         
     if plt_file is not None:
         fig.savefig("Figures/PandaPlots/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)

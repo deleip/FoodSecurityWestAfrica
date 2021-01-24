@@ -17,7 +17,7 @@ from ModelCode.Auxiliary import printing
 def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                     population_information, crop_alloc, \
                     meta_sol, meta_sol_vss, VSS_value, validation_values, \
-                    console_output, file):
+                    fn_fullresults, console_output, file):
     """
     Adds information on the model run to the current pandas csv.
     
@@ -115,7 +115,8 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                            "Resulting probability for solvency for VSS": meta_sol_vss["probS"],
                            "Value of stochastic solution": VSS_value,
                            "Validation value (deviation of total penalty costs)": validation_values["deviation_penalties"],
-                           "Seed (for yield generation)": settings["seed"]}
+                           "Seed (for yield generation)": settings["seed"],
+                           "Filename for full results": fn_fullresults}
             
         if not os.path.exists("ModelOutput/Pandas/" + file + ".csv"):
             CreateEmptyPanda(file)
@@ -241,13 +242,13 @@ def SetUpPandaDicts():
         "Sample size": "",
         "Sample size for validation": "",
         "Number of covered years": "",
-        "Average food demand": "[$10^{12}\,kcal$]",
-        "Import (excluding solvency constraint)": "[$10^{12}\,kcal$]",
-        "Import (excluding solvency constraint, including theoretical export)": "[$10^{12}\,kcal$]",
+        "Average food demand": "[$10^{12}\,$kcal]",
+        "Import (excluding solvency constraint)": "[$10^{12}\,$kcal]",
+        "Import (excluding solvency constraint, including theoretical export)": "[$10^{12}\,$kcal]",
         "Additional import needed when including solvency constraint": "[$10^{12}\,kcal$]",
-        "Total import needed when including solvency constraint": "[$10^{12}\,kcal$]",
+        "Total import needed when including solvency constraint": "[$10^{12}\,$kcal]",
         "Expected income (to calculate guaranteed income)": "[$10^9\,\$$]",
-        "Penalty for food shortage": "[$\$/10^3\,kcal$]",
+        "Penalty for food shortage": "[$\$/10^3\,$kcal]",
         "Penalty for insolvency": "[$\$/\$$]",
         "Necessary debt (excluding food security constraint)": "[$10^9\,\$$]",
         "Necessary debt (including food security constraint)": "[$10^9\,\$$]",
@@ -263,7 +264,7 @@ def SetUpPandaDicts():
         "Average cultivation costs per cluster (over years and samples)": "[$10^9\,\$$]",
         "Average total cultivation costs": "[$10^9\,\$$]",
         "Expected total costs": "[$10^9\,\$$]",
-        "Average food shortcomings (over years and samples)": "[$10^{12}\,kcal$]",
+        "Average food shortcomings (over years and samples)": "[$10^{12}\,$kcal]",
         "Number of occurrences per cluster where farmers make losses": "",
         "Average income per cluster in final run (over years and samples)": "[$10^9\,\$$]",
         "Average government payouts per cluster (over samples)": "[$10^9\,\$$]",
@@ -273,7 +274,8 @@ def SetUpPandaDicts():
         "Resulting probability for solvency for VSS": "",
         "Value of stochastic solution": "[$10^9\,\$$]",
         "Validation value (deviation of total penalty costs)": "",
-        "Seed (for yield generation)": ""}    
+        "Seed (for yield generation)": "",
+        "Filename for full results": ""}    
     
     convert =  {"Input probability food security": float,
          "Input probability solvency": float,
@@ -323,7 +325,8 @@ def SetUpPandaDicts():
          "Resulting probability for solvency for VSS": float,
          "Value of stochastic solution": float,
          "Validation value (deviation of total penalty costs)": float,
-         "Seed (for yield generation)": int}
+         "Seed (for yield generation)": int,
+         "Filename for full results": str}
         
     colnames = ['Input probability food security', 
         'Input probability solvency', 
@@ -372,7 +375,8 @@ def SetUpPandaDicts():
         'Resulting probability for solvency for VSS', 
         'Value of stochastic solution', 
         'Validation value (deviation of total penalty costs)',
-        'Seed (for yield generation)']
+        'Seed (for yield generation)',
+        'Filename for full results']
     
     with open("ModelOutput/Pandas/ColumnUnits.txt", "wb") as fp:
         pickle.dump(units, fp)
