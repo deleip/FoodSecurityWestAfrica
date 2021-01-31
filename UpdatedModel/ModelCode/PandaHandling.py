@@ -259,7 +259,7 @@ def PlotPandaMedian(panda_file = "current_panda",
         fig.subplots_adjust(bottom=0.2, top=0.9, left=0.1, right=0.9,
                     wspace=0.2, hspace=0.35)
         rows = int(np.floor(np.sqrt(len(output_var))))
-        cols = int(np.ceil(np.sqrt(len(output_var))))
+        cols = int(np.ceil(len(output_var)/rows))
     
     for idx, var in enumerate(output_var):
         if subplots:
@@ -396,5 +396,13 @@ def MainPandaPlotsFixedSettings(panda_file = "current_panda",
                        plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_PenaltiesPaied",
                        **kwargs)
         
-    
+    PlotPandaMedian(panda_file = panda_file,
+                    output_var=['Value of stochastic solution', \
+                                'Resulting probability for food security for VSS',\
+                                'Resulting probability for solvency for VSS'],
+                    grouping_aim = grouping_aim,
+                    adjacent = adjacent,
+                    plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_VSS",
+                    **kwargs)
+        
     return(None)

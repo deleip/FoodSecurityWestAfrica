@@ -74,9 +74,22 @@ for size, N, M in comb:
                 FS.FoodSecurityProblem(validation_size = M,
                                        plotTitle = "Aim: " + aim  + ", Adjacent: False",
                                        k_using = list(cluster_active),
-                                       N = N)
+                                      N = N)
 
-# %% ##################### 2. RUNS USING ONE CLUSTER ##########################
+
+# %% ##### 3. PLOTTING RESULTS  #####
+
+# all default settings so no **kwargs
+FS.CropAreasDependingOnColaboration(panda_file = "current_panda", 
+                                    groupAim = "Dissimilar",
+                                    adjacent = False,
+                                    console_output = None)
+
+FS.MainPandaPlotsFixedSettings(panda_file = "current_panda", 
+                               grouping_aim = "Dissimilar",
+                               adjacent = False)
+
+# %% ##################### 4. RUNS USING ONE CLUSTER ##########################
 
 # We use cluster 3 for some analysis using just a single cluster. 
 # TODO: why do we use 3 and not one of the others?
