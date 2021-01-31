@@ -357,7 +357,7 @@ def MainPandaPlotsFixedSettings(panda_file = "current_panda",
                        **kwargs)
         
     PlotPandaAggregate(panda_file = panda_file,
-                       output_var=['Import (excluding solvency constraint, including theoretical export)', \
+                       output_var=['Necessary add. import (excluding solvency constraint, including theoretical export)', \
                                    'Necessary debt (excluding food security constraint)'],
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,
@@ -386,6 +386,14 @@ def MainPandaPlotsFixedSettings(panda_file = "current_panda",
                     grouping_aim = grouping_aim,
                     adjacent = adjacent,
                     plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_ResProbabilities",
+                    **kwargs)
+
+    PlotPandaMedian(panda_file = panda_file,
+                    output_var=['Average food shortcomings (over all years and samples with shortcomings)', \
+                                'Average final fund (over all samples with negative final fund)'],
+                    grouping_aim = grouping_aim,
+                    adjacent = adjacent,
+                    plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_ShortcomingConstraints",
                     **kwargs)
         
     PlotPandaAggregate(panda_file = panda_file,

@@ -284,10 +284,14 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
                 "probS": prob_staying_solvent}
     
     if args["probF"] is not None:
-        meta_sol["add_needed_import"] = np.quantile(meta_sol["shortcomings"]\
+        meta_sol["necessary_import"] = np.quantile(meta_sol["shortcomings"]\
                  [~np.isnan(meta_sol["shortcomings"])].flatten(), args["probF"])
+    else:
+        meta_sol["necessary_import"] = None 
     if args["probS"] is not None:
         meta_sol["necessary_debt"] = - np.quantile(meta_sol["final_fund"], \
                                                    1 - args["probS"])
+    else:
+        meta_sol["necessary_debt"] = None 
     
     return(meta_sol)  

@@ -246,21 +246,29 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     # get the right penalties
     penalties_start  = tm.time()
     if settings["PenMet"] == "prob":
-        rhoF, rhoS, necessary_debt, needed_import = GetPenalties(settings, args, \
-                                        yield_information, console_output = console_output)
+        rhoF, rhoS, necessary_debt, necessary_import, \
+        maxProbFareaF, maxProbSareaF, maxProbFareaS, maxProbSareaS = \
+            GetPenalties(settings, args, yield_information, console_output = console_output)
         args["rhoF"] = rhoF
         args["rhoS"] = rhoS
         
         AddInfo_CalcParameters["necessary_debt"] = necessary_debt
-        AddInfo_CalcParameters["import"] = needed_import
-        if needed_import > 0:
-            args["import"] = needed_import
+        AddInfo_CalcParameters["necessary_import"] = necessary_import
+        AddInfo_CalcParameters["maxProbFareaF"] = maxProbFareaF
+        AddInfo_CalcParameters["maxProbSareaF"] = maxProbSareaF
+        AddInfo_CalcParameters["maxProbFareaS"] = maxProbFareaS
+        AddInfo_CalcParameters["maxProbSareaS"] = maxProbSareaS
     else:
         args["rhoF"] = settings["rhoF"]
         args["rhoS"] = settings["rhoS"]
         
         AddInfo_CalcParameters["necessary_debt"] = None
-        AddInfo_CalcParameters["import"] = None
+        AddInfo_CalcParameters["necessary_import"] = None
+        AddInfo_CalcParameters["maxProbFareaF"] = None
+        AddInfo_CalcParameters["maxProbSareaF"] = None
+        AddInfo_CalcParameters["maxProbFareaS"] = None
+        AddInfo_CalcParameters["maxProbSareaS"] = None
+        
     penalties_end  = tm.time()
     all_durations["GetPenalties"] = penalties_end - penalties_start
     
