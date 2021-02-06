@@ -40,6 +40,8 @@ def CheckFolderStructure():
         os.mkdir("Figures/CompareCropAllocsRiskPooling")
     if not os.path.isdir("Figures/rhoSvsDebts"):
         os.mkdir("Figures/rhoSvsDebts")
+    if not os.path.isdir("Figures/rhoFvsImports"):
+        os.mkdir("Figures/rhoFvsImports")
     if not os.path.isdir("Figures/PandaPlots"):
         os.mkdir("Figures/PandaPlots")
     if not os.path.isdir("Figures/PandaPlots/DevelopmentColaboration"):

@@ -86,7 +86,7 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                            "Import (given as model input)": args["import"],
                            "Necessary add. import (excluding solvency constraint, including theoretical export)": AddInfo_CalcParameters["necessary_import"],
                            "Necessary add. import (including solvency constraint, including theoretical export)": meta_sol["necessary_import"],
-                           "Total necessary import when including solvency constraint": args["import"] + meta_sol["add_needed_import"],
+                           "Total necessary import when including solvency constraint": args["import"] + meta_sol["necessary_import"],
                            "Expected income (to calculate guaranteed income)": list(AddInfo_CalcParameters["expected_incomes"]),
                            "Penalty for food shortage": args["rhoF"],
                            "Penalty for insolvency": args["rhoS"],

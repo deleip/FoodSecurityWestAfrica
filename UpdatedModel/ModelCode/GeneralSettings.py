@@ -15,6 +15,9 @@ shareDiffS = 10
 # probS cannot be reached (given as the share of the difference between
 # debt_bottom and debt_top)
 accuracy_debt = 0.005
+# accuracy of imports used in the algorithm to find the right rhoF in cases
+# where probF cannot be reached (given as number of decimal places)
+accuracy_import = 3
 
 # should model progress be logged?
 logs_on = True

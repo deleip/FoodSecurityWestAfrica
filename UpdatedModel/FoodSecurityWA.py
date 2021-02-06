@@ -162,6 +162,7 @@ settings, args, AddInfo_CalcParameters, yield_information, \
 population_information, status, durations, crop_alloc, meta_sol, \
 crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
     FS.FoodSecurityProblem(validation_size = 100000,
-                           k_using = [2],
-                           #plotTitle = "(Aim: Dissimilar, Adjacent: Flase)",
+                           k_using = [9],
+                           T = 25,
+                           plotTitle = "(Aim: Dissimilar, Adjacent: False)",
                            N = 10000)

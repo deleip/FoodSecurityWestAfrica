@@ -115,7 +115,8 @@ def GetPenalties(settings, args, yield_information, \
             printing("Calculating rhoF and import", console_output = console_output)
             
             rhoF, maxProbFareaF, maxProbSareaF, needed_import, crop_alloc, meta_sol = \
-                    GetRhoF(args, yield_information, probF, rhoFini, checkedGuess, console_output = console_output)
+                GetRhoF_Wrapper(args, yield_information, probF, rhoFini, checkedGuess, \
+                                SettingsAffectingRhoF, console_output = None, logs_on = None)    
                   
             dict_rhoFs[SettingsAffectingRhoF] = rhoF
             dict_imports[SettingsAffectingRhoF] = needed_import
@@ -253,7 +254,7 @@ def CheckPotential(args, yield_information, probF = None, probS = None, \
     elif probS is not None and probF is None:
         return(CheckOptimalProbS(args, yield_information, probS, accuracyS, console_output))
     
-def CheckOptimalProbF(args, other, probF, accuracy, console_output = None, logs_on = None):
+def CheckOptimalProbF(args, yield_information, probF, accuracy, console_output = None, logs_on = None):
     """
     Function to find the highest probF possible under the given settings, and
     calculating the amount of import needed to increase this probabtility to 
@@ -289,8 +290,10 @@ def CheckOptimalProbF(args, other, probF, accuracy, console_output = None, logs_
         food seecurity probF.    
     """
     
+    from ModelCode.GeneralSettings import accuracy_import as accuracy_import
+    
     # find best crop per cluster (based on average yields)
-    yld_means = other["yld_means"]  # t/ha
+    yld_means = yield_information["yld_means"]  # t/ha
     yld_means = np.swapaxes(np.swapaxes(yld_means, 1, 2) * \
                             args["crop_cal"], 1, 2) # 10^6 kcal/ha
     which_crop = np.argmax(yld_means, axis = 1)
@@ -312,19 +315,19 @@ def CheckOptimalProbF(args, other, probF, accuracy, console_output = None, logs_
               console_output = console_output, logs_on = logs_on)
     
     # check if it is high enough (shortcomings given as demand - production (- import))
-    needed_import = meta_sol["add_needed_import"]
+    needed_import = meta_sol["necessary_import"]
     if max_probF >= probF:
         printing("     Desired probF (" + str(np.round(probF * 100, accuracy - 1)) \
                              + "%) can be reached\n", console_output = console_output, logs_on = logs_on)
     else:
-        printing("     Import of " + str(np.round(needed_import, 2)) + \
+        printing("     Import of " + str(np.round(needed_import, accuracy_import + 1)) + \
                  " 10^12 kcal is needed to reach probF = " + \
                  str(np.round(probF * 100, accuracy - 1)) + "%\n", \
                      console_output = console_output, logs_on = logs_on)
             
     return(max_probF, max_probS, needed_import)
 
-def CheckOptimalProbS(args, other, probS, accuracy, console_output = None):
+def CheckOptimalProbS(args, yield_information, probS, accuracy, console_output = None):
     """
     Function to find the highest probS that is possible under given settings.
 
@@ -358,7 +361,7 @@ def CheckOptimalProbS(args, other, probS, accuracy, console_output = None):
             
     # try for rhoS = 1e9 (as a proxy for rhoS = inf)
     status, crop_alloc, meta_sol, prob, durations = \
-         SolveReducedcLinearProblemGurobiPy(args, 0, 1e9, console_output = False, logs_on = False)   
+         SolveReducedcLinearProblemGurobiPy(args, 0, 1e12, console_output = False, logs_on = False)   
     
     # get resulting probabilities
     max_probS = meta_sol["probS"]
@@ -380,7 +383,82 @@ def CheckOptimalProbS(args, other, probS, accuracy, console_output = None):
 
 # %% ############################## GET RHOF ##################################
 
-def GetRhoF(args, yield_information, probF, rhoFini, checkedGuess, \
+def GetRhoF_Wrapper(args, yield_information, probF, rhoFini, checkedGuess, file, \
+                    console_output = None, logs_on = None):
+    """
+    Finding the correct rhoS given the probability probS, based on a bisection
+    search algorithm.
+
+    Parameters
+    ----------
+    args : dict
+        Dictionary of arguments needed as model input.  
+    other : dict
+        Other information on the model setup (on the yield distributions).
+    probS : float
+        demanded probability of keeping the solvency constraint (only 
+        relevant if PenMet == "prob").
+    rhoSini : float or None 
+        If PenMet == "penalties", this is the value that will be used for rhoS.
+        if PenMet == "prob" and rhoSini is None, a initial guess for rhoS will 
+        be calculated in GetPenalties, else this will be used as initial guess 
+        for the penalty which will give the correct probability for solvency.
+    checkedGuess : boolean
+        True if there is an initial guess that we are already sure about, as 
+        it was confirmed for two sample sizes N and N' with N >= 2N' (and the
+        current N* > N'). False if there is no initial guess or the initial 
+        guess was not yet confirmed.
+    file : str
+        String combining all settings affecting rhoS, used to save a plot 
+        of rhoS vs. necessary debt in MinimizeNecessaryDebt. 
+    console_output : boolean, optional
+        Specifying whether the progress should be documented thorugh console 
+        outputs. The default is defined in ModelCode/GeneralSettings.
+
+    Returns
+    -------
+    rhoS : float
+        The correct penalty rhoF to reach the probability probS
+    necessary_debt : float
+        The necessary debt to cover the payouts in probS of the cases (when 
+        rhoF = 0).
+    maxProbS : float
+        Maximum probability for solvency that can be reached under these 
+        settings.
+    maxProbF : float
+        Probability for food security for the settings that give the maxProbS.
+    """
+    
+    from ModelCode.GeneralSettings import accuracyF as accuracy
+    from ModelCode.GeneralSettings import shareDiffF as shareDiff
+    from ModelCode.GeneralSettings import accuracy_import as accuracy_import
+    
+    # find the highest possible probF (and probS when using area to get the max
+    # probF)
+    maxProbF, maxProbS, necessary_import = CheckPotential(args, yield_information, \
+                 probF = probF, console_output = console_output, logs_on = logs_on) 
+    
+        
+    # if probF can be reached find lowest rhoF that gives probF
+    if maxProbF >= probF:
+        printing("     Finding corresponding penalty\n", console_output)
+        rhoF, crop_alloc, meta_sol = GetRhoF(args, probF, rhoFini, checkedGuess, shareDiff, accuracy, console_output, logs_on)
+    # if probF cannot be reached find rhoF that minimizes the import that is
+    # necessary for to provide the food demand in probF of the samples
+    else:
+        printing("     Finding lowest penalty minimizing necessary import\n", console_output)
+        rhoF, crop_alloc, meta_sol = MinimizeNecessaryImport(args, probF, rhoFini, checkedGuess, \
+                            necessary_import,  shareDiff, accuracy, file, console_output, logs_on)
+    
+    if np.round(necessary_import, accuracy_import) != np.round(meta_sol["necessary_import"], accuracy_import):
+        sys.exit("Necessary import seems to be off, logic must be flawed.")
+    
+    printing("\n     Final rhoF: " + str(rhoF), console_output = console_output, logs_on = logs_on)
+    
+    return(rhoF, maxProbF, maxProbS, necessary_import, crop_alloc, meta_sol)
+
+
+def GetRhoF(args, probF, rhoFini, checkedGuess, \
             console_output = None, logs_on = None):
     """
     Finding the correct rhoF given the probability probF, based on a bisection
@@ -435,16 +513,7 @@ def GetRhoF(args, yield_information, probF, rhoFini, checkedGuess, \
     from ModelCode.GeneralSettings import accuracyF as accuracy
     from ModelCode.GeneralSettings import shareDiffF as shareDiff
     
-    # needed import
-    maxProbF, maxProbS, needed_import = CheckPotential(args, yield_information, \
-                                    probF = probF, console_output = console_output, logs_on = logs_on)
-    
 
-    if maxProbF < probF:
-        probFaim = maxProbF
-    else:
-        probFaim = probF
-        
     # accuracy information
     printing("     accuracy that we demand for probF: " + str(accuracy - 2) + " decimal places",\
              console_output = console_output, logs_on = logs_on)
@@ -463,16 +532,16 @@ def GetRhoF(args, yield_information, probF, rhoFini, checkedGuess, \
                             SolveReducedcLinearProblemGurobiPy(args, rhoFini, 0, console_output = False, logs_on = False) 
             ReportProgressFindingRho(rhoFini, meta_sol, accuracy, durations, \
                                      "F", prefix = "Guess - ", console_output = console_output, logs_on = logs_on) 
-            if np.round(meta_sol["probF"], accuracy) == probFaim:
+            if np.round(meta_sol["probF"], accuracy) == probF:
                 rhoFcheck = rhoFini - rhoFini/shareDiff
                 status, crop_alloc_check, meta_sol_check, prob, durations = \
                     SolveReducedcLinearProblemGurobiPy(args, rhoFcheck, 0, console_output = False, logs_on = False)  
                 ReportProgressFindingRho(rhoFcheck, meta_sol_check, accuracy, durations, \
                                          "F", prefix = "Check - ", console_output = console_output, logs_on = logs_on) 
-                if np.round(meta_sol_check["probF"], accuracy) < probFaim:
+                if np.round(meta_sol_check["probF"], accuracy) < probF:
                     printing("     Cool, that worked!", console_output = console_output, logs_on = logs_on)
                     printing("\n     Final rhoF: " + str(rhoFini), console_output = console_output, logs_on = logs_on)
-                    return(rhoFini, maxProbF, maxProbS, needed_import, crop_alloc, meta_sol)    
+                    return(rhoFini, crop_alloc, meta_sol)    
             printing("     Oops, that guess didn't work - starting from scratch\n", console_output = console_output, logs_on = logs_on)
         else:
             printing("     We have a rhoF from a different N that was already double-checked!", console_output = console_output, logs_on = logs_on)
@@ -481,7 +550,7 @@ def GetRhoF(args, yield_information, probF, rhoFini, checkedGuess, \
             ReportProgressFindingRho(rhoFini, meta_sol, accuracy, durations, \
                                      "F", prefix = "", console_output = console_output, logs_on = logs_on) 
             printing("\n     Final rhoF: " + str(rhoFini), console_output = console_output, logs_on = logs_on)
-            return(rhoFini, maxProbF, maxProbS, needed_import, crop_alloc, meta_sol)    
+            return(rhoFini, crop_alloc, meta_sol)    
             
     
     # else we start from scratch
@@ -491,13 +560,14 @@ def GetRhoF(args, yield_information, probF, rhoFini, checkedGuess, \
     rhoFLastDown = np.inf
     rhoFLastUp = 0
     lowestCorrect = np.inf
+    meta_sol_lowestCorrect = []
     
     # calculate initial guess
     status, crop_alloc, meta_sol, prob, durations = \
                 SolveReducedcLinearProblemGurobiPy(args, rhoFini, 0, console_output = False, logs_on = False)
     
     # update information
-    if np.round(meta_sol["probF"], accuracy) == probFaim:
+    if np.round(meta_sol["probF"], accuracy) == probF:
         lowestCorrect = rhoFini
                 
     # remember guess
@@ -512,7 +582,7 @@ def GetRhoF(args, yield_information, probF, rhoFini, checkedGuess, \
         # find next guess
         rhoFnew, rhoFLastDown, rhoFLastUp = \
                     UpdatedRhoGuess(meta_sol, rhoFLastUp, rhoFLastDown, \
-                                    rhoFold, probFaim, accuracy, probType = "F")
+                                    rhoFold, probF, accuracy, probType = "F")
        
         # solve model for guess
         status, crop_alloc, meta_sol, prob, durations = \
@@ -525,20 +595,21 @@ def GetRhoF(args, yield_information, probF, rhoFini, checkedGuess, \
         # that gives a smaller probability (which is the rhoLastUp). If that is 
         # smaller than a certain share of the lowest correct penalte we have
         # reached the necessary accuracy.
-        if np.round(meta_sol["probF"], accuracy) == probFaim:
+        if np.round(meta_sol["probF"], accuracy) == probF:
             accuracy_int = rhoFnew - rhoFLastUp
             if accuracy_int < rhoFnew/shareDiff:
                 rhoF = rhoFnew
                 break
-        elif np.round(meta_sol["probF"], accuracy) < probFaim:
+        elif np.round(meta_sol["probF"], accuracy) < probF:
             if lowestCorrect != np.inf:
                 accuracy_int = lowestCorrect - rhoFnew
                 if accuracy_int < lowestCorrect/shareDiff:
                     rhoF = lowestCorrect
+                    meta_sol = meta_sol_lowestCorrect
                     break
             else:
                 accuracy_int = rhoFLastDown - rhoFnew
-        elif np.round(meta_sol["probF"], accuracy) > probFaim:
+        elif np.round(meta_sol["probF"], accuracy) > probF:
             accuracy_int = rhoFnew - rhoFLastUp
             
         # report
@@ -547,21 +618,159 @@ def GetRhoF(args, yield_information, probF, rhoFini, checkedGuess, \
             
         # remember guess
         rhoFold = rhoFnew
-        if np.round(meta_sol["probF"], accuracy) == probFaim \
+        if np.round(meta_sol["probF"], accuracy) == probF \
             and lowestCorrect > rhoFnew:
             lowestCorrect = rhoFnew
+            meta_sol_lowestCorrect = meta_sol
     
     # last report
-    ReportProgressFindingRho(rhoFnew, meta_sol, accuracy, durations, \
+    ReportProgressFindingRho(rhoF, meta_sol, accuracy, durations, \
                              "F", accuracy_int, console_output = console_output, logs_on = logs_on)    
-        
-    printing("\n     Final rhoF: " + str(rhoF), console_output = console_output, logs_on = logs_on)
+            
+    return(rhoF, crop_alloc, meta_sol)
+
+def MinimizeNecessaryImport(args, probF, rhoFini, checkedGuess, \
+                          necessary_import, shareDiff, accuracy, file, \
+                          console_output = None, logs_on = None):
     
-    return(rhoF, maxProbF, maxProbS, needed_import, crop_alloc, meta_sol)
+    # accuracy information
+    printing("     accuracy that we demand for rhoF: 1/" + str(shareDiff) + " of final rhoF", console_output = console_output, logs_on = logs_on)
+    
+    # the demanded accuracy in the import is given as a share of the difference
+    # between debt_top and debt_bottom
+    from ModelCode.GeneralSettings import accuracy_import
+    printing("     accuracy that we demand for the necessary import: " + str(accuracy_import) + " decimal places\n",\
+             console_output = console_output, logs_on = logs_on)
+        
+    # minimized import
+    min_import = np.round(necessary_import, accuracy_import)
+    
+    # check if rhoF from run with smaller N works here as well:
+    if rhoFini is not None:
+        printing("     Checking guess from run with other N", console_output = console_output)
+        status, crop_alloc, meta_sol, prob, durations = \
+                SolveReducedcLinearProblemGurobiPy(args, rhoFini, 0, console_output = False, logs_on = False) 
+        ReportProgressFindingRho(rhoFini, meta_sol, accuracy, durations, \
+                                 "F", imports = min_import, 
+                                 prefix = "Guess: ", console_output = console_output, \
+                                 logs_on = logs_on)
+        if checkedGuess:
+            printing("     We have a rhoF from a different N that was already double-checked!", console_output = console_output, logs_on = logs_on)
+            return(rhoFini, crop_alloc, meta_sol)
+        elif np.round(meta_sol["necessary_import"], accuracy_import) == min_import:    
+            rhoFcheck = rhoFini - rhoFini/shareDiff
+            status, crop_alloc_check, meta_sol_check, prob, durations = \
+                    SolveReducedcLinearProblemGurobiPy(args, rhoFcheck, 0, console_output = False, logs_on = False) 
+            ReportProgressFindingRho(rhoFcheck, meta_sol_check, accuracy, durations, \
+                                     "F", imports = min_import,
+                                     prefix = "Check: ", console_output = console_output, \
+                                     logs_on = logs_on)
+            if np.round(meta_sol_check["necessary_import"], accuracy_import) > np.round(meta_sol["necessary_import"], accuracy_import):
+                printing("     Cool, that worked!", console_output = console_output)
+                return(rhoFini, crop_alloc, meta_sol)
+        printing("     Oops, that guess didn't work - starting from scratch\n", \
+                 console_output = console_output, logs_on = logs_on)
+ 
+    
+    # else we start from scratch
+    rhoFini = 1
+
+    # initialize figure showing rhoF vs. necessary import to reach probF
+    from ModelCode.GeneralSettings import figsize
+    fig = plt.figure(figsize = figsize) 
+    
+    # initialize values for search algorithm
+    rhoFLastDown = np.inf
+    rhoFLastUp = 0
+    lowestCorrect = np.inf
+    meta_sol_lowestCorrect = []
+    crop_alloc_lowestCorrect = []
+    
+    # calculate initial guess
+    status, crop_alloc, meta_sol, prob, durations = \
+                SolveReducedcLinearProblemGurobiPy(args, rhoFini, 0, console_output = False, logs_on = False)
+    
+    # update information
+    if np.round(meta_sol["necessary_import"], accuracy_import) == min_import:
+        lowestCorrect = rhoFini
+                
+    # remember guess
+    rhoFold = rhoFini
+    
+    # plot and report
+    plt.scatter(rhoFini, meta_sol["necessary_import"], s = 10, color = "blue")
+    accuracy_int = lowestCorrect - rhoFLastUp
+    ReportProgressFindingRho(rhoFold, meta_sol, accuracy, durations, \
+                             "F", accuracy_int, imports = min_import, \
+                             console_output = console_output, logs_on = logs_on)
+        
+    while True:   
+        # find next guess
+        rhoFnew, rhoFLastDown, rhoFLastUp = \
+                    UpdatedRhoGuessImports(meta_sol, rhoFLastUp, rhoFLastDown, \
+                                    rhoFold, min_import, accuracy_import)
+       
+        # solve model for guess
+        status, crop_alloc, meta_sol, prob, durations = \
+                SolveReducedcLinearProblemGurobiPy(args, rhoFnew, 0, console_output = False, logs_on = False)
+        
+        
+        # We want to find the lowest penalty for which we get the right probability.
+        # The accuracy interval is always the difference between the lowest 
+        # penalty for which we get the right probability and the highest penalty
+        # that gives a smaller probability (which is the rhoLastUp). If that is 
+        # smaller than a certain share of the lowest correct penalte we have
+        # reached the necessary accuracy.
+        if np.round(meta_sol["necessary_import"], accuracy_import) == min_import:
+            accuracy_int = rhoFnew - rhoFLastUp
+            if accuracy_int < rhoFnew/shareDiff:
+                rhoF = rhoFnew
+                break
+        elif np.round(meta_sol["necessary_import"], accuracy_import) > min_import:
+            if lowestCorrect != np.inf:
+                accuracy_int = lowestCorrect - rhoFnew
+                if accuracy_int < lowestCorrect/shareDiff:
+                    rhoF = lowestCorrect
+                    meta_sol = meta_sol_lowestCorrect
+                    crop_alloc = crop_alloc_lowestCorrect
+                    break
+            else:
+                accuracy_int = rhoFLastDown - rhoFnew
+        elif np.round(meta_sol["necessary_import"], accuracy_import) < min_import:
+            sys.exit("Necessary import seems to be off, logic must be flawed.")
+            
+        # report
+        plt.scatter(rhoFnew, meta_sol["necessary_import"], s = 10, color = "blue")
+        ReportProgressFindingRho(rhoFnew, meta_sol, accuracy, durations, \
+                                 "F", accuracy_int, imports = min_import, \
+                                 console_output = console_output, logs_on = logs_on)
+            
+        # remember guess
+        rhoFold = rhoFnew
+        if np.round(meta_sol["necessary_import"], accuracy_import) == min_import \
+            and lowestCorrect > rhoFnew:
+            lowestCorrect = rhoFnew
+            meta_sol_lowestCorrect = meta_sol
+            crop_alloc_lowestCorrect = crop_alloc
+    
+    # last report
+    plt.scatter(rhoF, meta_sol["necessary_import"], s = 10, color = "blue")
+    ReportProgressFindingRho(rhoF, meta_sol, accuracy, durations, \
+                             "F", accuracy_int, imports = min_import, \
+                             console_output = console_output, logs_on = logs_on)    
+
+    # finish and save plot
+    plt.xlabel(r"$\rho_\mathrm{F}$ [$\$/10^3\,kcal$]", fontsize = 24)
+    plt.ylabel(r"Necessary import to reach $\alpha_\mathrm{F}$ [$10^{12}\,kcal$]", fontsize = 24)
+    plt.title(r"Necessary import for different $\rho_\mathrm{F}$", fontsize = 30, pad = 20)
+    fig.savefig("Figures/rhoFvsImports/" + file + ".jpg", \
+                bbox_inches = "tight", pad_inches = 1)
+            
+    return(rhoF, crop_alloc, meta_sol)
 
 # %% ############################## GET RHOS ##################################
 
-def GetRhoS_Wrapper(args, other, probS, rhoSini, checkedGuess, file, \
+def GetRhoS_Wrapper(args, yield_information, probS, rhoSini, checkedGuess, file, \
                     console_output = None):
     """
     Finding the correct rhoS given the probability probS, based on a bisection
@@ -613,7 +822,7 @@ def GetRhoS_Wrapper(args, other, probS, rhoSini, checkedGuess, file, \
     # find the highest possible probS (and probF when using area to get the max
     # probS), and choose probSnew to be either the wanted probS or probSmax if
     # the wanted one is not possible
-    maxProbS, maxProbF, necessary_debt = CheckPotential(args, other, probS = probS, console_output = console_output)   
+    maxProbS, maxProbF, necessary_debt = CheckPotential(args, yield_information, probS = probS, console_output = console_output)   
     
     # if probS can be reached find lowest rhoS that gives probS
     if maxProbS >= probS:
@@ -986,7 +1195,7 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, checkedGuess, \
             
     # finish and save plot
     plt.xlabel(r"$\rho_\mathrm{S}$ [\$/\$]", fontsize = 24)
-    plt.ylabel(r"Necessary debt to reach $\alpha\mathrm{S}$ [10^9\$]", fontsize = 24)
+    plt.ylabel(r"Necessary debt to reach $\alpha_\mathrm{S}$ [10^9\$]", fontsize = 24)
     plt.title(r"Necessary debt for different $\rho_\mathrm{S}$", fontsize = 30, pad = 20)
     fig.savefig("Figures/rhoSvsDebts/CropAlloc_" + file + ".jpg", \
                 bbox_inches = "tight", pad_inches = 1)
@@ -1352,6 +1561,63 @@ def UpdateRhoDebtValley(rhoSvalley, debtsValley):
         rhoSnew2 = (rhoSvalley[i] + rhoSvalley[i-1])/2
     
     return(rhoSnew1, rhoSnew2)  
+    
+# %% ####################### AUXILIARY FUNCTIONS RHOS #########################
+
+def UpdatedRhoGuessImports(meta_sol, rhoLastUp, rhoLastDown, rhoOld, min_import, accuracy):
+    """
+    For GetRhoF and GetRhoS (which have the same structure), this provides
+    the next guess for the penalty.
+
+    Parameters
+    ----------
+    meta_sol : dict
+        Dictionary of meta information to the optimal crop allocations for the 
+        last penalty guess.
+    rhoLastUp : float
+        The last (and thereby highest) penalty guess for which the probability 
+        was too low.
+    rhoLastDown : float
+        The last (and thereby lowest) penalty guess for which the probability 
+        was too high (or exactly right as we are searching for the lowest 
+        penalty giving the right probability).
+    rhoOld : float
+        The last penalty that we tried.
+    prob : float
+        The probability for which we aim.
+    accuracy : int
+        Desired decimal places of accuracy of the obtained probability. 
+    probType : string, "F" or "S"
+        Specifies whether the function is called to find the next guess for 
+        rhoS or for rhoF.
+
+    Returns
+    -------
+    rhoNew : float
+        The next penalty guess.
+    rhoLastDown : float
+        Updated version of rhoLastDown
+    rhoLastUp : float
+        Updated version of rhoFLastUp
+
+    """
+    
+    # find next guess
+    if np.round(meta_sol["necessary_import"], accuracy) > min_import:
+        rhoLastUp = rhoOld
+        if rhoLastDown == np.inf:
+            rhoNew = rhoOld * 4
+        else:
+            rhoNew = (rhoOld + rhoLastDown) / 2 
+    else:
+        rhoLastDown = rhoOld
+        if rhoLastUp == 0:
+            rhoNew = rhoOld / 4
+        else:
+            rhoNew = (rhoOld + rhoLastUp) / 2
+    
+    return(rhoNew, rhoLastDown, rhoLastUp)
+
 
 # %% ###################### JOINT AUXILIARY FUNCTIONS #########################
 
@@ -1476,7 +1742,7 @@ def UpdatedRhoGuess(meta_sol, rhoLastUp, rhoLastDown, rhoOld, prob, accuracy, pr
     return(rhoNew, rhoLastDown, rhoLastUp)
 
 def ReportProgressFindingRho(rhoOld, meta_sol, accuracy, durations, \
-                             ProbType, accuracy_int = False, debt = False, \
+                             ProbType, accuracy_int = False, debt = False, imports = False, \
                              prefix = "", console_output = None, logs_on = None):
     """
     Function to report progress in finding the correct pealty to the console.
@@ -1520,6 +1786,8 @@ def ReportProgressFindingRho(rhoOld, meta_sol, accuracy, durations, \
     None.
 
     """
+    
+    from ModelCode.GeneralSettings import accuracy_import
         
     # get correct probability and unit
     if ProbType == "F":
@@ -1537,9 +1805,18 @@ def ReportProgressFindingRho(rhoOld, meta_sol, accuracy, durations, \
     else:
         debt_text = ""
         
+    if imports:
+        if np.round(meta_sol["necessary_import"], accuracy_import) == imports:
+            import_text = ", nec. import at min."
+        else:
+            import_text = ", nec. import: " + str(np.round(meta_sol["necessary_import"], accuracy_import)) + " 10^12kcal"
+    else:
+        import_text = ""
+        
+        
     # if length of accuracy interval is given create corresponding text piece
     if accuracy_int:
-        accuracy_text = " (current accuracy interval: " + str(np.round(accuracy_int, 2)) + ")"
+        accuracy_text = " (current accuracy interval: " + str(np.round(accuracy_int, 3)) + ")"
     else:
         accuracy_text = ""
         
@@ -1547,7 +1824,7 @@ def ReportProgressFindingRho(rhoOld, meta_sol, accuracy, durations, \
     printing("     " + prefix + "rho" + ProbType + ": " + str(rhoOld) + unit + \
           ", prob" + ProbType + ": " + str(np.round(currentProb * 100, \
                                                     accuracy -1)) + \
-          "%" + debt_text + ", time: " + str(np.round(durations[2], 2)) + "s" + accuracy_text, \
+          "%" + debt_text + import_text + ", time: " + str(np.round(durations[2], 2)) + "s" + accuracy_text, \
               console_output = console_output, logs_on = logs_on)
     
     return(None)

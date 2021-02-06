@@ -12,7 +12,7 @@ import sys
 from ModelCode.Auxiliary import printing
 from ModelCode.GetPenalties import GetInitialGuess
 from ModelCode.SettingsParameters import SetParameters
-from ModelCode.GetPenalties import GetRhoF
+from ModelCode.GetPenalties import GetRhoF_Wrapper
 
 # %% ############### FUNCTIONS RUNNING MODEL TO GET EXP INCOME ################
 
@@ -143,8 +143,8 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
                       console_output = False, logs_on = False)
     
     rhoF, maxProbF, max_probS, needed_import, crop_alloc, meta_sol = \
-           GetRhoF(args, yield_information, probF = probF, rhoFini = rhoFini, \
-                   checkedGuess = checkedGuess, console_output = False, logs_on = False) 
+         GetRhoF_Wrapper(args, yield_information, probF, rhoFini, checkedGuess, \
+                         SettingsAffectingRhoF, console_output = False, logs_on = False)
           
     dict_rhoFs[SettingsAffectingRhoF] = rhoF
     dict_imports[SettingsAffectingRhoF] = needed_import
