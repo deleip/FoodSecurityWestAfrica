@@ -16,12 +16,13 @@ from ModelCode.Auxiliary import GetFilename
 from ModelCode.CompleteModelCall import LoadModelResults
 from ModelCode.PandaHandling import ReadFromPandaSingleClusterGroup
 from ModelCode.SettingsParameters import DefaultSettingsExcept
+from ModelCode.SettingsParameters import RiskForCatastrophe
 
 # %% ############################# ANALYSIS ###################################
 
 def CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title, \
                       comparing = "clusters", cols = None, cols_b = None, filename = None, \
-                      figsize = None, fig = None, ax = None, subplots = False, \
+                      figsize = None, close_plots = None, fig = None, ax = None, subplots = False, \
                       fs = "big", sim_start = 2017, plot_total_area = False, legends = True, plt_labels = True):
     """
     Creates a plot of the crop areas over time, either all in one plot or as
@@ -77,6 +78,8 @@ def CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title, \
     """
     if figsize is None:
         from ModelCode.GeneralSettings import figsize        
+        
+    print(close_plots, flush = True)
     
     if fs == "big":
         fs_axis = 24
@@ -122,12 +125,14 @@ def CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title, \
                 total_area = total_area + np.nansum(cr, axis = (1,2))
         years = range(sim_start, sim_start + CropAllocs[0].shape[0])
         
+        
     idx_col = -1
     total_K = 0
     for idx, cr in enumerate(CropAllocs):
         [T, J, K] = cr.shape
         total_K = total_K + K
         years = range(sim_start, sim_start + T)
+        ticks = np.arange(sim_start, sim_start + T + 0.1, 3)
         for k in range(0, K):
             if comparing == "clusters":
                 idx_col = labels[idx][k] - 1
@@ -153,6 +158,7 @@ def CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title, \
                 axTmp.set_title(legend_title + str(label), fontsize = fs_sptitle)
                 axTmp.set_xlim(years[0] - 0.5, years[-1] + 0.5)
                 axTmp.xaxis.set_tick_params(labelsize=12)
+                axTmp.set_xticks(ticks)
                 axTmp.yaxis.set_tick_params(labelsize=12)
                 axTmp.yaxis.offsetText.set_fontsize(12)
                 axTmp.xaxis.offsetText.set_fontsize(12)
@@ -161,6 +167,7 @@ def CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title, \
     if not subplots:
         ax.set_xlim(years[0] - 0.5, years[-1] + 0.5)
         ax.xaxis.set_tick_params(labelsize=fs_axis)
+        ax.set_xticks(ticks)
         ax.yaxis.set_tick_params(labelsize=fs_axis)
         ax.yaxis.offsetText.set_fontsize(fs_axis)
         ax.xaxis.offsetText.set_fontsize(fs_axis)
@@ -200,12 +207,16 @@ def CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title, \
             filename = filename + "_sp"
         fig.savefig("Figures/CompareCropAllocs/" + filename + \
                     ".jpg", bbox_inches = "tight", pad_inches = 1, format = "jpg")
- #   plt.close()
+
+    if close_plots:
+        plt.close(fig)
+    
+    return(None)
     
 def CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, MaxAreasPool, MaxAreasIndep, 
                                 labelsPool, labelsIndep, title = None, plot_total_area = True,  
                                 cols = None, cols_b = None, 
-                                subplots = False, filename = None, figsize = None, 
+                                subplots = False, filename = None, figsize = None, close_plots = None,
                                 sim_start = 2017):
     """
     Given two list of crop areas, max available areas and labels, this plots 
@@ -257,12 +268,14 @@ def CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, MaxAreasPool, M
     CompareCropAllocs(CropAllocsPool, MaxAreasPool, labelsPool, \
                       "Risk pooling", "Cluster: ", fig = fig, ax = ax, \
                       subplots = subplots, fs = "small", \
-                      plot_total_area = plot_total_area, legends = False, plt_labels = False)
+                      plot_total_area = plot_total_area, legends = False, plt_labels = False,
+                      close_plots = False)
     ax = fig.add_subplot(1,2,2)
     CompareCropAllocs(CropAllocsIndep, MaxAreasIndep, labelsIndep, \
                       "Independent", "Cluster: ", fig = fig, ax = ax, \
                       subplots = subplots, fs = "small", \
-                      plot_total_area = plot_total_area, plt_labels = False)
+                      plot_total_area = plot_total_area, plt_labels = False,
+                      close_plots = False)
         
     fig.add_subplot(111, frame_on = False)
     plt.tick_params(bottom = False, left = False, which = "both",
@@ -278,6 +291,11 @@ def CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, MaxAreasPool, M
             filename = filename + "_sp"
         fig.savefig("Figures/CompareCropAllocsRiskPooling/" + filename + \
                     ".jpg", bbox_inches = "tight", pad_inches = 1)
+
+    if close_plots:
+        plt.close(fig)
+        
+    return(None)
 
 # def GetResultsToCompare(ResType = "k_using", PenMet = "prob", probF = 0.99, \
 #                        probS = 0.95, rhoF = None, rhoS = None, console_output = None, \
@@ -589,14 +607,68 @@ def GetResultsToCompare(ResType = "k_using", panda_file = "current_panda", \
         
 #     return(None)
 
-def CropAreasDependingOnColaboration(panda_file = "current_panda", 
-                                    groupAim = "Dissimilar",
-                                    adjacent = False,
-                                    console_output = None,
-                                    **kwargs):
+def PlotTotalAreas(total_areas, groupAim, adjacent, fnPlot = None,
+                   sim_start = 2017, cols = None, figsize = None, close_plots = None):
     
+    title = "Grouping: " + groupAim
+    if adjacent:
+        title = title + ", adjacent"
+    
+    if figsize is None:
+        from ModelCode.GeneralSettings import figsize  
+        
+    if close_plots is None:
+        from ModelCode.GeneralSettings import close_plots
+        
+    if cols is None:            
+            cols = ["royalblue", "darkred", "grey", "gold", \
+                    "limegreen", "darkturquoise", "darkorchid", "seagreen", 
+                    "indigo"]
+    
+    groups = [9, 5, 3, 2, 1]
+                
+    fig = plt.figure(figsize = figsize) 
+    T = len(total_areas[0])
+    years = range(sim_start, sim_start + T)      
+    ticks = np.arange(sim_start, sim_start + T + 0.1, 3)     
+    
+    for idx, cr in enumerate(total_areas):
+        plt.plot(years, cr, color = cols[idx], label = str(groups[idx]))
+    plt.xlabel("Years", fontsize = 20, labelpad = 5)
+    plt.ylabel(r"Crop area in [$10^6\,$ha]", fontsize = 20, labelpad = 5)
+    plt.xticks(ticks)
+    plt.legend(title = "Num. groups", title_fontsize = 20, fontsize = 16)
+    plt.title(title, fontsize = 24, pad = 10)
+    plt.tick_params(labelsize = 16)
+    
+    if fnPlot is not None:
+        fig.savefig("Figures/CompareCropAllocs/" + fnPlot + \
+                    ".jpg", bbox_inches = "tight", pad_inches = 1)
+    
+    if close_plots:
+        plt.close(fig)
+    
+    return(None)
+
+def CropAreasDependingOnColaboration(panda_file = "current_panda", 
+                                     groupAim = "Dissimilar",
+                                     adjacent = False,
+                                     figsize = None,
+                                     cols = None,
+                                     console_output = None,
+                                     close_plots = None,
+                                     **kwargs):
+     
+    if close_plots is None:
+        from ModelCode.GeneralSettings import close_plots
+        
     if console_output is None:
         from ModelCode.GeneralSettings import console_output
+        
+    if cols is None:            
+        cols = ["royalblue", "darkred", "grey", "gold", \
+                "limegreen", "darkturquoise", "darkorchid", "seagreen", 
+                "indigo"]    
         
     if adjacent:
         add = "Adj"
@@ -619,7 +691,8 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
                                             console_output = console_output,
                                             k_using = BestGrouping, 
                                             **kwargs)
-    
+    total_areas = [sum([np.sum(cr, axis = (1,2)) for cr in CropAllocs])]
+        
     # return(CropAllocs, MaxAreas, labels)
     printing("  Plotting", console_output = console_output)
     CompareCropAllocs(CropAllocs = CropAllocs,
@@ -629,9 +702,10 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
                       legend_title = "Cluster: ",
                       comparing = "clusters", 
                       filename = fnPlot, 
-                      subplots = (3,3))    
+                      subplots = (3,3),
+                      close_plots = close_plots)    
         
-    
+        
     for size in [2,3,5,9]:
         printing("\nGroup size " + str(size), console_output = console_output)
         with open("InputData/Clusters/ClusterGroups/GroupingSize" \
@@ -644,11 +718,12 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
             
         CropAllocs_pooling, MaxAreas_pooling, labels_pooling = \
                 GetResultsToCompare(ResType="k_using",\
-                                           panda_file = panda_file,
-                                           console_output = console_output,
-                                           k_using = BestGrouping, 
-                                           **kwargs)  
-                    
+                                    panda_file = panda_file,
+                                    console_output = console_output,
+                                    k_using = BestGrouping, 
+                                    **kwargs)  
+        total_areas.append(sum([np.sum(cr, axis = (1,2)) for cr in CropAllocs_pooling]))
+            
         printing("  Plotting", console_output = console_output)
         CompareCropAllocs(CropAllocs = CropAllocs_pooling,
                           MaxAreas = MaxAreas_pooling,
@@ -657,14 +732,20 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
                           legend_title = "Cluster: ",
                           comparing = "clusters", 
                           filename = fnPlot, 
-                          subplots = (3,3)) 
+                          subplots = (3,3),
+                          close_plots = close_plots)    
         
         CompareCropAllocRiskPooling(CropAllocs_pooling, CropAllocs, 
-                                        MaxAreas_pooling, MaxAreas, 
-                                        labels_pooling, labels, 
-                                        filename = fnPlot,
-                                        title = str(BestGrouping),
-                                        subplots = False)   
+                                    MaxAreas_pooling, MaxAreas, 
+                                    labels_pooling, labels, 
+                                    filename = fnPlot,
+                                    title = str(BestGrouping),
+                                    subplots = False,
+                                    close_plots = close_plots)      
+     
+    
+    fnPlot = GetFilename(settingsIterate, groupAim = groupAim,  adjacent = adjacent)
+    PlotTotalAreas(total_areas, groupAim, adjacent, fnPlot, close_plots = close_plots)
         
     return(None)
 
@@ -723,3 +804,74 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
 #                                         subplots = False)        
     
 #     return(None)
+
+
+def NumberOfSamples(sample_size,
+                    risk,
+                    threshold = 500,
+                    sim_start = 2017,
+                    T = 20,
+                    figsize = None,
+                    plt_title = "SamplesOverTime",
+                    close_plots = None):
+    
+    if figsize is None:
+        from ModelCode.GeneralSettings import figsize
+        
+    if close_plots is None:
+        from ModelCode.GeneralSettings import close_plots
+    
+    fig = plt.figure(figsize = figsize)
+    fig.add_subplot(1,2,1)
+    years = range(sim_start, sim_start + T)
+    ticks = np.arange(sim_start, sim_start + T + 0.1, 3)
+    
+    for num_clusters in range(1, 10):
+        prob_cat_year = RiskForCatastrophe(risk, num_clusters)
+        steps = np.array(range(0,T))
+        factor = (1 - prob_cat_year) ** steps
+        samples = sample_size * factor
+    
+        plt.plot(years, samples, label = num_clusters)
+        
+    plt.plot(years, np.repeat(threshold, T), linestyle = "--", color = "red")
+        
+    plt.yscale("symlog")
+    plt.xlim(years[0] - 0.5, years[-1] + 0.5)
+    plt.xticks(ticks)
+    plt.xlabel("Year", fontsize = 18)
+    plt.ylabel("Active samples", fontsize = 18)
+    plt.title("Starting with " + str(sample_size) + " samples",
+              fontsize = 22, pad = 10)
+    
+    
+    fig.add_subplot(1,2,2)
+    for num_clusters in range(1, 10):
+        prob_cat_year = RiskForCatastrophe(risk, num_clusters)
+        steps = np.flip(range(0,T))
+        factor = (1/(1 - prob_cat_year)) ** steps
+        samples = threshold * factor
+        
+        plt.plot(years, samples, label = num_clusters)
+        
+    plt.plot(years, np.repeat(threshold, T), linestyle = "--", color = "red")
+        
+    plt.yscale("symlog")
+    plt.xlim(years[0] - 0.5, years[-1] + 0.5)
+    plt.xticks(ticks)
+    plt.legend(title = "Number of clusters")
+    plt.xlabel("Year", fontsize = 18)
+    plt.ylabel("Active samples", fontsize = 18)
+    plt.title("Ending with " + str(threshold) + " samples",
+              fontsize = 22, pad = 10)
+    
+    if plt_title is not None:
+        fig.savefig("Figures/Samples/" + plt_title + "N" + str(sample_size) + "Threshold" + str(threshold) + ".jpg",
+                 bbox_inches = "tight", pad_inches = 1)
+    
+    if close_plots:
+        plt.close()
+    
+    return(None)
+    
+    

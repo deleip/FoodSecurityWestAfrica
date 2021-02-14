@@ -14,7 +14,8 @@ import os
 # %% ########################## PLOTTING FUNCTIONS ############################  
 
 def PlotModelOutput(PlotType = "CropAlloc", cols = None, cols_b = None, \
-                    figsize = None, title = None, file = None, **kwargs):
+                    figsize = None, title = None, file = None, plt_close = None, 
+                    **kwargs):
     """
     Creating different types of plots based on the model in- and output
 
@@ -49,6 +50,9 @@ def PlotModelOutput(PlotType = "CropAlloc", cols = None, cols_b = None, \
     if figsize is None:
         from ModelCode.GeneralSettings import figsize
     
+    if plt_close is None:
+        from ModelCode.GeneralSettings import plt_close
+        
     # defining colors
     if cols is None:            
         cols = ["royalblue", "darkred", "grey", "gold", \
@@ -62,6 +66,9 @@ def PlotModelOutput(PlotType = "CropAlloc", cols = None, cols_b = None, \
     if PlotType == "CropAlloc":
         PlotCropAlloc(cols = cols, cols_b = cols_b, figsize = figsize, \
                       title = title, file = file, **kwargs)
+    
+    if plt_close:
+        plt.close()
     
     return()
 
@@ -178,12 +185,6 @@ def PlotCropAlloc(crop_alloc, k, k_using, max_areas, cols = None, cols_b = None,
             ax.yaxis.set_tick_params(labelsize=16)
             ax.yaxis.offsetText.set_fontsize(16)
             ax.xaxis.offsetText.set_fontsize(16)
-            # ax.text(0.05, 0.91, "Cluster " + str(int(k_using[cl])), \
-            #         fontsize = 16, transform = ax.transAxes, \
-            #         verticalalignment = 'top', bbox = props)
-            # if cl == 0:
-            #     plt.title("                        Separate clusters", \
-            #               fontsize = 32, pad = 8) 
     
     
     if file is not None:

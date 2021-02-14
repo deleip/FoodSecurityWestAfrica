@@ -26,3 +26,6 @@ console_output = True
 
 # figsize used for all figures
 figsize = (24, 13.5)
+
+# close figures after plotting
+close_plots = True

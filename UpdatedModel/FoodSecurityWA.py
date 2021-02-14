@@ -40,14 +40,21 @@ for s in [1, 2, 3, 5]:
 # %% ##### 2. DEFAULT RUN FOR ADJACENT CLUSTER GROUPS OF SIZE 1, 2, 3, 5  #####
 
 # group size, sample size N, validation sample size M
-comb = [#(1, 100000, 200000),
-       # (2, 40000, 150000),
-       # (3, 250000, 400000),
-        #(5, 400000, 600000),
-        ("all", 300000, 500000)
+comb1 = [#(1, 10000, 50000),
+        (2, 20000, 100000),
+        (3, 50000, 100000),
+        (5, 100000, 200000),
+        ("all", 100000, 200000)
         ]
 
-for size, N, M in comb:
+comb2 = [(1, 20000, 50000),
+        (2, 40000, 100000),
+        (3, 100000, 200000),
+        (5, 200000, 300000),
+        ("all", 250000, 400000)
+        ]
+
+for size, N, M in comb2:
     if size == "all":
         settings, args, AddInfo_CalcParameters, yield_information, \
         population_information, status, durations, crop_alloc, meta_sol, \
@@ -60,7 +67,7 @@ for size, N, M in comb:
     
     for aim in ["Dissimilar"]:    
         with open("InputData/Clusters/ClusterGroups/GroupingSize" \
-                      + str(size) + aim + ".txt", "rb") as fp:
+                      + str(size) + aim + "Adj.txt", "rb") as fp:
                 BestGrouping = pickle.load(fp)
                 
         for cluster_active in BestGrouping:
@@ -72,9 +79,9 @@ for size, N, M in comb:
             population_information, status, durations, crop_alloc, meta_sol, \
             crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
                 FS.FoodSecurityProblem(validation_size = M,
-                                       plotTitle = "Aim: " + aim  + ", Adjacent: False",
+                                       plotTitle = "Aim: " + aim  + ", Adjacent: True",
                                        k_using = list(cluster_active),
-                                      N = N)
+                                       N = N)
 
 
 # %% ##### 3. PLOTTING RESULTS  #####
@@ -82,12 +89,16 @@ for size, N, M in comb:
 # all default settings so no **kwargs
 FS.CropAreasDependingOnColaboration(panda_file = "current_panda", 
                                     groupAim = "Dissimilar",
-                                    adjacent = False,
+                                    adjacent = True,
                                     console_output = None)
 
 FS.MainPandaPlotsFixedSettings(panda_file = "current_panda", 
                                grouping_aim = "Dissimilar",
-                               adjacent = False)
+                               adjacent = True)
+
+FS.PlotPenaltyVsProb(panda_file = "current_panda", 
+                      grouping_aim = "Dissimilar",
+                      adjacent = True)
 
 # %% ##################### 4. RUNS USING ONE CLUSTER ##########################
 
@@ -161,8 +172,7 @@ for probF in [0.97, 0.99]:
 settings, args, AddInfo_CalcParameters, yield_information, \
 population_information, status, durations, crop_alloc, meta_sol, \
 crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
-    FS.FoodSecurityProblem(validation_size = 100000,
+    FS.FoodSecurityProblem(validation_size = 50000,
                            k_using = [9],
-                           T = 25,
-                           plotTitle = "(Aim: Dissimilar, Adjacent: False)",
+                           plotTitle = "Aim: Dissimilar, Adjacent: True",
                            N = 10000)

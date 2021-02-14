@@ -124,6 +124,9 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                            "Seed (for yield generation)": settings["seed"],
                            "Filename for full results": fn_fullresults}
             
+        if np.isnan(dict_for_pandas["Average food shortcomings (over all years and samples with shortcomings)"]):
+            dict_for_pandas["Average food shortcomings (over all years and samples with shortcomings)"] = 0
+            
         if not os.path.exists("ModelOutput/Pandas/" + file + ".csv"):
             CreateEmptyPanda(file)
         
@@ -218,7 +221,7 @@ def OpenPanda(file = "current_panda"):
             dict_convert[key] = __ConvertListsFloats
         elif dict_convert[key] == "list of ints":
             dict_convert[key] = __ConvertListsInts
-        
+    
     # re-read panda with conversions
     panda = pd.read_csv("ModelOutput/Pandas/" + file + ".csv", converters = dict_convert)
     
@@ -325,7 +328,7 @@ def SetUpPandaDicts():
          "Share of West Africa's population that is living in currently considered region (2015)": \
              float,
          "On average cultivated area per cluster": "list of floats",
-        "Average yearly total cultivated area": float,
+         "Average yearly total cultivated area": float,
          "Average food demand penalty (over years and samples)": float,
          "Average solvency penalty (over samples)": float,
          "Average cultivation costs per cluster (over years and samples)": "list of floats",

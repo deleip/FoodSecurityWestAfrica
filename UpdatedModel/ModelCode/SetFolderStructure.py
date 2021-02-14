@@ -46,6 +46,8 @@ def CheckFolderStructure():
         os.mkdir("Figures/PandaPlots")
     if not os.path.isdir("Figures/PandaPlots/DevelopmentColaboration"):
         os.mkdir("Figures/PandaPlots/DevelopmentColaboration")
+    if not os.path.isdir("Figures/Samples"):
+        os.mkdir("Figures/Samples")
         
     if not os.path.isdir("InputData"):
         warn.warn("You are missing the input data")

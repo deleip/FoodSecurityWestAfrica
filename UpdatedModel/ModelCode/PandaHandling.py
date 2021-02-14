@@ -78,7 +78,7 @@ def ReadFromPandaSingleClusterGroup(file = "current_panda",
                                      ini_fund = 0,            
                                      N = None, 
                                      validation_size = None,
-                                     T = 25,
+                                     T = 20,
                                      seed = 201120):
         
     if output_var is None:
@@ -134,6 +134,7 @@ def ReadFromPandaSingleClusterGroup(file = "current_panda",
                 
     
     def __ConvertListsInts(arg):
+        print(arg, flush = True)
         arg = arg.strip("][").split(", ")
         res = []
         for j in range(0, len(arg)):
@@ -206,10 +207,19 @@ def __ExtractResPanda(sub_panda, out_type, output_var, size):
             res.iloc[0, idx*3 + 2] = sub_panda[var].median()
             res.iloc[0, idx*3 + 3] = sub_panda[var].max()
         return(res)
+    
+    if out_type == "all":
+        output_var_fct.insert(0, "Group size")
+        res = pd.DataFrame(columns = output_var_fct, index = [size])
+        res.iloc[0,0] = size
+        for idx, var in enumerate(output_var):
+            res.iloc[0, idx + 1] = list(sub_panda[var])
+        return(res)
+    
 
 def PandaToPlot_GetResults(file = "current_panda", 
                            output_var = None,
-                           out_type = "agg", # or median
+                           out_type = "agg", # or median, or all
                            grouping_aim = "Dissimilar",
                            adjacent = False,
                            **kwargs):
@@ -241,11 +251,15 @@ def PlotPandaMedian(panda_file = "current_panda",
                     figsize = None,
                     subplots = True,
                     plt_file = None,
+                    close_plots = None,
                     **kwargs):
     
     if figsize is None:
         from ModelCode.GeneralSettings import figsize
     
+    if close_plots is None:
+        from ModelCode.GeneralSettings import close_plots
+        
     with open("ModelOutput/Pandas/ColumnUnits.txt", "rb") as fp:
         units = pickle.load(fp)
     
@@ -280,7 +294,69 @@ def PlotPandaMedian(panda_file = "current_panda",
         plt.legend(fontsize = 20)
         
     if plt_file is not None:
-        fig.savefig("Figures/PandaPlots/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
+        fig.savefig("Figures/PandaPlots/" + plt_file + "_Median.jpg", bbox_inches = "tight", pad_inches = 1)
+        
+    if close_plots:
+        plt.close()
+        
+    return(None)
+
+def PlotPandaAll(panda_file = "current_panda", 
+                 output_var = None,
+                 grouping_aim = "Dissimilar",
+                 adjacent = False,
+                 figsize = None,
+                 subplots = True,
+                 plt_file = None,
+                 close_plots = None,
+                 **kwargs):
+    
+    if figsize is None:
+        from ModelCode.GeneralSettings import figsize
+        
+    if close_plots is None:
+        from ModelCode.GeneralSettings import close_plots
+    
+    with open("ModelOutput/Pandas/ColumnUnits.txt", "rb") as fp:
+        units = pickle.load(fp)
+    
+    res = PandaToPlot_GetResults(panda_file, output_var, "all", grouping_aim, adjacent, **kwargs)
+    
+    if output_var is str:
+        output_var = [output_var]
+    
+    if subplots:
+        fig = plt.figure(figsize = figsize)
+        fig.subplots_adjust(bottom=0.2, top=0.9, left=0.1, right=0.9,
+                    wspace=0.2, hspace=0.35)
+        rows = int(np.floor(np.sqrt(len(output_var))))
+        cols = int(np.ceil(len(output_var)/rows))
+    
+    for idx, var in enumerate(output_var):
+        if subplots:
+            fig.add_subplot(rows, cols, idx + 1)
+            plt.suptitle("Development depending on colaboration of clusters", \
+                  fontsize = 24)
+        else:
+            fig = plt.figure(figsize = figsize)
+            plt.title("Development depending on colaboration of clusters", \
+                  fontsize = 24, pad = 15)
+        plt.scatter(np.repeat(1, len(res.loc[1, var])), res.loc[1, var])
+        plt.scatter(np.repeat(2, len(res.loc[2, var])), res.loc[2, var])
+        plt.scatter(np.repeat(3, len(res.loc[3, var])), res.loc[3, var])
+        plt.scatter(np.repeat(4, len(res.loc[5, var])), res.loc[5, var])
+        plt.scatter(np.repeat(5, len(res.loc[9, var])), res.loc[9, var])
+        plt.xticks([1, 2, 3, 4, 5], [9, 5, 3, 2, 1], fontsize = 16)
+        plt.yticks(fontsize = 16)
+        plt.xlabel("Number of different cluster groups", fontsize = 20)
+        plt.ylabel(var + " " + units[var], fontsize = 20)
+        # plt.legend(fontsize = 20)
+        
+    if plt_file is not None:
+        fig.savefig("Figures/PandaPlots/" + plt_file + "_All.jpg", bbox_inches = "tight", pad_inches = 1)
+      
+    if close_plots:
+        plt.close()
         
     return(None)
 
@@ -292,11 +368,15 @@ def PlotPandaAggregate(panda_file = "current_panda",
                     figsize = None,
                     subplots = True,
                     plt_file = None,
+                    close_plots = None,
                     **kwargs):
     
     if figsize is None:
         from ModelCode.GeneralSettings import figsize
     
+    if close_plots is None:
+        from ModelCode.GeneralSettings import close_plots
+        
     if type(output_var) is str:
         output_var = [output_var]
     
@@ -333,10 +413,44 @@ def PlotPandaAggregate(panda_file = "current_panda",
         plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
         
     if plt_file is not None:
-        fig.savefig("Figures/PandaPlots/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
-        
+        fig.savefig("Figures/PandaPlots/" + plt_file + "_Agg.jpg", bbox_inches = "tight", pad_inches = 1)
+    
+    if close_plots:
+        plt.close()
+    
     return(None)
 
+def PlotPandaSingle(panda_file = "current_panda", 
+                    output_var = None,
+                    grouping_aim = "Dissimilar",
+                    adjacent = False,
+                    figsize = None,
+                    subplots = True,
+                    plt_file = None,
+                    close_plots = None,
+                    **kwargs):
+    
+    PlotPandaMedian(panda_file = panda_file, 
+                    output_var = output_var,
+                    grouping_aim = grouping_aim,
+                    adjacent = adjacent,
+                    figsize = figsize,
+                    subplots = subplots,
+                    plt_file = plt_file,
+                    close_plots = close_plots,
+                    **kwargs)
+
+    PlotPandaAll(panda_file = panda_file, 
+                    output_var = output_var,
+                    grouping_aim = grouping_aim,
+                    adjacent = adjacent,
+                    figsize = figsize,
+                    subplots = subplots,
+                    plt_file = plt_file,
+                    close_plots = close_plots,
+                    **kwargs)
+    
+    return(None)
 
 def MainPandaPlotsFixedSettings(panda_file = "current_panda", 
                                 grouping_aim = "Dissimilar",
@@ -354,6 +468,7 @@ def MainPandaPlotsFixedSettings(panda_file = "current_panda",
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,
                        plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_TotalAllocArea_TotalCultCosts",
+                       close_plots = True,
                        **kwargs)
         
     PlotPandaAggregate(panda_file = panda_file,
@@ -362,38 +477,43 @@ def MainPandaPlotsFixedSettings(panda_file = "current_panda",
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,
                        plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_NecImportsPen_NecDebtPen",
+                       close_plots = True,
                        **kwargs)
         
     PlotPandaAggregate(panda_file = panda_file,
-                       output_var=['Total import needed when including solvency constraint', \
+                       output_var=['Total necessary import when including solvency constraint', \
                                    'Necessary debt (including food security constraint)'],
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,
                        plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_NecImports_NecDebt",
+                       close_plots = True,
                        **kwargs)
         
-    PlotPandaMedian(panda_file = panda_file,
+    PlotPandaSingle(panda_file = panda_file,
                     output_var=['Penalty for food shortage', \
                                 'Penalty for insolvency'],
                     grouping_aim = grouping_aim,
                     adjacent = adjacent,
                     plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_Penalties",
+                    close_plots = True,
                     **kwargs)
 
-    PlotPandaMedian(panda_file = panda_file,
+    PlotPandaSingle(panda_file = panda_file,
                     output_var=['Resulting probability for food security', \
                                 'Resulting probability for solvency'],
                     grouping_aim = grouping_aim,
                     adjacent = adjacent,
                     plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_ResProbabilities",
+                    close_plots = True,
                     **kwargs)
 
-    PlotPandaMedian(panda_file = panda_file,
+    PlotPandaSingle(panda_file = panda_file,
                     output_var=['Average food shortcomings (over all years and samples with shortcomings)', \
                                 'Average final fund (over all samples with negative final fund)'],
                     grouping_aim = grouping_aim,
                     adjacent = adjacent,
                     plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_ShortcomingConstraints",
+                    close_plots = True,
                     **kwargs)
         
     PlotPandaAggregate(panda_file = panda_file,
@@ -402,15 +522,76 @@ def MainPandaPlotsFixedSettings(panda_file = "current_panda",
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,
                        plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_PenaltiesPaied",
+                       close_plots = True,
                        **kwargs)
         
-    PlotPandaMedian(panda_file = panda_file,
+    PlotPandaSingle(panda_file = panda_file,
                     output_var=['Value of stochastic solution', \
                                 'Resulting probability for food security for VSS',\
                                 'Resulting probability for solvency for VSS'],
                     grouping_aim = grouping_aim,
                     adjacent = adjacent,
                     plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_VSS",
+                    close_plots = True,
                     **kwargs)
         
+    return(None)
+
+def PlotPenaltyVsProb(panda_file = "current_panda", 
+                      grouping_aim = "Dissimilar",
+                      adjacent = False,
+                      figsize = None,
+                      **kwargs):
+    
+    if figsize is None:
+        from ModelCode.GeneralSettings import figsize
+        
+    if adjacent:
+        add = "Adj"
+    else:
+        add = ""
+    
+    plt_file = "PenaltiesProbabilities_" + grouping_aim + add
+    
+    cols = ["royalblue", "darkred", "grey", "gold", "limegreen"]
+    markers = ["o", "X", "^", "D", "s"]
+
+    fig = plt.figure(figsize = figsize)
+    ax1 = fig.add_subplot(1, 2, 1)
+    ax2 = fig.add_subplot(1, 2, 2)
+    for idx, size in enumerate([1, 2, 3, 5, 9]):
+        with open("InputData/Clusters/ClusterGroups/GroupingSize" \
+                          + str(size) + grouping_aim + add + ".txt", "rb") as fp:
+                    BestGrouping = pickle.load(fp)
+    
+        panda_tmp = ReadFromPanda(file = panda_file, \
+                                  output_var = ['Penalty for food shortage', 
+                                                'Penalty for insolvency',
+                                                'Resulting probability for food security',
+                                                'Resulting probability for solvency'], 
+                                  k_using = BestGrouping, \
+                                  **kwargs)
+            
+        ax1.scatter(panda_tmp[['Penalty for food shortage']], 
+                    panda_tmp[['Resulting probability for food security']],
+                    color = cols[idx], marker = markers[idx])
+        ax2.scatter(panda_tmp[['Penalty for insolvency']], 
+                    panda_tmp[['Resulting probability for solvency']],
+                    color = cols[idx], marker = markers[idx], 
+                    label = str(size))
+        
+    ax1.tick_params(labelsize = 14)
+    ax2.tick_params(labelsize = 14)    
+    ax1.set_xlabel(r"Penalty for food shortage $\rho_\mathrm{F}$ [$\$/10^3\,$kcal]", fontsize = 18)
+    ax1.set_ylabel("Resulting probability for food security", fontsize = 18)
+    ax2.set_xlabel(r"Penalty for insolvency $\rho_\mathrm{S}$ [$\$/\$$]", fontsize = 18)
+    ax2.set_ylabel("Resulting probability for solvencyy", fontsize = 18)
+    ax2.legend(title = "Groupsizes", fontsize = 16, title_fontsize = 18)
+    plt.suptitle("Penalties and resulting probabilities (Aim: " + grouping_aim + \
+                 ", Adjacent: " + str(adjacent) + ")", fontsize = 26)
+            
+    fig.savefig("Figures/PandaPlots/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
+
+    plt.close()    
+
     return(None)

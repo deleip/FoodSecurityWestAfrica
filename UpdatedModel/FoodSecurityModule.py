@@ -46,6 +46,7 @@ from ModelCode.PandaHandling import PlotPandaMedian
 from ModelCode.PandaHandling import PlotPandaAggregate
 from ModelCode.PandaHandling import UpdatePandaWithAddInfo
 from ModelCode.PandaHandling import MainPandaPlotsFixedSettings
+from ModelCode.PandaHandling import PlotPenaltyVsProb
 
 # set up folder structure (if not already done)
 CheckFolderStructure()
