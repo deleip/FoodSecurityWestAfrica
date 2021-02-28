@@ -20,6 +20,7 @@ from ModelCode.SettingsParameters import DefaultSettingsExcept
 from ModelCode.SettingsParameters import SetParameters
 
 from ModelCode.CompleteModelCall import FoodSecurityProblem
+from ModelCode.CompleteModelCall import LoadModelResults
 
 from ModelCode.ModelCore import SolveReducedcLinearProblemGurobiPy
 

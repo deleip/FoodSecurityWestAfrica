@@ -41,21 +41,32 @@ for s in [1, 2, 3, 5]:
 
 # group size, sample size N, validation sample size M
 comb1 = [#(1, 10000, 50000),
-        (2, 20000, 100000),
-        (3, 50000, 100000),
+        #(2, 20000, 100000),
+        #(3, 50000, 100000),
         (5, 100000, 200000),
         ("all", 100000, 200000)
         ]
 
-comb2 = [(1, 20000, 50000),
+comb2 = [#(1, 20000, 50000),
         (2, 40000, 100000),
         (3, 100000, 200000),
         (5, 200000, 300000),
         ("all", 250000, 400000)
         ]
 
-for size, N, M in comb2:
+comb3 = [(2, 100000, 200000),
+        (3, 250000, 400000),
+        (5, 400000, 500000),
+        ("all", 500000, 600000)
+        ]
+
+adj = "" # "Adj"
+
+for size, N, M in comb3:
     if size == "all":
+        print("\u2017"*49)
+        print("Aim: " + aim + ", size: " + str(size) + ", clusters: all")
+        print("\u033F "*49)
         settings, args, AddInfo_CalcParameters, yield_information, \
         population_information, status, durations, crop_alloc, meta_sol, \
         crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -67,7 +78,7 @@ for size, N, M in comb2:
     
     for aim in ["Dissimilar"]:    
         with open("InputData/Clusters/ClusterGroups/GroupingSize" \
-                      + str(size) + aim + "Adj.txt", "rb") as fp:
+                      + str(size) + aim + adj + ".txt", "rb") as fp:
                 BestGrouping = pickle.load(fp)
                 
         for cluster_active in BestGrouping:
@@ -79,7 +90,7 @@ for size, N, M in comb2:
             population_information, status, durations, crop_alloc, meta_sol, \
             crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
                 FS.FoodSecurityProblem(validation_size = M,
-                                       plotTitle = "Aim: " + aim  + ", Adjacent: True",
+                                       plotTitle = "Aim: " + aim  + ", Adjacent: False",
                                        k_using = list(cluster_active),
                                        N = N)
 
@@ -99,6 +110,20 @@ FS.MainPandaPlotsFixedSettings(panda_file = "current_panda",
 FS.PlotPenaltyVsProb(panda_file = "current_panda", 
                       grouping_aim = "Dissimilar",
                       adjacent = True)
+
+# all default settings so no **kwargs
+FS.CropAreasDependingOnColaboration(panda_file = "current_panda", 
+                                    groupAim = "Dissimilar",
+                                    adjacent = False,
+                                    console_output = None)
+
+FS.MainPandaPlotsFixedSettings(panda_file = "current_panda", 
+                               grouping_aim = "Dissimilar",
+                               adjacent = False)
+
+FS.PlotPenaltyVsProb(panda_file = "current_panda", 
+                      grouping_aim = "Dissimilar",
+                      adjacent = False)
 
 # %% ##################### 4. RUNS USING ONE CLUSTER ##########################
 

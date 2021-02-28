@@ -25,9 +25,11 @@ def ReturnGeneralSettings():
     from ModelCode.GeneralSettings import shareDiffF
     from ModelCode.GeneralSettings import shareDiffS
     from ModelCode.GeneralSettings import accuracy_debt
+    from ModelCode.GeneralSettings import accuracy_import
     from ModelCode.GeneralSettings import logs_on
     from ModelCode.GeneralSettings import console_output
     from ModelCode.GeneralSettings import figsize
+    from ModelCode.GeneralSettings import close_plots
     
     print("General Settings are", flush = True)
     print("\u033F "*20)
@@ -43,12 +45,16 @@ def ReturnGeneralSettings():
           "Current value: " + colored(str(shareDiffS), "cyan"), flush = True)
     print("  - accuracy_debt: accuracy of debts in cases where probS cannot be reached. " + \
           "Current value: " + colored(str(accuracy_debt), "cyan"), flush = True)
+    print("  - accuracy_import: accuracy of imports in cases where probF cannot be reached. " + \
+          "Current value: " + colored(str(accuracy_import), "cyan"), flush = True)
     print("  - logs_on: should model progress be logged? " + \
          "Current value: " + colored(str(logs_on), "cyan"), flush = True)
     print("  - console_output: should model progress be reported in console? " + \
           "Current value: " + colored(str(console_output), "cyan"), flush = True)
     print("  - figsize: default figsize used for figures. " + \
           "Current value: " + colored(str(figsize), "cyan"), flush = True)
+    print("  - close_plots: should figures be closed after plotting? " + \
+          "Current value: " + colored(str(close_plots), "cyan"), flush = True)
     
     return(None)
 
@@ -57,9 +63,11 @@ def ModifyGeneralSettings(accuracyF = None, \
                           shareDiffF = None, \
                           shareDiffS = None, \
                           accuracy_debt = None, \
+                          accuracy_import = None, \
                           logs_on = None, \
                           console_output = None, \
-                          figsize = None):
+                          figsize = None, \
+                          close_plots = None):
     """
     Updates the values for the given general settings by rewriting the
     ModelCode/GeneralSettings.py file, keeping the last value that was given
@@ -103,9 +111,11 @@ def ModifyGeneralSettings(accuracyF = None, \
     from ModelCode.GeneralSettings import shareDiffF as shareDiffFbefore
     from ModelCode.GeneralSettings import shareDiffS as shareDiffSbefore
     from ModelCode.GeneralSettings import accuracy_debt as accuracy_debtbefore
+    from ModelCode.GeneralSettings import accuracy_import as accuracy_importbefore
     from ModelCode.GeneralSettings import logs_on as logs_onFbefore
     from ModelCode.GeneralSettings import console_output as console_outputbefore
     from ModelCode.GeneralSettings import figsize as figsizebefore
+    from ModelCode.GeneralSettings import close_plots as close_plotsbefore
     
     report = "Changed settings for "
     
@@ -148,6 +158,14 @@ def ModifyGeneralSettings(accuracyF = None, \
         settings.write("accuracy_debt = " + str(accuracy_debt) + "\n\n")
         if accuracy_debt != accuracy_debtbefore:
              report += "accuracy_debt, "
+    settings.write("# accuracy of imports used in the algorithm to find the right rhoF in cases\n")
+    settings.write("# where probF cannot be reached (given as number of decimal places)\n")
+    if accuracy_import is None:
+        settings.write("accuracy_import = " + str(accuracy_importbefore) + "\n\n")
+    else:
+        settings.write("accuracy_import = " + str(accuracy_import) + "\n\n")
+        if accuracy_import != accuracy_importbefore:
+             report += "accuracy_debt, "
     settings.write("# should model progress be logged?\n")
     if logs_on is None:
         settings.write("logs_on = " + str(logs_onFbefore) + "\n")
@@ -164,11 +182,18 @@ def ModifyGeneralSettings(accuracyF = None, \
             report += "console_output, "
     settings.write("# figsize used for all figures\n")
     if figsize is None:
-        settings.write("figsize = " + str(figsizebefore))
+        settings.write("figsize = " + str(figsizebefore) + "\n\n")
     else:
-        settings.write("figsize = " + str(figsize))
+        settings.write("figsize = " + str(figsize) + "\n\n")
         if figsize != figsizebefore:
             report += "figsize, "
+    settings.write("# close figures after plotting\n")
+    if close_plots is None:
+        settings.write("close_plots = " + str(close_plotsbefore))
+    else:
+        settings.write("close_plots = " + str(close_plots))
+        if close_plots != close_plotsbefore:
+            report += "close_plots, "
     settings.close()
     
     if report == "Changed settings for ":
@@ -204,12 +229,17 @@ def ResetGeneralSettings():
     settings.write("# probS cannot be reached (given as the share of the difference between\n")
     settings.write("# debt_bottom and debt_top)\n")
     settings.write("accuracy_debt = 0.005\n\n")
+    settings.write("# accuracy of imports used in the algorithm to find the right rhoF in cases\n")
+    settings.write("# where probF cannot be reached (given as number of decimal places)\n")
+    settings.write("accuracy_import = 3\n\n")
     settings.write("# should model progress be logged?\n")
     settings.write("logs_on = True\n")
     settings.write("# should model progress be reported in console?" + "\n")
     settings.write("console_output = True\n\n")
     settings.write("# figsize used for all figures\n")
-    settings.write("figsize = (24, 13.5)")
+    settings.write("figsize = (24, 13.5)\n\n")
+    settings.write("# close figures after plotting\n")
+    settings.write("close_plots = True")
     settings.close()
     
     print("Settings reset to original values.")

@@ -2,7 +2,7 @@
 """
 Created on Sat Jan 23 16:15:20 2021
 
-@author: leip
+@author: Debbora Leip
 """
 import numpy as np
 import pandas as pd
@@ -35,7 +35,7 @@ def UpdatePandaWithAddInfo(OldFile = "current_panda", console_output = None):
     
     # temporarily move the current_panda to tmp to be able to work on a
     # current_panda
-    CreateEmptyPanda(OldFile + "_updated")
+    CreateEmptyPanda(OldFile + "_updating")
     
     for i in range(0, len(oldPanda)):
         if console_output:
@@ -51,13 +51,13 @@ def UpdatePandaWithAddInfo(OldFile = "current_panda", console_output = None):
         write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                         population_information, crop_alloc, \
                         meta_sol, meta_sol_vss, VSS_value, validation_values, \
-                        filename, console_output = False, file = OldFile + "_updated")
+                        filename, console_output = False, file = OldFile + "_updating")
 
     # remove old panda file
     os.remove("ModelOutput/Pandas/" + OldFile + ".csv")
     
     # rename _update file to OldFile
-    os.rename("ModelOutput/Pandas/" + OldFile + "_updated.csv", "ModelOutput/Pandas/" + OldFile + ".csv")
+    os.rename("ModelOutput/Pandas/" + OldFile + "_updating.csv", "ModelOutput/Pandas/" + OldFile + ".csv")
 
     return(None)
 
@@ -120,7 +120,7 @@ def ReadFromPandaSingleClusterGroup(file = "current_panda",
         sub_panda = sub_panda[output_var_fct][sub_panda["Sample size"] == N]
         # nor results for right sample siize
         if sub_panda.empty:
-            sys.exit("Reyuested data is not available.")
+            sys.exit("Requested data is not available.")
         return(sub_panda)
         
     # results for highest sample size for these settings
@@ -134,7 +134,6 @@ def ReadFromPandaSingleClusterGroup(file = "current_panda",
                 
     
     def __ConvertListsInts(arg):
-        print(arg, flush = True)
         arg = arg.strip("][").split(", ")
         res = []
         for j in range(0, len(arg)):
@@ -251,6 +250,7 @@ def PlotPandaMedian(panda_file = "current_panda",
                     figsize = None,
                     subplots = True,
                     plt_file = None,
+                    foldername = None,
                     close_plots = None,
                     **kwargs):
     
@@ -290,11 +290,11 @@ def PlotPandaMedian(panda_file = "current_panda",
         plt.xticks([1, 2, 3, 4, 5], [9, 5, 3, 2, 1], fontsize = 16)
         plt.yticks(fontsize = 16)
         plt.xlabel("Number of different cluster groups", fontsize = 20)
-        plt.ylabel(var + " " + units[var], fontsize = 20)
+        plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
         plt.legend(fontsize = 20)
         
     if plt_file is not None:
-        fig.savefig("Figures/PandaPlots/" + plt_file + "_Median.jpg", bbox_inches = "tight", pad_inches = 1)
+        fig.savefig("Figures/" + foldername + "PandaPlots/Median/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
         
     if close_plots:
         plt.close()
@@ -308,6 +308,7 @@ def PlotPandaAll(panda_file = "current_panda",
                  figsize = None,
                  subplots = True,
                  plt_file = None,
+                 foldername = None,
                  close_plots = None,
                  **kwargs):
     
@@ -349,11 +350,11 @@ def PlotPandaAll(panda_file = "current_panda",
         plt.xticks([1, 2, 3, 4, 5], [9, 5, 3, 2, 1], fontsize = 16)
         plt.yticks(fontsize = 16)
         plt.xlabel("Number of different cluster groups", fontsize = 20)
-        plt.ylabel(var + " " + units[var], fontsize = 20)
+        plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
         # plt.legend(fontsize = 20)
         
     if plt_file is not None:
-        fig.savefig("Figures/PandaPlots/" + plt_file + "_All.jpg", bbox_inches = "tight", pad_inches = 1)
+        fig.savefig("Figures/" + foldername + "PandaPlots/All/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
       
     if close_plots:
         plt.close()
@@ -368,6 +369,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
                     figsize = None,
                     subplots = True,
                     plt_file = None,
+                    foldername = None,
                     close_plots = None,
                     **kwargs):
     
@@ -376,7 +378,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
     
     if close_plots is None:
         from ModelCode.GeneralSettings import close_plots
-        
+
     if type(output_var) is str:
         output_var = [output_var]
     
@@ -413,7 +415,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
         plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
         
     if plt_file is not None:
-        fig.savefig("Figures/PandaPlots/" + plt_file + "_Agg.jpg", bbox_inches = "tight", pad_inches = 1)
+        fig.savefig("Figures/" + foldername + "PandaPlots/Aggregated/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
     
     if close_plots:
         plt.close()
@@ -427,6 +429,7 @@ def PlotPandaSingle(panda_file = "current_panda",
                     figsize = None,
                     subplots = True,
                     plt_file = None,
+                    foldername = None,
                     close_plots = None,
                     **kwargs):
     
@@ -437,6 +440,7 @@ def PlotPandaSingle(panda_file = "current_panda",
                     figsize = figsize,
                     subplots = subplots,
                     plt_file = plt_file,
+                    foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
 
@@ -447,6 +451,7 @@ def PlotPandaSingle(panda_file = "current_panda",
                     figsize = figsize,
                     subplots = subplots,
                     plt_file = plt_file,
+                    foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
     
@@ -455,85 +460,160 @@ def PlotPandaSingle(panda_file = "current_panda",
 def MainPandaPlotsFixedSettings(panda_file = "current_panda", 
                                 grouping_aim = "Dissimilar",
                                 adjacent = False,
+                                close_plots = None,
+                                console_output = None,
                                 **kwargs):
     
+    if console_output is None:
+        from ModelCode.GeneralSettings import console_output
+    
+    def __report(i, console_output = console_output, num_plots = 12):
+        if console_output:
+            sys.stdout.write("\r     Plot " + str(i) + " of " + str(num_plots))
+      
+    foldername = grouping_aim
+    if adjacent:
+        foldername = foldername + "Adjacent/"
+    else:
+        foldername = foldername + "NonAdjacent/"
+        
     if adjacent:
         add = "Adj"
     else:
         add = ""
-    
+        
     PlotPandaAggregate(panda_file = panda_file,
                        output_var=['Average yearly total cultivated area', \
                                    'Average total cultivation costs'],
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,
-                       plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_TotalAllocArea_TotalCultCosts",
-                       close_plots = True,
+                       plt_file = grouping_aim + add + "_TotalAllocArea_TotalCultCosts",
+                       foldername = foldername,
+                       close_plots = close_plots,
                        **kwargs)
+    __report(1)    
         
     PlotPandaAggregate(panda_file = panda_file,
                        output_var=['Necessary add. import (excluding solvency constraint, including theoretical export)', \
                                    'Necessary debt (excluding food security constraint)'],
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,
-                       plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_NecImportsPen_NecDebtPen",
-                       close_plots = True,
+                       plt_file = grouping_aim + add + "_NecImportsPen_NecDebtPen",
+                       foldername = foldername,
+                       close_plots = close_plots,
                        **kwargs)
+    __report(2)    
         
     PlotPandaAggregate(panda_file = panda_file,
                        output_var=['Total necessary import when including solvency constraint', \
                                    'Necessary debt (including food security constraint)'],
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,
-                       plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_NecImports_NecDebt",
-                       close_plots = True,
+                       plt_file = grouping_aim + add + "_NecImports_NecDebt",
+                       foldername = foldername,
+                       close_plots = close_plots,
                        **kwargs)
+    __report(3)    
         
     PlotPandaSingle(panda_file = panda_file,
                     output_var=['Penalty for food shortage', \
                                 'Penalty for insolvency'],
                     grouping_aim = grouping_aim,
                     adjacent = adjacent,
-                    plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_Penalties",
-                    close_plots = True,
+                    plt_file = grouping_aim + add + "_Penalties",
+                    foldername = foldername,
+                    close_plots = close_plots,
                     **kwargs)
+    __report(4)    
 
     PlotPandaSingle(panda_file = panda_file,
                     output_var=['Resulting probability for food security', \
                                 'Resulting probability for solvency'],
                     grouping_aim = grouping_aim,
                     adjacent = adjacent,
-                    plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_ResProbabilities",
-                    close_plots = True,
+                    plt_file = grouping_aim + add + "_ResProbabilities",
+                    foldername = foldername,
+                    close_plots = close_plots,
                     **kwargs)
+    __report(5)    
 
     PlotPandaSingle(panda_file = panda_file,
                     output_var=['Average food shortcomings (over all years and samples with shortcomings)', \
-                                'Average final fund (over all samples with negative final fund)'],
+                                'Average food shortcomings per capita (over all years and samples with shortcomings)'],
                     grouping_aim = grouping_aim,
                     adjacent = adjacent,
-                    plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_ShortcomingConstraints",
-                    close_plots = True,
+                    plt_file = grouping_aim + add + "_FoodShortcomings",
+                    foldername = foldername,
+                    close_plots = close_plots,
                     **kwargs)
+    __report(6)    
         
+    PlotPandaSingle(panda_file = panda_file,
+                    output_var=['Average final fund (over all samples with negative final fund)',
+                                'Averge final fund (over all samples with negative final fund) scaled with probability of insolvency'],
+                    grouping_aim = grouping_aim,
+                    adjacent = adjacent,
+                    plt_file = grouping_aim + add + "_FinalFund",
+                    foldername = foldername,
+                    close_plots = close_plots,
+                    **kwargs)
+    __report(7)    
+    
+    PlotPandaSingle(panda_file = panda_file,
+                    output_var=['Averge final fund per capita (over all samples with negative final fund)',
+                                'Averge final fund per capita (over all samples with negative final fund) scaled with probability of insolvency'],
+                    grouping_aim = grouping_aim,
+                    adjacent = adjacent,
+                    plt_file = grouping_aim + add + "_FinalFundPerCapita",
+                    foldername = foldername,
+                    close_plots = close_plots,
+                    **kwargs)
+    __report(8)    
+        
+    PlotPandaSingle(panda_file = panda_file,
+                    output_var=['Averge final fund as share of guaranteed income (over all samples with negative final fund)',
+                                'Averge final fund as share of guaranteed income (over all samples with negative final fund) scaled with probability of insolvency'],
+                    grouping_aim = grouping_aim,
+                    adjacent = adjacent,
+                    plt_file = grouping_aim + add + "_FinalFundShareGovInc",
+                    foldername = foldername,
+                    close_plots = close_plots,
+                    **kwargs)
+    __report(9)    
+    
     PlotPandaAggregate(panda_file = panda_file,
                        output_var=['Average food demand penalty (over years and samples)', \
                                    'Average solvency penalty (over samples)'],
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,
-                       plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_PenaltiesPaied",
-                       close_plots = True,
+                       plt_file = grouping_aim + add + "_PenaltiesPaied",
+                       foldername = foldername,
+                       close_plots = close_plots,
                        **kwargs)
+    __report(10)    
         
     PlotPandaSingle(panda_file = panda_file,
                     output_var=['Value of stochastic solution', \
-                                'Resulting probability for food security for VSS',\
+                                'VSS as share of total costs (sto. solution)',\
+                                'VSS as share of total costs (det. solution)'],
+                    grouping_aim = grouping_aim,
+                    adjacent = adjacent,
+                    plt_file = grouping_aim + add + "_VSScosts",
+                    foldername = foldername,
+                    close_plots = close_plots,
+                    **kwargs)
+    __report(11)    
+        
+    PlotPandaSingle(panda_file = panda_file,
+                    output_var=['Resulting probability for food security for VSS',\
                                 'Resulting probability for solvency for VSS'],
                     grouping_aim = grouping_aim,
                     adjacent = adjacent,
-                    plt_file = "DevelopmentColaboration/" + grouping_aim + add + "_VSS",
-                    close_plots = True,
+                    plt_file = grouping_aim + add + "_VSSprobabilities",
+                    foldername = foldername,
+                    close_plots = close_plots,
                     **kwargs)
+    __report(12)    
         
     return(None)
 
@@ -541,17 +621,27 @@ def PlotPenaltyVsProb(panda_file = "current_panda",
                       grouping_aim = "Dissimilar",
                       adjacent = False,
                       figsize = None,
+                      close_plots = None,
                       **kwargs):
     
     if figsize is None:
         from ModelCode.GeneralSettings import figsize
+        
+    if close_plots is None:
+        from ModelCode.GeneralSettings import close_plots
         
     if adjacent:
         add = "Adj"
     else:
         add = ""
     
-    plt_file = "PenaltiesProbabilities_" + grouping_aim + add
+    foldername = grouping_aim
+    if adjacent:
+        foldername = foldername + "Adjacent/"
+    else:
+        foldername = foldername + "NonAdjacent/"
+    
+    plt_file = grouping_aim + add + "_PenaltiesProbabilities"
     
     cols = ["royalblue", "darkred", "grey", "gold", "limegreen"]
     markers = ["o", "X", "^", "D", "s"]
@@ -590,8 +680,9 @@ def PlotPenaltyVsProb(panda_file = "current_panda",
     plt.suptitle("Penalties and resulting probabilities (Aim: " + grouping_aim + \
                  ", Adjacent: " + str(adjacent) + ")", fontsize = 26)
             
-    fig.savefig("Figures/PandaPlots/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
+    fig.savefig("Figures/" + foldername + "PandaPlots/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
 
-    plt.close()    
+    if close_plots:
+        plt.close()  
 
     return(None)

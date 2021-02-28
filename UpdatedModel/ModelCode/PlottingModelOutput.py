@@ -3,7 +3,7 @@
 """
 Created on Fri Jan  1 15:19:25 2021
 
-@author: debbora
+@author: Debbora Leip
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,7 +14,7 @@ import os
 # %% ########################## PLOTTING FUNCTIONS ############################  
 
 def PlotModelOutput(PlotType = "CropAlloc", cols = None, cols_b = None, \
-                    figsize = None, title = None, file = None, plt_close = None, 
+                    figsize = None, title = None, file = None, close_plots = None, 
                     **kwargs):
     """
     Creating different types of plots based on the model in- and output
@@ -50,8 +50,8 @@ def PlotModelOutput(PlotType = "CropAlloc", cols = None, cols_b = None, \
     if figsize is None:
         from ModelCode.GeneralSettings import figsize
     
-    if plt_close is None:
-        from ModelCode.GeneralSettings import plt_close
+    if close_plots is None:
+        from ModelCode.GeneralSettings import close_plots
         
     # defining colors
     if cols is None:            
@@ -67,7 +67,7 @@ def PlotModelOutput(PlotType = "CropAlloc", cols = None, cols_b = None, \
         PlotCropAlloc(cols = cols, cols_b = cols_b, figsize = figsize, \
                       title = title, file = file, **kwargs)
     
-    if plt_close:
+    if close_plots:
         plt.close()
     
     return()

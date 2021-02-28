@@ -1,4 +1,4 @@
-# Last modified January 10, 2021, at 16:04
+# Last modified February 15, 2021, at 10:20
 # (reset to original values)
 
 # accuracy demanded from the probabilities as decimal places (given as float,
@@ -15,6 +15,7 @@ shareDiffS = 10
 # probS cannot be reached (given as the share of the difference between
 # debt_bottom and debt_top)
 accuracy_debt = 0.005
+
 # accuracy of imports used in the algorithm to find the right rhoF in cases
 # where probF cannot be reached (given as number of decimal places)
 accuracy_import = 3

@@ -313,13 +313,19 @@ def SetParameters(settings, AddInfo_CalcParameters,\
                   "UN_PopTotal_Prospects_WesternAfrica.txt", "rb") as fp:    
         total_pop = pickle.load(fp)
         scenarios = pickle.load(fp)
-    total_pop_scen = total_pop[np.where(scenarios == "Medium")[0][0],:]
-    total_pop_UN = total_pop_scen[2015-1950]
+    total_pop_est_past = total_pop[np.where(scenarios == "Medium")[0][0],:][0:71]
+    if settings["pop_scenario"] == "fixed":
+        total_pop_scen = np.repeat(total_pop[np.where(scenarios == "Medium")[0][0],:][(sim_start-1)-1950], T)
+    else:
+        total_pop_scen = total_pop[np.where(scenarios == pop_scenario)[0][0],:]\
+                                    [(sim_start - 1950):(sim_start + T - 1950)]
+    total_pop_UN_2015 = total_pop_est_past[2015-1950]
     cluster_pop = np.zeros(len(k_using))
     for i, cl in enumerate(k_using):
         cluster_pop[i] = np.nansum(gridded_pop[clusters == cl])
     total_pop_GPW = np.sum(cluster_pop)
-    pop_ratio = total_pop_GPW/total_pop_UN
+    cluster_pop_ratio_2015 = cluster_pop/total_pop_UN_2015
+    total_pop_ratio_2015 = total_pop_GPW/total_pop_UN_2015
     
 # 4. Country shares of area (for price calculation)
     with open("InputData/Prices/CountryCodesGridded.txt", "rb") as fp:    
@@ -442,21 +448,8 @@ def SetParameters(settings, AddInfo_CalcParameters,\
     # of per capita daily consumption we use UN population scenarios for West 
     # Africa and scale them down to the area we use, using the ratio from 2015 
     # (from gridded GPW data)
-    with open("InputData/Population/" + \
-                  "UN_PopTotal_Prospects_WesternAfrica.txt", "rb") as fp:    
-        total_pop = pickle.load(fp)
-        scenarios = pickle.load(fp)
-    if pop_scenario == "fixed":
-        total_pop_scen = total_pop[np.where(scenarios == "Medium")[0][0],:]
-        demand = np.repeat(ppdemand*365*total_pop_scen[(sim_start-1)-1950],\
-                   T) # for fixed we use pop of 2016 if run starts 2017
-        demand = demand * pop_ratio
-    else:
-        total_pop_scen = total_pop[np.where(scenarios ==  \
-                                                pop_scenario)[0][0],:]
-        demand = ppdemand*365*total_pop_scen[(sim_start-1950): \
-                                                (sim_start-1950+T)]
-        demand = demand * pop_ratio
+    demand = ppdemand * 365 * total_pop_scen
+    demand = demand * total_pop_ratio_2015
     # in 10^12 kcal
     demand = 1e-12 * demand
 
@@ -469,10 +462,7 @@ def SetParameters(settings, AddInfo_CalcParameters,\
     if not pop_scenario == "fixed":
         total_pop_ratios = total_pop_scen / \
                                 total_pop_scen[(sim_start-1)-1950]
-        guaranteed_income = (guaranteed_income.swapaxes(0,1) * \
-                            total_pop_ratios[(sim_start-1950): \
-                                                (sim_start-1950+T)]) \
-                            .swapaxes(0,1)
+        guaranteed_income = (guaranteed_income.swapaxes(0,1) * total_pop_ratios).swapaxes(0,1)
           
 # 10. prices for selling crops, per crop and cluster
     with open("InputData//Prices/CountryAvgFarmGatePrices.txt", "rb") as fp:    
@@ -546,14 +536,18 @@ def SetParameters(settings, AddInfo_CalcParameters,\
     printing("     Share of samples without catastrophe: " + str(np.round(no_cat*100, 2)), \
               console_output = console_output, logs_on = logs_on) 
     # share of non-profitable crops
-    share_rice_np = np.sum(ylds[:,:,0,:] < y_profit[0,:])/np.sum(~np.isnan(ylds[:,:,0,:]))
-    printing("     Share of cases with rice yields too low to provide profit: " + \
-             str(np.round(share_rice_np * 100, 2)), console_output = console_output, \
-             logs_on = logs_on)
-    share_maize_np = np.sum(ylds[:,:,1,:] < y_profit[1,:])/np.sum(~np.isnan(ylds[:,:,1,:]))
-    printing("     Share of cases with maize yields too low to provide profit: " + \
-             str(np.round(share_maize_np * 100, 2)), console_output = console_output, \
-             logs_on = logs_on)
+    if wo_yields:
+        share_rice_np = 0
+        share_maize_np = 0
+    else:
+        share_rice_np = np.sum(ylds[:,:,0,:] < y_profit[0,:])/np.sum(~np.isnan(ylds[:,:,0,:]))
+        printing("     Share of cases with rice yields too low to provide profit: " + \
+                 str(np.round(share_rice_np * 100, 2)), console_output = console_output, \
+                 logs_on = logs_on)
+        share_maize_np = np.sum(ylds[:,:,1,:] < y_profit[1,:])/np.sum(~np.isnan(ylds[:,:,1,:]))
+        printing("     Share of cases with maize yields too low to provide profit: " + \
+                 str(np.round(share_maize_np * 100, 2)), console_output = console_output, \
+                 logs_on = logs_on)
     # in average more profitable crop
     exp_profit = yld_means * prices - costs
     avg_time_profit = np.nanmean(exp_profit, axis = 0)
@@ -603,7 +597,7 @@ def SetParameters(settings, AddInfo_CalcParameters,\
              "exp_profit": exp_profit}
     
     population_information = {"total_pop_scen": total_pop_scen,
-                              "pop_area_ratio2015": pop_ratio}
+                              "pop_cluster_ratio2015": cluster_pop_ratio_2015}
         
     return(args, yield_information, population_information)
 
@@ -700,18 +694,17 @@ def YieldRealisations(yld_slopes, yld_constants, resid_std, sim_start, N, \
                                     N, T, num_clusters, VSS)
     
     # generating yields according to catastrophes
-    if wo_yields:
-        ylds = []
-    else:
-        ylds, yld_means = ProjectYields(yld_slopes, yld_constants, resid_std, sim_start, \
+    ylds, yld_means = ProjectYields(yld_slopes, yld_constants, resid_std, sim_start, \
                              N, cat_clusters, terminal_years, T, risk, \
                              num_clusters, num_crops, yield_projection, \
-                             VSS)
+                             VSS, wo_yields)
         
-    # comparing with np.nans leads to annoying warnings, so we turn them off        
-    np.seterr(invalid='ignore')
-    ylds[ylds<0] = 0
-    np.seterr(invalid='warn')
+        
+    if not wo_yields:
+        # comparing with np.nans leads to annoying warnings, so we turn them off        
+        np.seterr(invalid='ignore')
+        ylds[ylds<0] = 0
+        np.seterr(invalid='warn')
     
     return(cat_clusters, terminal_years, ylds, yld_means)
 
@@ -780,7 +773,7 @@ def CatastrophicYears(risk, N, T, num_clusters, VSS):
 def ProjectYields(yld_slopes, yld_constants, resid_std, sim_start, \
                   N, cat_clusters, terminal_years, T, risk, \
                   num_clusters, num_crops, yield_projection, \
-                  VSS = False):
+                  VSS = False, wo_yields = False):
     """
     Depending on the occurence of catastrophes yield samples are generated
     from the given yield distributions.    
@@ -851,6 +844,9 @@ def ProjectYields(yld_slopes, yld_constants, resid_std, sim_start, \
     # needed for VSS
     if VSS == True:
         return(np.expand_dims(yld_means, axis = 0), yld_means)
+    
+    if wo_yields:
+        return([], yld_means)
     
     # initializing yield array
     ylds = np.empty([N, T, num_crops, num_clusters])

@@ -3,7 +3,7 @@
 """
 Created on Fri Jan  1 13:44:33 2021
 
-@author: debbora
+@author: Debbora Leip
 """
 
 import os
@@ -30,24 +30,38 @@ def CheckFolderStructure():
     if not os.path.isdir("Figures"):
         os.mkdir("Figures")
     
+    def __GroupingPlotFolders(main):
+        if not os.path.isdir("Figures/" + main):
+            os.mkdir("Figures/" + main)
+        if not os.path.isdir("Figures/" + main + "/CompareCropAllocs"):
+            os.mkdir("Figures/" + main + "/CompareCropAllocs")
+        if not os.path.isdir("Figures/" + main + "/CompareCropAllocsRiskPooling"):
+            os.mkdir("Figures/" + main + "/CompareCropAllocsRiskPooling")
+        if not os.path.isdir("Figures/" + main + "/PandaPlots"):
+            os.mkdir("Figures/" + main + "/PandaPlots")
+        if not os.path.isdir("Figures/" + main + "/PandaPlots/Aggregated"):
+            os.mkdir("Figures/" + main + "/PandaPlots/Aggregated")
+        if not os.path.isdir("Figures/" + main + "/PandaPlots/All"):
+            os.mkdir("Figures/" + main + "/PandaPlots/All")
+        if not os.path.isdir("Figures/" + main + "/PandaPlots/Median"):
+            os.mkdir("Figures/" + main + "/PandaPlots/Median")
+        
     if not os.path.isdir("Figures/ClusterGroups"):
         os.mkdir("Figures/ClusterGroups")
     if not os.path.isdir("Figures/CropAllocs"):
         os.mkdir("Figures/CropAllocs")
-    if not os.path.isdir("Figures/CompareCropAllocs"):
-        os.mkdir("Figures/CompareCropAllocs")
-    if not os.path.isdir("Figures/CompareCropAllocsRiskPooling"):
-        os.mkdir("Figures/CompareCropAllocsRiskPooling")
     if not os.path.isdir("Figures/rhoSvsDebts"):
         os.mkdir("Figures/rhoSvsDebts")
     if not os.path.isdir("Figures/rhoFvsImports"):
         os.mkdir("Figures/rhoFvsImports")
-    if not os.path.isdir("Figures/PandaPlots"):
-        os.mkdir("Figures/PandaPlots")
-    if not os.path.isdir("Figures/PandaPlots/DevelopmentColaboration"):
-        os.mkdir("Figures/PandaPlots/DevelopmentColaboration")
     if not os.path.isdir("Figures/Samples"):
         os.mkdir("Figures/Samples")
+    __GroupingPlotFolders("DissimilarAdjacent")
+    __GroupingPlotFolders("SimilarAdjacent")
+    __GroupingPlotFolders("DissimilarNonAdjacent")
+    __GroupingPlotFolders("SimilarNonAdjacent")
+    if not os.path.isdir("Figures/CrossGroupings"):
+        os.mkdir("Figures/CrossGroupings")
         
     if not os.path.isdir("InputData"):
         warn.warn("You are missing the input data")

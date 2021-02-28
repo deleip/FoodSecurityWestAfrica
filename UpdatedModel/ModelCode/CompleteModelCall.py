@@ -30,8 +30,8 @@ from ModelCode.VSSandValidation import OutOfSampleVal
 # %% ############## WRAPPING FUNCTIONS FOR FOOD SECURITY MODEL ################
 
 def FoodSecurityProblem(console_output = None, logs_on = None, \
-                        save = True, plotTitle = None, panda_file = "current_panda", \
-                        **kwargs):
+                        save = True, plotTitle = None, close_plots = None, 
+                        panda_file = "current_panda", **kwargs):
     """
         
     Setting up and solving the food security problem. Returns model output
@@ -142,7 +142,8 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
     if plotTitle is not None:
         PlotModelOutput(PlotType = "CropAlloc", title = plotTitle, \
                     file = fn, crop_alloc = crop_alloc, k = settings["k"], \
-                    k_using = settings["k_using"], max_areas = args["max_areas"])
+                    k_using = settings["k_using"], max_areas = args["max_areas"],
+                    close_plots = close_plots)
     
     return(settings, args, AddInfo_CalcParameters, yield_information, \
            population_information, status, all_durations, crop_alloc, meta_sol, \
