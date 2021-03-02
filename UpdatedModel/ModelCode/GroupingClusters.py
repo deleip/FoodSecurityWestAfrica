@@ -15,6 +15,33 @@ import matplotlib.colors as col
 # %% ######################### GROUPING CLUSTERS ############################## 
 
 def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True, title = None, figsize = None):
+    """
+    Group the given clusters to groups of given size, according to the 
+    medoid-to-medoid distances, either with the aim to group the most similar
+    clusters or the most dissimilar clusters, and either forcing clusters in a
+    group to be adjacent or not.
+
+    Parameters
+    ----------
+    k : int, optional
+        The number of clusters in which the area is devided. The default is 9.
+    size : int, optional
+        The size of the cluster groups. If k cannot be devided by the size, one
+        group will be smaller. The default is 5.
+    aim : str, optional
+        Either "Dissimilar" or "Similar". The default is "Similar".
+    adjacent : boolean, optional
+        Whether clusters within a group need to be adjacent. The default is True.
+    title : str, optional
+        Plot title to use. If None, clusters will not be plotted. The default is None.
+    figsize : tuple, optional
+        The figure size. If None, the default as defined in ModelCode/GeneralSettings is used.
+
+    Returns
+    -------
+    None.
+
+    """
     
     if figsize is None:
         from ModelCode.GeneralSettings import figsize
@@ -27,7 +54,7 @@ def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True, title = 
         pickle.load(fp) # clusters
         pickle.load(fp) # costs
         medoids = pickle.load(fp)
-    DistMedoids = MedoidMedoidDist(medoids, distance)
+    DistMedoids = __MedoidMedoidDist(medoids, distance)
     
     with open("InputData/Clusters/AdjacencyMatrices/k" + str(k) + "AdjacencyMatrix.txt", "rb") as fp:
         AdjacencyMatrix = pickle.load(fp)
@@ -38,13 +65,13 @@ def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True, title = 
     BestGrouping = None
     valid = 0
     
-    for grouping in AllGroupings(clusters, size):
-        if adjacent and not CheckAdjacency(clusters, grouping, AdjacencyMatrix):
+    for grouping in __AllGroupings(clusters, size):
+        if adjacent and not __CheckAdjacency(clusters, grouping, AdjacencyMatrix):
             continue
         valid += 1
-        TmpCosts = CostsGrouping(grouping, DistMedoids)
+        TmpCosts = __CostsGrouping(grouping, DistMedoids)
         BestGrouping, BestCosts = \
-           UpdateGrouping(BestCosts, TmpCosts, BestGrouping, grouping, aim)
+           __UpdateGrouping(BestCosts, TmpCosts, BestGrouping, grouping, aim)
     
     ShiftedGrouping = []
     for gr in BestGrouping:
@@ -65,7 +92,7 @@ def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True, title = 
                
     return(ShiftedGrouping, BestCosts, valid)
       
-def AllGroupings(lst, num):
+def __AllGroupings(lst, num):
     if len(lst) < num:
         yield []
         return
@@ -75,7 +102,7 @@ def AllGroupings(lst, num):
             lst_tmp = lst.copy()
             for j in i:
                 lst_tmp.remove(j)
-            for result in AllGroupings(lst_tmp, num):
+            for result in __AllGroupings(lst_tmp, num):
                 yield [i] + result
     else:
         for i in it.combinations(lst[1:], num - 1):
@@ -86,10 +113,10 @@ def AllGroupings(lst, num):
             lst_tmp = lst.copy()
             for j in i:
                 lst_tmp.remove(j)
-            for rest in AllGroupings(lst_tmp, num):
+            for rest in __AllGroupings(lst_tmp, num):
                 yield [i] + rest        
                 
-def CheckAdjacency(clusters, grouping, AdjacencyMatrix):
+def __CheckAdjacency(clusters, grouping, AdjacencyMatrix):
     for gr in grouping:
         if len(grouping) == 1:
             continue
@@ -103,7 +130,7 @@ def CheckAdjacency(clusters, grouping, AdjacencyMatrix):
             return(False)
     return(True)
 
-def CostsGrouping(grouping, dist):
+def __CostsGrouping(grouping, dist):
     costs = 0
     for gr in grouping:
         if len(gr) == 1:
@@ -112,7 +139,7 @@ def CostsGrouping(grouping, dist):
             costs = costs + dist[i[0], i[1]]
     return(costs)
 
-def UpdateGrouping(BestCosts, TmpCosts, BestGrouping, grouping, aim):
+def __UpdateGrouping(BestCosts, TmpCosts, BestGrouping, grouping, aim):
     if BestCosts is None:
         return(grouping, TmpCosts)
     if aim == "Similar":
@@ -124,7 +151,7 @@ def UpdateGrouping(BestCosts, TmpCosts, BestGrouping, grouping, aim):
             return(grouping, TmpCosts)
         return(BestGrouping, BestCosts)
             
-def MedoidMedoidDist(medoids, dist):
+def __MedoidMedoidDist(medoids, dist):
     k = len(medoids)
     res = np.empty([k,k])
     res.fill(0)
@@ -139,6 +166,36 @@ def MedoidMedoidDist(medoids, dist):
 
 def VisualizeClusterGroups(k, size, aim, adjacent, grouping, title, figsize, \
                           fontsizet = 20, fontsizea = 16):
+    """
+    Visulaizes the cluster groups on a map
+
+    Parameters
+    ----------
+    k : int, optional
+        The number of clusters in which the area is devided. The default is 9.
+    size : int, optional
+        The size of the cluster groups. If k cannot be devided by the size, one
+        group will be smaller. The default is 5.
+    aim : str, optional
+        Either "Dissimilar" or "Similar". The default is "Similar".
+    adjacent : boolean, optional
+        Whether clusters within a group need to be adjacent. The default is True.
+    grouping : list of tuples
+        Specifies the cluster groups.
+    title : str, optional
+        Plot title to use. If None, clusters will not be plotted. The default is None.
+    figsize : tuple, optional
+        The figure size. If None, the default as defined in ModelCode/GeneralSettings is used.
+    fontsizet : int, optional
+        Fontsize to use for the plot title. The default is 20.
+    fontsizea : int, optional
+        Fontsize to use for the logitudes and latitudes. The default is 16.
+
+    Returns
+    -------
+    None.
+
+    """
     
     from mpl_toolkits.basemap import Basemap
         

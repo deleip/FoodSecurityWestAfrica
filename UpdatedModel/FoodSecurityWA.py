@@ -37,17 +37,17 @@ for s in [1, 2, 3, 5]:
                         " size s = " + str(s) + " according to " + aim + "ity")
         
 
-# %% ##### 2. DEFAULT RUN FOR ADJACENT CLUSTER GROUPS OF SIZE 1, 2, 3, 5  #####
+# %% ############### 2. DEFAULT RUN FOR DIFFERENT GROUP TYPES  ################
 
 # group size, sample size N, validation sample size M
-comb1 = [#(1, 10000, 50000),
-        #(2, 20000, 100000),
-        #(3, 50000, 100000),
+comb1 = [(1, 10000, 50000),
+        (2, 20000, 100000),
+        (3, 50000, 100000),
         (5, 100000, 200000),
         ("all", 100000, 200000)
         ]
 
-comb2 = [#(1, 20000, 50000),
+comb2 = [(1, 20000, 50000),
         (2, 40000, 100000),
         (3, 100000, 200000),
         (5, 200000, 300000),
@@ -60,40 +60,50 @@ comb3 = [(2, 100000, 200000),
         ("all", 500000, 600000)
         ]
 
+combs = [comb1, comb2, comb3]
+
+grouping_types = [("Dissimilar", "Adj"),
+                  ("Dissimilar", ""),
+                  ("Similar", "Adj")]
 adj = "" # "Adj"
 
-for size, N, M in comb3:
-    if size == "all":
-        print("\u2017"*49)
-        print("Aim: " + aim + ", size: " + str(size) + ", clusters: all")
-        print("\u033F "*49)
-        settings, args, AddInfo_CalcParameters, yield_information, \
-        population_information, status, durations, crop_alloc, meta_sol, \
-        crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
-            FS.FoodSecurityProblem(validation_size = M,
-                                   plotTitle = "All clusters",
-                                   k_using = size,
-                                   N = N)
-        continue
-    
-    for aim in ["Dissimilar"]:    
-        with open("InputData/Clusters/ClusterGroups/GroupingSize" \
-                      + str(size) + aim + adj + ".txt", "rb") as fp:
-                BestGrouping = pickle.load(fp)
-                
-        for cluster_active in BestGrouping:
-            print("\u2017"*49)
-            print("Aim: " + aim + ", size: " + str(size) + ", clusters: " + str(cluster_active))
-            print("\u033F "*49)
-            
-            settings, args, AddInfo_CalcParameters, yield_information, \
-            population_information, status, durations, crop_alloc, meta_sol, \
-            crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
-                FS.FoodSecurityProblem(validation_size = M,
-                                       plotTitle = "Aim: " + aim  + ", Adjacent: False",
-                                       k_using = list(cluster_active),
-                                       N = N)
 
+for aim, adj in grouping_types:
+    if aim == "Dissimilar":
+        continue
+    if adj == "Adj":
+        adj_text = "True"
+    for idx, comb in enumerate(combs):
+        for size, N, M in comb:
+            if size == "all":
+                print("\u2017"*65)
+                print("Aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: all, comb: " + str(idx + 1))
+                print("\u033F "*65)
+                settings, args, AddInfo_CalcParameters, yield_information, \
+                population_information, status, durations, crop_alloc, meta_sol, \
+                crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
+                    FS.FoodSecurityProblem(validation_size = M,
+                                           plotTitle = "All clusters",
+                                           k_using = size,
+                                           N = N)
+            else:
+                with open("InputData/Clusters/ClusterGroups/GroupingSize" \
+                              + str(size) + aim + adj + ".txt", "rb") as fp:
+                        BestGrouping = pickle.load(fp)
+                        
+                for cluster_active in BestGrouping:
+                    print("\u2017"*65)
+                    print("Aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: " + str(cluster_active) + ", comb: " + str(idx + 1))
+                    print("\u033F "*65)
+                    
+                    settings, args, AddInfo_CalcParameters, yield_information, \
+                    population_information, status, durations, crop_alloc, meta_sol, \
+                    crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
+                        FS.FoodSecurityProblem(validation_size = M,
+                                               plotTitle = "Aim: " + aim  + ", Adjacent: False",
+                                               k_using = list(cluster_active),
+                                               N = N)
+        
 
 # %% ##### 3. PLOTTING RESULTS  #####
 

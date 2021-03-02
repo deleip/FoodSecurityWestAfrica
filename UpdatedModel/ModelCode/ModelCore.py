@@ -67,12 +67,12 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
     
     start = tm.time()
     
-# no output to console
+    # no output to console
     env = gp.Env(empty = True)    
     env.setParam('OutputFlag', 0)
     env.start()
     
-# problem
+    # problem
     prob = gp.Model("SustainableFoodSecurity", env = env)
     
     # dimension stuff
@@ -84,7 +84,7 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
     termyear_p1[termyear_p1 == 0] = T
     termyear_p1 = termyear_p1.astype(int)
     
-# index tupes for variables and constraints
+    # index tupes for variables and constraints
     indVfood = flatten([[(t, s) for t in range(0, termyear_p1[s])] \
                         for s in range(0, N)])
     
@@ -98,14 +98,14 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
     indMaxArea = list(it.product(range(0, K), range(0, T)))
     indCropsClusters = list(it.product(range(0, J), range(0, K)))
     
-# variables
+    # variables
     x = prob.addVars(range(0, T), range(0, J), range(0, K), name = "x")
     Vfood = prob.addVars(indVfood, name = "Vfood")
     Vsol = prob.addVars(range(0, N), name = "Vsol")
     Wgov = prob.addVars(indW, name = "Wgov")
 
 
-# objective function
+    # objective function
     obj = gp.quicksum([1/N * x[t,j,k] * args["costs"][j,k] \
                         for (t,j,k) in indCultCosts] + \
                        [1/N * rhoF * Vfood[t, s] for (t, s) in indVfood] + \
@@ -114,18 +114,18 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
     prob.setObjective(obj, gp.GRB.MINIMIZE)
             
          
-# constraints 1
+    # constraints 1
     prob.addConstrs((gp.quicksum([x[t, j, k] for j in range(0, J)]) \
                  <= args["max_areas"][k] for (k, t) in indMaxArea), "c_marea")
        
-# constraints 2
+    # constraints 2
     prob.addConstrs((gp.quicksum([Vfood[t, s]] + \
                 [args["ylds"][s, t, j, k] * x[t, j, k] * args["crop_cal"][j] \
                           for (j, k) in indCropsClusters]) \
                  >= (args["demand"][t] - args["import"]) \
                                  for (t, s) in indVfood), "c_demand")
     
-# constraints 3
+    # constraints 3
     prob.addConstrs((gp.quicksum([-Vsol[s]] + \
                         [- args["tax"] * (args["ylds"][s, t, j, k] * \
                                 x[t, j, k] * args["prices"][j, k] - \
@@ -137,13 +137,13 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
                                 range(0, K))]) \
                  <= args["ini_fund"] for s in range(0, N)), "c_sol")
         
-# constraints 4
+    # constraints 4
     prob.addConstrs((gp.quicksum([- Wgov[t, k, s]] + \
             [- args["ylds"][s, t, j, k] * x[t, j, k] * args["prices"][j, k] + \
             x[t, j, k] * args["costs"][j, k] for j in range(0, J)]) \
          <= - args["guaranteed_income"][t, k] for (t, k, s) in indW), "c_gov")
 
-# solving
+    # solving
     middle = tm.time()
 
     prob.optimize()
@@ -156,7 +156,7 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
     
     status = prob.status
     
-# get results
+    # get results
     crop_alloc = np.zeros((T, J, K))
     meta_sol = []
     
@@ -171,11 +171,6 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
                                         "," + str(j) + "," + str(k) + "]").X
                   
         meta_sol = GetMetaInformation(crop_alloc, args, rhoF, rhoS)
-        
-        # if meta_sol["num_years_with_losses"] > 0:
-        #     warn.warn(str("Please notice that in " + \
-        #               str(meta_sol["num_years_with_losses"]) + \
-        #               " years/clusters profits are negative."))
             
     printing("     Time      Setting up model: " + \
             str(np.round(durations[0], 2)) + "s", console_output = console_output, logs_on = logs_on)

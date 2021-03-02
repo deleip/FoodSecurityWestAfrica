@@ -78,12 +78,12 @@ def OutOfSampleVal(crop_alloc, settings, AddInfo_CalcParameters, rhoF, rhoS, \
         The penalty for insolvency.   
     meta_sol : dict 
         additional information about the model output 
-    console_output : boolean, optional
-        Specifying whether the progress should be documented thorugh console 
-        outputs. The default is defined in ModelCode/GeneralSettings.
     probS : float or None
         demanded probability of keeping the solvency constraint if 
         PenMet == "prob", None else.
+    console_output : boolean, optional
+        Specifying whether the progress should be documented thorugh console 
+        outputs. The default is defined in ModelCode/GeneralSettings.
 
     Yields
     ------

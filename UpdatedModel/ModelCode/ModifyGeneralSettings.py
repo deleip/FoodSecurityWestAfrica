@@ -93,12 +93,18 @@ def ModifyGeneralSettings(accuracyF = None, \
         Accuracy of debts used in the algorithm to find the right rhoS in
         cases where probS cannot be reached (given as the share of the 
         difference between debt_bottom and debt_top). The default is None.
+    accuracy_import : float, optional
+        Accuracy of imports used in the algorithm to find the right rhoF in
+        cases where probF cannot be reached (given as number of decimal places).
+        The default is None.
     logs_on : boolean, optional
         Should model progress be logged?. The default is None.
     console_output : boolean, optional
         Should model progress be reported in console?. The default is None.
     figsize : tuple, optional
         figsize used for all figures. The default is None.
+    close_plots: boolean, optional
+        Should plots be closed after plotting (and saving)? The default is None.
 
     Returns
     -------

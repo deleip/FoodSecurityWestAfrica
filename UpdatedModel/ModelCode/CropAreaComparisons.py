@@ -52,8 +52,15 @@ def CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title, \
         values will be used. The default is None.
     filename : str, optional
         Filename to save the resulting plot. If None, plot is not saved. The
+        default is None.
+    foldername : str, optional
+        The subfolder of Figures which to use (depends on the grouping type).
+        The default is None.
     figsize : tuple, optional
-        The figure size. The default is defined at the top of the document.
+        The figure size. If None, the default as defined in ModelCode/GeneralSettings is used.
+    close_plots : boolean or None
+        Whether plots should be closed after plotting (and saving). If None, 
+        the default as defined in ModelCode/GeneralSettings is used.
     fig : figure, optional
         If the function should create a plot within an already existing
         figure, the figure has to be passed to the function. The default is 
@@ -70,6 +77,13 @@ def CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title, \
         should be used for figures with many plots. The default is "big".
     sim_start : int, optional
         First year of the simulation. The default is 2017.
+    plot_total_area : boolean, optional
+        Specifies whether the total cultivated area should be included in plot.
+        Default is False.
+    legends : boolean, optional
+        Specifies if legends should be plotted. Default is True.
+    plt_labels : boolean, optional
+        Specifies whether plot labels should be included. Default is True.
 
     Returns
     -------
@@ -203,7 +217,7 @@ def CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title, \
     if filename is not None:
         if subplots:
             filename = filename + "_sp"
-        fig.savefig("Figures/" + foldername + "CompareCropAllocs/" + filename + \
+        fig.savefig("Figures/" + foldername + "/CompareCropAllocs/" + filename + \
                     ".jpg", bbox_inches = "tight", pad_inches = 1, format = "jpg")
 
     if close_plots:
@@ -213,8 +227,8 @@ def CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title, \
     
 def CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, MaxAreasPool, MaxAreasIndep, 
                                 labelsPool, labelsIndep, title = None, plot_total_area = True,  
-                                cols = None, cols_b = None, 
-                                subplots = False, filename = None, foldername = None, figsize = None, close_plots = None,
+                                cols = None, cols_b = None, subplots = False, 
+                                filename = None, foldername = None, figsize = None, close_plots = None,
                                 sim_start = 2017):
     """
     Given two list of crop areas, max available areas and labels, this plots 
@@ -243,13 +257,20 @@ def CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, MaxAreasPool, M
     cols_b : list, optional
         List of colors in a lighter shade to use. If None, a standard set of
         colors is used. The default is None.
-    subplots : TYPE, optional
-        DESCRIPTION. The default is False.
+    subplots : boolean, optional
+        If True, for each setting a new subplot is used. If False, all are 
+        plotted in the same plot. The default is False.
     filename : str, optional
         Filename to save the resulting plot. If None, plot is not saved. The
         default is None.
+    foldername : str, optional
+        The subfolder of Figures which to use (depends on the grouping type).
+        The default is None.
     figsize : tuple, optional
-        The figure size. The default is defined at the top of the document.
+        The figure size. If None, the default as defined in ModelCode/GeneralSettings is used.
+    close_plots : boolean or None
+        Whether plots should be closed after plotting (and saving). If None, 
+        the default as defined in ModelCode/GeneralSettings is used.
     sim_start : int, optional
         First year of the simulation. The default is 2017.
 
@@ -287,7 +308,7 @@ def CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, MaxAreasPool, M
     if filename is not None:
         if subplots:
             filename = filename + "_sp"
-        fig.savefig("Figures/" + foldername + "CompareCropAllocsRiskPooling/" + filename + \
+        fig.savefig("Figures/" + foldername + "/CompareCropAllocsRiskPooling/" + filename + \
                     ".jpg", bbox_inches = "tight", pad_inches = 1)
 
     if close_plots:
@@ -307,40 +328,10 @@ def GetResultsToCompare(ResType = "k_using", panda_file = "current_panda", \
     ResType : str, optional
         Which setting will be changed to compare different results. Needs to 
         be the exact name of that setting. The default is "k_using".
-    PenMet : "prob" or "penalties", optional
-        "prob" if desired probabilities were given. "penalties" if penalties 
-         were given directly. The default is "prob".
-    probF : float, optional
-        demanded probability of keeping the food demand constraint (only 
-        relevant if PenMet == "prob"). The default is 0.95.
-    probS : float, optional
-        demanded probability of keeping the solvency constraint (only 
-        relevant if PenMet == "prob"). The default is 0.95.
-    rhoF : float or None, optional 
-        Value that will be used as penalty for shortciómings of the food 
-        demand (only relevant if PenMet == "penalties"). The default is None.
-    rhoS : float or None, optional 
-        Value that will be used as penalty for insolvency of the government 
-        fund (only relevant if PenMet == "penalties"). The default is None.
-    console_output : boolean, optional
-        Specifying whether the progress should be documented thorugh console 
-        outputs. The default is defined in ModelCode/GeneralSettings.
-    groupSize : int, optional
-        The size of the groups. If we load reults for different cluster groups,
-        this is relevant for the output filename. The default is "".
-    groupAim : str ("Similar" or "Dissimilar"), optional
-        The aim when grouping clusters. If we load reults for different cluster 
-        groups, this is relevant for the output filename. The default is "".
-    adjacent : boolean, optional
-        Whether clusters within a group are adjacent. If we load reults for 
-        different cluster groups, this is relevant for the output filename.
-        The default is False.
-    validation : None or int, optional
-        if not None, the objevtice function will be re-evaluated for 
-        validation with a higher sample size as given by this parameter. 
-        The default is None.  
-    **kwargs
-        settings for the model, passed to DefaultSettingsExcept()  
+    panda_file : str, optional
+        Filename of panda csv to use for results.
+    **kwargs : 
+        Settings specifiying for which model run results shall be returned
 
     Returns
     -------
@@ -352,8 +343,11 @@ def GetResultsToCompare(ResType = "k_using", panda_file = "current_panda", \
     labels : list
         List of labels for plots (given information on the setting that is 
         changing).
-    fnIterate : str
-        Filename to be used as basis for saving figures using this data.
+    Ns :
+        sample size of each model run for which results are returned
+    Ms : 
+        validation sample size of each model run for which results are returned
+        
 
     """
     
@@ -424,6 +418,41 @@ def GetResultsToCompare(ResType = "k_using", panda_file = "current_panda", \
 
 def PlotTotalAreas(total_areas, groupAim, adjacent, fnPlot = None, foldername = None,
                    sim_start = 2017, cols = None, figsize = None, close_plots = None):
+    """
+    Plot that show the total cultivated area over all cluster groups for
+    all groupings resulting from the different group sizes (for a specific 
+    grouping type)
+
+    Parameters
+    ----------
+    total_areas : list of np.arrays
+        Total cultivated area for each grouping size.
+    grouping_aim : str, optional
+        The aim in grouping clusters, either "Similar" or "Dissimilar".
+    adjacent : boolean, optional
+        Whether clusters in a cluster group need to be adjacent. The default is False.
+    fnPlot : str, optional
+        Filename to save the resulting plot. If None, plot is not saved. The
+        default is None.
+    foldername : str, optional
+        The subfolder of Figures which to use (depends on the grouping type).
+        The default is None.
+    sim_start : int, optional
+        First year of the simulation. The default is 2017.
+    cols : list, optional
+        List of colors to use for plotting. If None, default values will
+        be used. The default is None.
+    figsize : tuple, optional
+        The figure size. If None, the default as defined in ModelCode/GeneralSettings is used.
+    close_plots : boolean or None
+        Whether plots should be closed after plotting (and saving). If None, 
+        the default as defined in ModelCode/GeneralSettings is used.
+        
+    Returns
+    -------
+    None.
+
+    """
     
     title = "Grouping: " + groupAim
     if adjacent:
@@ -457,7 +486,7 @@ def PlotTotalAreas(total_areas, groupAim, adjacent, fnPlot = None, foldername = 
     plt.tick_params(labelsize = 16)
     
     if fnPlot is not None:
-        fig.savefig("Figures/" + foldername + "CompareCropAllocs/" + fnPlot + "TotalAreas" + \
+        fig.savefig("Figures/" + foldername + "/CompareCropAllocs/" + fnPlot + "TotalAreas" + \
                     ".jpg", bbox_inches = "tight", pad_inches = 1)
     
     if close_plots:
@@ -473,6 +502,35 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
                                      console_output = None,
                                      close_plots = None,
                                      **kwargs):
+    """
+    For each group size used for grouping, this makes plots to compare the 
+    crop areas depending on the level of cooperation (i.e. group sizes)
+    
+
+    Parameters
+    ----------
+    panda_file : str, optional
+        Filename of panda csv to use for results.
+    grouping_aim : str, optional
+        The aim in grouping clusters, either "Similar" or "Dissimilar".
+    adjacent : boolean, optional
+        Whether clusters in a cluster group need to be adjacent. The default is False.
+    figsize : tuple, optional
+        The figure size. If None, the default as defined in ModelCode/GeneralSettings is used.
+    cols : list, optional
+        List of colors to use for plotting. If None, default values will
+        be used. The default is None.
+    close_plots : boolean or None
+        Whether plots should be closed after plotting (and saving). If None, 
+        the default as defined in ModelCode/GeneralSettings is used.
+    **kwargs : 
+        Settings specifiying for which model run results shall be returned
+
+    Returns
+    -------
+    None.
+
+    """
      
     if close_plots is None:
         from ModelCode.GeneralSettings import close_plots
@@ -494,9 +552,9 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
         
     foldername = groupAim
     if adjacent:
-        foldername = foldername + "Adjacent/"
+        foldername = foldername + "Adjacent"
     else:
-        foldername = foldername + "NonAdjacent/"
+        foldername = foldername + "NonAdjacent"
         
     printing("\nGroup size " + str(1), console_output = console_output)
     with open("InputData/Clusters/ClusterGroups/GroupingSize" \
@@ -595,6 +653,39 @@ def NumberOfSamples(sample_size,
                     figsize = None,
                     plt_title = "SamplesOverTime",
                     close_plots = None):
+    """
+    Creates a plot of the development of the number of samples in the simulation
+    over the considered years (both starting from a specific sample size in
+    the first year, and showing the development of samples when specified how 
+    many samples are needed in the last year) for different cluster group sizes.
+
+    Parameters
+    ----------
+    sample_size : int
+        The sample size to start with.
+    risk : float
+        The risk that is covered by the government.
+    threshold : int, optional
+        A threshold that will be included as a horizontal line in the plots.
+        The default is 500.
+    sim_start : int, optional
+        First year of the simulation. The default is 2017.
+    T : int, optional
+        The number of years covered by the simulation. The default is 20.
+    figsize : tuple, optional
+        The figure size. If None, the default as defined in ModelCode/GeneralSettings is used.
+    plt_title :str, optional
+        Filename to save the resulting plot. If None, plot is not saved.
+        The default is "SamplesOverTime".
+    close_plots : boolean or None
+        Whether plots should be closed after plotting (and saving). If None, 
+        the default as defined in ModelCode/GeneralSettings is used.
+        
+    Returns
+    -------
+    None.
+
+    """
     
     if figsize is None:
         from ModelCode.GeneralSettings import figsize

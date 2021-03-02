@@ -22,8 +22,7 @@ def GetPenalties(settings, args, yield_information, \
     """
     Given the probabilities probF and probS this either loads or calculates
     the corresponding penalties. Penalties are calculated with the respective
-    other penalty set to zero, such that the probabilities resulting in the
-    run using both penalties will always be at least as high as demanded.
+    other penalty set to zero.
 
     Parameters
     ----------
@@ -35,7 +34,7 @@ def GetPenalties(settings, args, yield_information, \
         Information on theon the yield distributions.
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is defined in ModelCode/GeneralSettings.
+        outputs.  If None, the default as defined in ModelCode/GeneralSettings is used.
     logs_on : boolean, optional
         Specifying whether the progress should be documented in a log file.
         If None, the default as defined in ModelCode/GeneralSettings is used.
@@ -43,17 +42,28 @@ def GetPenalties(settings, args, yield_information, \
     Returns
     -------
     rhoF : float
-        The correct penalty rhoF to reach the probability probF
+        The correct penalty rhoF to reach the probability probF (or the highest
+        possible probF).
     rhoS : float
-        The correct penalty rhoF to reach the probability probS
+        The correct penalty rhoF to reach the probability probS (or the highest
+        possible probS).
     necessary_debt : float
         The necessary debt to cover the payouts in probS of the cases (when 
         rhoF = 0).
     needed_import : float
         Amount of food that needs to imported to reach the probability for
         food seecurity probF (when using only rhoF and setting rhoS = 0)
+    maxProbFareaF : float
+        Maximum possible probability for food security for the given settings.
+    maxProbSareaF : float
+        Probability for solvency for areas to reach maximum porbability for food 
+        security.
+    maxProbFareaS : float
+        Probability for food security for areas to reach maximum porbability 
+        for solvency.
+    maxProbSareaS : float
+        Maximum possible probability for solvency for the given settings.
     """
-            
     # extract some settings (that were originally passed on directly...)
     probF = args["probF"]
     probS = args["probS"]
@@ -231,10 +241,10 @@ def CheckPotential(args, yield_information, probF = None, probS = None, \
         The desired probability for solvency. The default is None.
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is defined in ModelCode/GeneralSettings.
+        outputs. If None, the default as defined in ModelCode/GeneralSettings is used.
     logs_on : boolean, optional
         Specifying whether the progress should be documented in a log document.
-        The default is defined in ModelCode/GeneralSettings.
+        If None, the default as defined in ModelCode/GeneralSettings is used.
 
     Returns
     -------
@@ -255,7 +265,8 @@ def CheckPotential(args, yield_information, probF = None, probS = None, \
     elif probS is not None and probF is None:
         return(CheckOptimalProbS(args, yield_information, probS, accuracyS, console_output, logs_on))
     
-def CheckOptimalProbF(args, yield_information, probF, accuracy, console_output = None, logs_on = None):
+def CheckOptimalProbF(args, yield_information, probF, accuracy,
+                      console_output = None, logs_on = None):
     """
     Function to find the highest probF possible under the given settings, and
     calculating the amount of import needed to increase this probabtility to 
@@ -265,8 +276,8 @@ def CheckOptimalProbF(args, yield_information, probF, accuracy, console_output =
     ----------
     args : dict
         Dictionary of arguments needed as model input.  
-    other : dict
-        Other information on the model setup (on the yield distributions).
+    yield_information : dict
+        Information on the yield distributions.
     probF : float
         The desired probability for food security.
     accuracy : int, optional
@@ -274,10 +285,10 @@ def CheckOptimalProbF(args, yield_information, probF, accuracy, console_output =
         The default is defined in ModelCode/GeneralSettings.
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is defined in ModelCode/GeneralSettings.
+        outputs. If None, the default as defined in ModelCode/GeneralSettings is used.
     logs_on : boolean, optional
         Specifying whether the progress should be documented in a log document.
-        The default is defined in ModelCode/GeneralSettings.
+        If None, the default as defined in ModelCode/GeneralSettings is used.
 
     Returns
     -------
@@ -328,7 +339,8 @@ def CheckOptimalProbF(args, yield_information, probF, accuracy, console_output =
             
     return(max_probF, max_probS, needed_import)
 
-def CheckOptimalProbS(args, yield_information, probS, accuracy, console_output = None, logs_on = None):
+def CheckOptimalProbS(args, yield_information, probS, accuracy,
+                      console_output = None, logs_on = None):
     """
     Function to find the highest probS that is possible under given settings.
 
@@ -336,16 +348,20 @@ def CheckOptimalProbS(args, yield_information, probS, accuracy, console_output =
     ----------
     args : dict
         Dictionary of arguments needed as model input.  
-    other : dict
-        Other information on the model setup (on the yield distributions).
+    yield_information : dict
+        Information on the yield distributions.
     probS : float
         The desired probability for solvency.
     accuracy : int, optional
         Desired decimal places of accuracy of the obtained probS. 
-        The default is defined in ModelCode/GeneralSettings.
+        If None, the default as defined in ModelCode/GeneralSettings is used.
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is defined in ModelCode/GeneralSettings.
+        outputs. If None, the default as defined in ModelCode/GeneralSettings 
+        is used.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log document.
+        If None, the default as defined in ModelCode/GeneralSettings is used.
 
     Returns
     -------
@@ -394,40 +410,46 @@ def GetRhoF_Wrapper(args, yield_information, probF, rhoFini, checkedGuess, file,
     ----------
     args : dict
         Dictionary of arguments needed as model input.  
-    other : dict
-        Other information on the model setup (on the yield distributions).
-    probS : float
-        demanded probability of keeping the solvency constraint (only 
+    yield_information : dict
+        Information on the yield distributions.
+    probF : float
+        demanded probability of keeping the food security constraint (only 
         relevant if PenMet == "prob").
-    rhoSini : float or None 
-        If PenMet == "penalties", this is the value that will be used for rhoS.
-        if PenMet == "prob" and rhoSini is None, a initial guess for rhoS will 
-        be calculated in GetPenalties, else this will be used as initial guess 
-        for the penalty which will give the correct probability for solvency.
+    rhoFini : float or None 
+        Initial guess for rhoF.
     checkedGuess : boolean
         True if there is an initial guess that we are already sure about, as 
         it was confirmed for two sample sizes N and N' with N >= 2N' (and the
         current N* > N'). False if there is no initial guess or the initial 
         guess was not yet confirmed.
     file : str
-        String combining all settings affecting rhoS, used to save a plot 
-        of rhoS vs. necessary debt in MinimizeNecessaryDebt. 
+        String combining all settings affecting rhoF, used to save a plot 
+        of rhoF vs. necessary import in MinimizeNecessaryImport. 
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is defined in ModelCode/GeneralSettings.
+        outputs. If None, the default as defined in ModelCode/GeneralSettings
+        is used.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log document.
+        If None, the default as defined in ModelCode/GeneralSettings is used.
 
     Returns
     -------
     rhoS : float
-        The correct penalty rhoF to reach the probability probS
-    necessary_debt : float
-        The necessary debt to cover the payouts in probS of the cases (when 
-        rhoF = 0).
-    maxProbS : float
-        Maximum probability for solvency that can be reached under these 
-        settings.
-    maxProbF : float
-        Probability for food security for the settings that give the maxProbS.
+        The correct penalty rhoF to reach the given probF (or the highest
+        possible probF).
+    maxProbFareaF : float
+        Maximum possible probability for food security for the given settings.
+    maxProbSareaF : float
+        Probability for solvency for areas to reach maximum porbability for food 
+        security.
+    needed_import : float
+        Amount of food that needs to imported to reach the probability for
+        food seecurity probF (when using only rhoF and setting rhoS = 0)
+    crop_alloc : np.array
+        Crop area allocations for the resulting penalty.
+    meta_sol : dict
+        Dictionary on model outputs for the resulting penalty.
     """
     
     from ModelCode.GeneralSettings import accuracyF as accuracy
@@ -466,45 +488,36 @@ def GetRhoF(args, probF, rhoFini, checkedGuess, shareDiff, accuracy, \
     ----------
     args : dict
         Dictionary of arguments needed as model input.  
-    yield_information : dict
-        Other information on the model setup (on the yield distributions).
     probF : float
-        demanded probability of keeping the food demand constraint (only 
-        relevant if PenMet == "prob").
+        demanded probability of keeping the food demand constraint 
     rhoFini : float or None 
-        If PenMet == "penalties", this is the value that will be used for rhoF.
-        if PenMet == "prob" and rhoFini is None, a initial guess for rhoF will 
-        be calculated in GetPenalties, else this will be used as initial guess 
-        for the penalty which will give the correct probability for reaching 
-        food demand.
+        Initial guess for rhoF.
     checkedGuess : boolean
         True if there is an initial guess that we are already sure about, as 
         it was confirmed for two sample sizes N and N' with N >= 2N' (and the
         current N* > N'). False if there is no initial guess or the initial 
-        guess was not yet confirmed.
+        guess was not yet confirmed
+    shareDiff : float
+        The share of the final rhoF that the accuracy interval can have as 
+        size (i.e. if size(accuracy interval) < 1/shareDiff * rhoF, for rhoF
+        the current best guess for the correct penalty, then we use rhoF).
+    accuracy : int
+        Desired decimal places of accuracy of the obtained probF. 
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is defined in ModelCode/GeneralSettings.
+        outputs. If None, the default as defined in ModelCode/GeneralSettings is used.
     logs_on : boolean, optional
         Specifying whether the progress should be documented in a log document.
-        The default is defined in ModelCode/GeneralSettings.
+        If None, the default as defined in ModelCode/GeneralSettings is used.
 
     Returns
     -------
     rhoF : float
-        The correct penalty rhoF to reach the probability probF
-    maxProbF : float
-        Maximum probability for food security that can be reached under these 
-        settings.
-    maxProbS : float
-        Probability for solvency for the settings that give the maxProbF.
-    needed_import : float
-        Amount of food that needs to imported to reach the probability for
-        food seecurity probF.    
-    crop_alloc : np.array
+        The resulting penalty rhoF    
+    crop_alloc_out : np.array
         The optimal crop allocations using the penalty rhoF and setting rhoS 
         to zero in the given settings.
-    meta_sol : dict
+    meta_sol_out : dict
         Dictionary of meta information to the optimal crop allocations
     """
    
@@ -629,6 +642,53 @@ def GetRhoF(args, probF, rhoFini, checkedGuess, shareDiff, accuracy, \
 def MinimizeNecessaryImport(args, probF, rhoFini, checkedGuess, \
                           necessary_import, shareDiff, accuracy, file, \
                           console_output = None, logs_on = None):
+    """
+    In cases where the probability probF cannot be reached, we instead look
+    for the lowest penalty that minimizes the necessary import to cover the
+    food demand in probF of the cases.
+
+    Parameters
+    ----------
+    args : dict
+        Dictionary of arguments needed as model input.  
+    probF : float
+        demanded probability of keeping the food demand constraint 
+    rhoFini : float or None 
+        Initial guess for rhoF.
+    checkedGuess : boolean
+        True if there is an initial guess that we are already sure about, as 
+        it was confirmed for two sample sizes N and N' with N >= 2N' (and the
+        current N* > N'). False if there is no initial guess or the initial 
+        guess was not yet confirmed
+    necessary_import : float
+        Import that is needed to cover food demand in probF of the cases when 
+        using all agricultural area with the more productive crop in all years.
+    shareDiff : float
+        accuracy of the penalties given thorugh size of the accuracy interval;
+        the size needs to be smaller than final rho / shareDiff
+    accuracy : int
+        Desired decimal places of accuracy of the obtained probF.
+    file : str
+        String combining all settings affecting rhoF, used to save a plot 
+        of rhoF vs. necessary import. 
+    console_output : boolean, optional
+        Specifying whether the progress should be documented thorugh console 
+        outputs. If None, the default as defined in ModelCode/GeneralSettings is used.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log document.
+        If None, the default as defined in ModelCode/GeneralSettings is used.
+
+    Returns
+    -------
+    rhoF : float
+        The resulting penalty rhoF    
+    crop_alloc_out : np.array
+        The optimal crop allocations using the penalty rhoF and setting rhoS 
+        to zero in the given settings.
+    meta_sol_out : dict
+        Dictionary of meta information to the optimal crop allocations
+
+    """
     
     # accuracy information
     printing("     accuracy that we demand for rhoF: 1/" + str(shareDiff) + " of final rhoF", console_output = console_output, logs_on = logs_on)
@@ -779,16 +839,12 @@ def GetRhoS_Wrapper(args, yield_information, probS, rhoSini, checkedGuess, file,
     ----------
     args : dict
         Dictionary of arguments needed as model input.  
-    other : dict
-        Other information on the model setup (on the yield distributions).
+    yield_information : dict
+        Information on the yield distributions.
     probS : float
-        demanded probability of keeping the solvency constraint (only 
-        relevant if PenMet == "prob").
+        demanded probability of keeping the solvency constraint
     rhoSini : float or None 
-        If PenMet == "penalties", this is the value that will be used for rhoS.
-        if PenMet == "prob" and rhoSini is None, a initial guess for rhoS will 
-        be calculated in GetPenalties, else this will be used as initial guess 
-        for the penalty which will give the correct probability for solvency.
+        Initial guess for rhoS.
     checkedGuess : boolean
         True if there is an initial guess that we are already sure about, as 
         it was confirmed for two sample sizes N and N' with N >= 2N' (and the
@@ -799,12 +855,16 @@ def GetRhoS_Wrapper(args, yield_information, probS, rhoSini, checkedGuess, file,
         of rhoS vs. necessary debt in MinimizeNecessaryDebt. 
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is defined in ModelCode/GeneralSettings.
+        outputs. If None, the default as defined in ModelCode/GeneralSettings
+        is used.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log document.
+        If None, the default as defined in ModelCode/GeneralSettings is used.
 
     Returns
     -------
     rhoS : float
-        The correct penalty rhoF to reach the probability probS
+        The resulting penalty rhoS
     necessary_debt : float
         The necessary debt to cover the payouts in probS of the cases (when 
         rhoF = 0).
@@ -838,7 +898,8 @@ def GetRhoS_Wrapper(args, yield_information, probS, rhoSini, checkedGuess, file,
     
     return(rhoS, necessary_debt, maxProbS, maxProbF)
 
-def GetRhoS(args, probS, rhoSini, checkedGuess, shareDiff, accuracy, console_output = None, logs_on = None):
+def GetRhoS(args, probS, rhoSini, checkedGuess, shareDiff, accuracy, 
+             console_output = None, logs_on = None):
     """
     Finding the correct rhoS given the probability probS, based on a bisection
     search algorithm.
@@ -847,16 +908,12 @@ def GetRhoS(args, probS, rhoSini, checkedGuess, shareDiff, accuracy, console_out
     ----------
     args : dict
         Dictionary of arguments needed as model input.  
-    other : dict
-        Other information on the model setup (on the yield distributions).
+    yield_information : dict
+        Information on the yield distributions.
     probS : float
-        demanded probability of keeping the solvency constraint (only 
-        relevant if PenMet == "prob").
+        demanded probability of keeping the solvency constraint
     rhoSini : float or None 
-        If PenMet == "penalties", this is the value that will be used for rhoS.
-        if PenMet == "prob" and rhoSini is None, a initial guess for rhoS will 
-        be calculated in GetPenalties, else this will be used as initial guess 
-        for the penalty which will give the correct probability for solvency.
+        Initial guess for rhoS.
     checkedGuess : boolean
         True if there is an initial guess that we are already sure about, as 
         it was confirmed for two sample sizes N and N' with N >= 2N' (and the
@@ -870,12 +927,16 @@ def GetRhoS(args, probS, rhoSini, checkedGuess, shareDiff, accuracy, console_out
         Desired decimal places of accuracy of the obtained probS. 
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is defined in ModelCode/GeneralSettings.
+        outputs. If None, the default as defined in ModelCode/GeneralSettings 
+        is used.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log document.
+        If None, the default as defined in ModelCode/GeneralSettings is used.
 
     Returns
     -------
     rhoS : float
-        The correct penalty rhoF to reach the probability probS.
+        The resulting penalty rhoS
     """
             
     # accuracy information
@@ -994,13 +1055,9 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, checkedGuess, \
     args : dict
         Dictionary of arguments needed as model input.  
     probS : float
-        demanded probability of keeping the solvency constraint (only 
-        relevant if PenMet == "prob").
+        demanded probability of keeping the solvency constraint
     rhoSini : float or None 
-        If PenMet == "penalties", this is the value that will be used for rhoS.
-        if PenMet == "prob" and rhoSini is None, a initial guess for rhoS will 
-        be calculated in GetPenalties, else this will be used as initial guess 
-        for the penalty which will give the correct probability for solvency.
+        Initial guess for rhoS.
     checkedGuess : boolean
         True if there is an initial guess that we are already sure about, as 
         it was confirmed for two sample sizes N and N' with N >= 2N' (and the
@@ -1022,7 +1079,10 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, checkedGuess, \
         of rhoS vs. necessary debt. 
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is defined in ModelCode/GeneralSettings.
+        outputs. If None, the default as defined in ModelCode/GeneralSettings is used.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log document.
+        If None, the default as defined in ModelCode/GeneralSettings is used.
 
     Returns
     -------
@@ -1206,7 +1266,8 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, checkedGuess, \
     plt.title(r"Necessary debt for different $\rho_\mathrm{S}$", fontsize = 30, pad = 20)
     fig.savefig("Figures/rhoSvsDebts/CropAlloc_" + file + ".jpg", \
                 bbox_inches = "tight", pad_inches = 1)
-            
+    plt.close()	    
+	        
     return(FinalRhoS, FinalNecessaryDebt)
 
     
@@ -1227,10 +1288,7 @@ def CheckRhoSiniDebt(args, probS, rhoSini, debt_top, debt_bottom, shareDiff, acc
         demanded probability of keeping the solvency constraint (only 
         relevant if PenMet == "prob").
     rhoSini : float or None 
-        If PenMet == "penalties", this is the value that will be used for rhoS.
-        if PenMet == "prob" and rhoSini is None, a initial guess for rhoS will 
-        be calculated in GetPenalties, else this will be used as initial guess 
-        for the penalty which will give the correct probability for solvency.
+        Initial guess for rhoS.
     debt_top : float
         The debt that would be necessary for rhoS -> inf (aproximated by
         setting rhoS = 1e9).
@@ -1246,7 +1304,11 @@ def CheckRhoSiniDebt(args, probS, rhoSini, debt_top, debt_bottom, shareDiff, acc
         probS can't be reached anyway.)
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is defined in ModelCode/GeneralSettings.
+        outputs. If None, the default as defined in ModelCode/GeneralSettings 
+        is used.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log document.
+        If None, the default as defined in ModelCode/GeneralSettings is used.
 
     Returns
     -------
@@ -1436,7 +1498,6 @@ def UpdateDebtInformation(rhoSnew, necessary_debt, debt_top, debt_bottom, \
             interval = rhoSvalley[i+1] - rhoSvalley[i-1]
             
         
-    
     # check whether we are acurate enough
     if rhoS != 0:
         if interval < rhoS/shareDiff:
@@ -1456,7 +1517,7 @@ def DebtReport(necessary_debt, debt_bottom, debt_top):
 
     Parameters
     ----------
-    necessary_debt : TYPE
+    necessary_debt : float
         The necessary debt when using rhoSnew.
     debt_bottom : float
         The debt that would be necessary for rhoS = 0.
@@ -1579,8 +1640,7 @@ def UpdateRhoDebtValley(rhoSvalley, debtsValley):
 
 def UpdatedRhoGuessImports(meta_sol, rhoLastUp, rhoLastDown, rhoOld, min_import, accuracy):
     """
-    For GetRhoF and GetRhoS (which have the same structure), this provides
-    the next guess for the penalty.
+    For MinimizeNecessaryImport this provides the next guess for the penalty.
 
     Parameters
     ----------
@@ -1596,13 +1656,11 @@ def UpdatedRhoGuessImports(meta_sol, rhoLastUp, rhoLastDown, rhoOld, min_import,
         penalty giving the right probability).
     rhoOld : float
         The last penalty that we tried.
-    prob : float
-        The probability for which we aim.
+    minImport : float
+        The minimal import (when using the full area for the more productive 
+        crop in all years)
     accuracy : int
         Desired decimal places of accuracy of the obtained probability. 
-    probType : string, "F" or "S"
-        Specifies whether the function is called to find the next guess for 
-        rhoS or for rhoF.
 
     Returns
     -------
@@ -1783,16 +1841,21 @@ def ReportProgressFindingRho(rhoOld, meta_sol, accuracy, durations, \
         probS of the samples. Only relevant when called from 
         MinimizeNecessaryDebt. If False the debt is not reported. 
         The default is False.
+    imports : float or False
+        Necessary import to cover food demand in probF of the cases. Only 
+        relevant when called from MinimizeNecessaryImport. If False the import
+        is not reported.         
     prefix : float or False
         Used for additional information before the rest of the text. Used e.g. 
         when there are two next guesses when searching for the correct rhoS 
         within MinimizeNecessaryDebt. The default is "".
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. The default is True.
+        outputs.If None, the default as defined in ModelCode/GeneralSettings
+        is used.
     logs_on : boolean, optional
         Specifying whether the progress should be documented in a log document.
-        The default is defined in ModelCode/GeneralSettings.
+        If None, the default as defined in ModelCode/GeneralSettings is used.
 
     Returns
     -------

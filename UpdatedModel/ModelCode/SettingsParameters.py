@@ -99,7 +99,7 @@ def DefaultSettingsExcept(PenMet = "prob",
         validation with a higher sample size as given by this parameter. 
         The default is None.
     T : int, optional
-        Number of years to cover in the simulation. The default is 25.
+        Number of years to cover in the simulation. The default is 20.
     seed : int, optional
         Seed to allow for reproduction of the results. The default is 201120.
     tax : float, optional
@@ -109,7 +109,7 @@ def DefaultSettingsExcept(PenMet = "prob",
         depending on the expected income of farmers in a scenario excluding
         the government. The default is 90%.
     ini_fund : float
-        The default is 0.
+        Initial fund size. The default is 0.
         
         
     Returns
@@ -226,15 +226,12 @@ def SetParameters(settings, AddInfo_CalcParameters,\
           for each crop in 10^9$/10^6ha
         - demand: np.array of size (T,) giving the total food demand
           for each year in 10^12kcal
-        - import: import needed to reach the desired probability for food
-          security in 10^12kcal
         - ini_fund: initial fund size in 10^9$
+        - import: given import that will be subtraced from demand in 10^12kcal
         - tax: tax rate to be paied on farmers profits
         - prices: np.array of size (num_crops,) giving farm gate prices 
           farmers earn in 10^9$/10^6t
-        - T: number of years covered in model
-        - expected_incomes: expected income in secnario without government and
-          probF = 95% for each clutser.               
+        - T: number of years covered in model          
         - guaranteed_income: np.array of size (T, len(k_using)) giving 
           the income guaranteed by the government for each year and cluster
           in case of catastrophe in 10^9$
@@ -243,8 +240,16 @@ def SetParameters(settings, AddInfo_CalcParameters,\
         - max_areas: np.array of size (len(k_using),) giving the upper 
           limit of area available for agricultural cultivation in each
           cluster
-    other : dict
-        Dictionary giving some additional inforamtion
+        - probF : float or None, gigving demanded probability of keeping the
+          food demand constraint.
+        - probS : float or None, giving demanded probability of keeping the 
+          solvency constraint.
+        - rhoF : float giving the input penalty for food shortages (if probF = None), 
+          or the penalty calculated based on probF.
+        - rhoS : float giving the input penalty for onsolvency (if probS = None), 
+          or the penalty calculated based on probS.
+    yield_information : dict
+        Dictionary giving additional information on the yields
         
         - slopes: slopes of the yield trends
         - constants: constants of the yield trends
@@ -262,7 +267,16 @@ def SetParameters(settings, AddInfo_CalcParameters,\
         - share_maize_np: share of cases where maize yields are too low to 
           provide profit
         - exp_profit: expected profits in 10^9$/10^6ha per year, crop, cluster
-
+    population_information: dict
+        Dictionary giving additional information on the population size in the
+        model.
+        
+        - total_pop_scen : np.array of size (T,) giving estimates of population 
+          in West Africa from simulation start to end for given population 
+          scenario (from UN PopDiv)
+        - pop_cluster_ratio2015 : np.array of size (len(k_using),) giving the
+          share of population of a cluster to total population of West Africa
+          in 2015.
     """
     
     crops = ["Rice", "Maize"]
@@ -618,7 +632,7 @@ def RiskForCatastrophe(risk, num_clusters):
 
     Returns
     -------
-    prob : The probability for a year to be catastrophic.
+    res : The probability for a year to be catastrophic.
 
     """
     res = 0
@@ -724,7 +738,7 @@ def CatastrophicYears(risk, N, T, num_clusters, VSS):
         in the original objective function. The default is 3500.
     T : int
         Number of years to cover in the simulation. The default is 25.
-    k : int
+    num_clusters : int
         Number of clusters in which the area is to be devided. 
         The default is 1.
     VSS : boolean
@@ -817,12 +831,16 @@ def ProjectYields(yld_slopes, yld_constants, resid_std, sim_start, \
         If True, average yields will be returned instead of yield samples, as 
         needed to calculate the deterministic solution on which the VSS is
         based. The default is False.
+    wo_yields : boolean, optional
+        If True, the function will do everything execept generating the yield
+        samples (and return an empty list as placeholder for the ylds 
+        parameter). The default is False.
 
     Returns
     -------
     ylds : np.array of size (N, T, num_crops, len(k_using)) 
         yield samples in 10^6t/10^6ha according to the presence of 
-        catastrophes
+        catastrophes. If wo_yields = True, this is an empty list.
     yld_means : np.array of size (T, num_crops, len(k_using))
         Average yields in 10^6t/10^6ha.
 

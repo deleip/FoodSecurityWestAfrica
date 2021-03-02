@@ -53,7 +53,7 @@ def MakeList(grouping):
     
 def printing(content, console_output = None, flush = True, logs_on = None):
     """
-    Function to only print progress report to console if chosen.
+    Function the prints progress to console and/or to log file if chosen.
 
     Parameters
     ----------
@@ -104,7 +104,7 @@ def GetFilename(settings, groupSize = "", groupAim = "", \
         in case loading data for e.g. all groups from a specific cluster 
         grouping, this is the size of the groups (relevant for filename of
         figures)
-    groupSize : int
+    groupAim : str
         in case loading data for e.g. all groups from a specific cluster 
         grouping, this is the aim of the grouping (relevant for filename of
         figures)
@@ -120,7 +120,14 @@ def GetFilename(settings, groupSize = "", groupAim = "", \
     -------
     fn : str
         Filename combining all settings.
-
+    SettingsMaxProbF : str
+        Only if allNames is True.
+    SettingsAffectingRhoF : str
+        Only if allNames is True.
+    SettingsMaxProbS : str
+        Only if allNames is True.
+    SettingsAffectingRhoS : str
+        Only if allNames is True.
     """
         
     settingsTmp = settings.copy()

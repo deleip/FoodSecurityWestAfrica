@@ -174,23 +174,11 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
     args : dict
         Dictionary of arguments needed as model input (as given by 
         SetParameters())
-
-  meta_sol = {"exp_tot_costs": exp_tot_costs,
-                "fix_costs": fix_costs,
-                "yearly_fixed_costs": yearly_fixed_costs,
-                "fd_penalty": fd_penalty,
-                "avg_fd_penalty": avg_fd_penalty,
-                "sol_penalty": sol_penalty,
-                "shortcomings": shortcomings,
-                "exp_shortcomings": exp_shortcomings,
-                "expected_incomes": exp_incomes,
-                "profits": profits,
-                "num_years_with_losses": num_years_with_losses,
-                "payouts": payouts,
-                "final_fund": final_fund,
-                "probF": prob_food_security,
-                "probS": prob_staying_solvent}
-
+    rhoF : float
+        The penalty for shortcomings of the food demand.
+    rhoS : float
+        The penalty for insolvency.
+ 
     Returns
     -------
     meta_sol : dict 
@@ -209,7 +197,7 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
         - sol_penalties: Penalty payed because of insolvency in each sample.
         - shortcomings: Shortcoming of the food demand in 10^12kcal for each year in each 
           sample.
-        - avg_shortcomings: Average shortcoming of the food demand in 
+        - exp_shortcomings: Average shortcoming of the food demand in 
           10^12kcal in each year.
         - expected_incomes: Average profits of farmers in 10^9$ for each cluster in
           each year.

@@ -21,6 +21,7 @@ from ModelCode.SettingsParameters import SetParameters
 
 from ModelCode.CompleteModelCall import FoodSecurityProblem
 from ModelCode.CompleteModelCall import LoadModelResults
+from ModelCode.CompleteModelCall import PlotCropAlloc
 
 from ModelCode.ModelCore import SolveReducedcLinearProblemGurobiPy
 
@@ -29,12 +30,11 @@ from ModelCode.MetaInformation import GetMetaInformation
 from ModelCode.VSSandValidation import VSS
 from ModelCode.VSSandValidation import OutOfSampleVal
 
-from ModelCode.PlottingModelOutput import PlotModelOutput
-
-from ModelCode.AnalysisAndComparison import CompareCropAllocs
-from ModelCode.AnalysisAndComparison import CompareCropAllocRiskPooling
-from ModelCode.AnalysisAndComparison import GetResultsToCompare
-from ModelCode.AnalysisAndComparison import CropAreasDependingOnColaboration
+from ModelCode.CropAreaComparisons import CompareCropAllocs
+from ModelCode.CropAreaComparisons import CompareCropAllocRiskPooling
+from ModelCode.CropAreaComparisons import GetResultsToCompare
+from ModelCode.CropAreaComparisons import CropAreasDependingOnColaboration
+from ModelCode.CropAreaComparisons import NumberOfSamples
 
 from ModelCode.Auxiliary import GetFilename
 from ModelCode.Auxiliary import MakeList

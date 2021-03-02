@@ -34,15 +34,14 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
         Information on the yield distributions for the considered clusters.
     population_information : dict
         Information on the population in the considered area.
-        DESCRIPTION.
     crop_alloc :  np.array
         gives the optimal crop areas for all years, crops, clusters
     meta_sol : dict 
         additional information about the model output ('exp_tot_costs', 
-        'fix_costs', 'S', 'exp_incomes', 'profits', 'exp_shortcomings', 
-        'fd_penalty', 'avg_fd_penalty', 'sol_penalty', 'final_fund', 
-        'prob_staying_solvent', 'prob_food_security', 'payouts', 
-        'yearly_fixed_costs', 'num_years_with_losses')
+        'fix_costs', 'yearly_fixed_costs', 'fd_penalty', 'avg_fd_penalty', 
+        'sol_penalty', 'shortcomings', 'exp_shortcomings', 'expected_incomes', 
+        'profits', 'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
+        'probS', 'necessary_import', 'necessary_debt')
     meta_sol_vss : dict
         additional information on the deterministic solution 
     VSS_value : float
@@ -54,11 +53,14 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
         size for validation ("sample_size", "total_costs", "total_costs_val", 
         "fd_penalty", "fd_penalty_val", "sol_penalty", "sol_penalty_val", 
         "total_penalties", "total_penalties_val", "deviation_penalties")
+    fn_fullresults : str
+        Filename used to save the full model results.
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
         outputs. If None, the default as defined in ModelCode/GeneralSettings 
         is used.
-
+    file : str
+        filename of panda csv to which the information is to be added.
     Returns
     -------
     None.
@@ -194,13 +196,19 @@ def SetUpNewCurrentPandas(name_old_pandas):
 
 def CreateEmptyPanda(file = "current_panda"):
     """
-    Creating a new empty pandas object with the correct columns.
+    Creating a new empty pandas object with the correct columns.    
+
+    Parameters
+    ----------
+    file : str, optional
+        Name for file where to save the new panda csv.
+        The default is "current_panda".
 
     Returns
     -------
     None.
-
     """
+
     
     with open("ModelOutput/Pandas/ColumnNames.txt", "rb") as fp:
         colnames = pickle.load(fp)
@@ -211,6 +219,21 @@ def CreateEmptyPanda(file = "current_panda"):
     return(None)
 
 def OpenPanda(file = "current_panda"):
+    """
+    Load the panda csv into python.
+
+    Parameters
+    ----------
+    file : str, optional
+        Name of file with the csv that is to be loaded.
+        The default is "current_panda".
+
+    Returns
+    -------
+    panda : panda dataframe
+        The panda object with information on model runs.
+
+    """
  
     def __ConvertListsInts(arg):
         arg = arg.strip("][").split(", ")
@@ -249,6 +272,15 @@ def OpenPanda(file = "current_panda"):
     return(panda)
 
 def OverViewCurrentPandaVariables():
+    """
+    Returns a list with the current panda variables
+
+    Returns
+    -------
+    colnames : list
+        All variables that are currently available in the panda csvs.
+
+    """
     
     with open("ModelOutput/Pandas/ColumnNames.txt", "rb") as fp:
         colnames = pickle.load(fp)
@@ -256,6 +288,17 @@ def OverViewCurrentPandaVariables():
     return(colnames)
     
 def SetUpPandaDicts():
+    """
+    Sets up the dicts that are needed to deal with the panda csvs.
+    Dictonaries are defined here and saved so they can be loaded from other
+    functions. If additional variables are included in the write_to_pandas
+    function, they need to be added to all three dictionaries here as well!!
+
+    Returns
+    ------
+    None.
+
+    """
     units = {"Input probability food security": "",
         "Input probability solvency": "",
         "Number of crops": "",
