@@ -39,7 +39,13 @@ def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True, title = 
 
     Returns
     -------
-    None.
+    ShiftedGrouping : list of tuples
+        the grouping of clusters corresponding to the grouping type and size
+    BestCosts : float
+        the optimal costs (in terms of medoid to medoid distance), corresponds
+        to the reported cluster grouping
+    valid : int
+        number of groupings that would be valid for the given size and adjacency
 
     """
     

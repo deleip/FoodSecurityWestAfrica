@@ -13,28 +13,29 @@ import pandas as pd
 import sys
 
 from ModelCode.Auxiliary import printing
+from ModelCode.Auxiliary import GetDefaults
 
 # %% ############# FUNCTIONS TO GET INPUT FOR FOOD SECURITY MODEL #############
 
-def DefaultSettingsExcept(PenMet = "prob",
-                          probF = 0.99,
-                          probS = 0.95, 
-                          rhoF = None,
-                          rhoS = None,
-                          k = 9,     
-                          k_using = [3],
-                          num_crops = 2,
-                          yield_projection = "fixed",   
-                          sim_start = 2017,
-                          pop_scenario = "fixed",
-                          risk = 0.05,                          
-                          N = 10000, 
-                          validation_size = None,
-                          T = 20,
-                          seed = 201120,
-                          tax = 0.01,
-                          perc_guaranteed = 0.9,
-                          ini_fund = 0):     
+def DefaultSettingsExcept(PenMet = "default",
+                          probF = "default",
+                          probS = "default", 
+                          rhoF = "default",
+                          rhoS = "default",
+                          k = "default",     
+                          k_using = "default",
+                          num_crops = "default",
+                          yield_projection = "default",   
+                          sim_start = "default",
+                          pop_scenario = "default",
+                          risk = "default",                          
+                          N = "default", 
+                          validation_size = "default",
+                          T = "default",
+                          seed = "default",
+                          tax = "default",
+                          perc_guaranteed = "default",
+                          ini_fund = "default"):     
     """
     Using the default for all settings not specified, this creates a 
     dictionary of all settings.
@@ -44,40 +45,42 @@ def DefaultSettingsExcept(PenMet = "prob",
     PenMet : "prob" or "penalties", optional
         "prob" if desired probabilities are given and penalties are to be 
         calculated accordingly. "penalties" if input penalties are to be used
-        directly. The default is "prob".
+        directly. The default is defined in ModelCode/DefaultModelSettings.py.
     probF : float, optional
         demanded probability of keeping the food demand constraint (only 
-        relevant if PenMet == "prob"). The default is 0.99.
+        relevant if PenMet == "prob"). The default is defined in ModelCode/DefaultModelSettings.py.
     probS : float, optional
         demanded probability of keeping the solvency constraint (only 
-        relevant if PenMet == "prob"). The default is 0.95.
+        relevant if PenMet == "prob"). The default is defined in ModelCode/DefaultModelSettings.py.
     rhoF : float or None, optional 
         If PenMet == "penalties", this is the value that will be used for rhoF.
         if PenMet == "prob" and rhoF is None, a initial guess for rhoF will 
         be calculated in GetPenalties, else this will be used as initial guess 
         for the penalty which will give the correct probability for reaching 
-        food demand. The default is None.
+        food demand. The default is defined in ModelCode/DefaultModelSettings.py.
     rhoS : float or None, optional 
         If PenMet == "penalties", this is the value that will be used for rhoS.
         if PenMet == "prob" and rhoS is None, a initial guess for rhoS will 
         be calculated in GetPenalties, else this will be used as initial guess 
         for the penalty which will give the correct probability for solvency.
-        The default is None.
+        The default is defined in ModelCode/DefaultModelSettings.py.
     k : int, optional
         Number of clusters in which the area is to be devided. 
-        The default is 9.
+        The default is defined in ModelCode/DefaultModelSettings.py.
     k_using : "all" or a list of int i\in{1,...,k}, optional
         Specifies which of the clusters are to be considered in the model. 
-        The default is the representative cluster [3].
+        The default is defined in ModelCode/DefaultModelSettings.py.
     num_crops : int, optional
-        The number of crops that are used. The default is 2.
+        The number of crops that are used. The default is defined in
+        ModelCode/DefaultModelSettings.py.
     yield_projection : "fixed" or "trend", optional
         If "fixed", the yield distribtuions of the year prior to the first
         year of simulation are used for all years. If "trend", the mean of 
         the yield distributions follows the linear trend.
-        The default is "fixed".
+        The default is defined in ModelCode/DefaultModelSettings.py.
     sim_start : int, optional
-        The first year of the simulation. The default is 2017.
+        The first year of the simulation. The default is defined in
+        ModelCode/DefaultModelSettings.py.
     pop_scenario : str, optional
         Specifies which population scenario should be used. "fixed" uses the
         population of the year prior to the first year of the simulation for
@@ -86,39 +89,50 @@ def DefaultSettingsExcept(PenMet = "prob",
         'ConstantMortality', 'NoChange' and 'Momentum', referring to different
         UN_WPP population scenarios. All scenarios have the same estimates up 
         to (including) 2019, scenariospecific predictions start from 2020
-        The default is "fixed".
+        The default is defined in ModelCode/DefaultModelSettings.py.
     risk : int, optional
         The risk level that is covered by the government. Eg. if risk is 0.05,
         yields in the lower 5% quantile of the yield distributions will be 
-        considered as catastrophic. The default is 5%.
+        considered as catastrophic. The default is defined in
+        ModelCode/DefaultModelSettings.py.
     N : int, optional
         Number of yield samples to be used to approximate the expected value
-        in the original objective function. The default is 10000.
+        in the original objective function. The default is defined in
+        ModelCode/DefaultModelSettings.py.
     validation_size : None or int, optional
         if not None, the objevtice function will be re-evaluated for 
         validation with a higher sample size as given by this parameter. 
-        The default is None.
+        The default is defined in ModelCode/DefaultModelSettings.py.
     T : int, optional
-        Number of years to cover in the simulation. The default is 20.
+        Number of years to cover in the simulation. The default is defined in 
+        ModelCode/DefaultModelSettings.py.
     seed : int, optional
-        Seed to allow for reproduction of the results. The default is 201120.
+        Seed to allow for reproduction of the results. The default is defined 
+        in ModelCode/DefaultModelSettings.py.
     tax : float, optional
-        Tax rate to be paied on farmers profits. The default is 1%.
+        Tax rate to be paied on farmers profits. The default is defined in#
+        ModelCode/DefaultModelSettings.py.
     perc_guaranteed : float, optional
         The percentage that determines how high the guaranteed income will be 
         depending on the expected income of farmers in a scenario excluding
-        the government. The default is 90%.
+        the government. The default is defined in ModelCode/DefaultModelSettings.py.
     ini_fund : float
-        Initial fund size. The default is 0.
+        Initial fund size. The default is defined in ModelCode/DefaultModelSettings.py.
         
         
     Returns
     -------
     settings : dict
         A dictionary that includes all of the above settings.
-    
-
     """
+    
+    PenMet, probF, probS, rhoF, rhoS, k, k_using, \
+    num_crops, yield_projection, sim_start, pop_scenario, \
+    risk, N, validation_size, T, seed, tax, perc_guaranteed, \
+    ini_fund = GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
+                num_crops, yield_projection, sim_start, pop_scenario,
+                risk, N, validation_size, T, seed, tax, perc_guaranteed,
+                ini_fund)
 
     if type(k_using) is int:
         k_using = [k_using]
@@ -328,11 +342,13 @@ def SetParameters(settings, AddInfo_CalcParameters,\
         total_pop = pickle.load(fp)
         scenarios = pickle.load(fp)
     total_pop_est_past = total_pop[np.where(scenarios == "Medium")[0][0],:][0:71]
-    if settings["pop_scenario"] == "fixed":
+    if pop_scenario == "fixed":
         total_pop_scen = np.repeat(total_pop[np.where(scenarios == "Medium")[0][0],:][(sim_start-1)-1950], T)
     else:
         total_pop_scen = total_pop[np.where(scenarios == pop_scenario)[0][0],:]\
                                     [(sim_start - 1950):(sim_start + T - 1950)]
+        total_pop_year_before = total_pop[np.where(scenarios == pop_scenario)[0][0],:]\
+                                    [sim_start - 1 - 1950]                            
     total_pop_UN_2015 = total_pop_est_past[2015-1950]
     cluster_pop = np.zeros(len(k_using))
     for i, cl in enumerate(k_using):
@@ -474,8 +490,7 @@ def SetParameters(settings, AddInfo_CalcParameters,\
     # guaraneteed income per person assumed to be constant over time, 
     # therefore scale with population size
     if not pop_scenario == "fixed":
-        total_pop_ratios = total_pop_scen / \
-                                total_pop_scen[(sim_start-1)-1950]
+        total_pop_ratios = total_pop_scen / total_pop_year_before
         guaranteed_income = (guaranteed_income.swapaxes(0,1) * total_pop_ratios).swapaxes(0,1)
           
 # 10. prices for selling crops, per crop and cluster

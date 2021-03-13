@@ -6,9 +6,12 @@ Created on Fri Jan  1 14:35:49 2021
 @author: Debbora Leip
 """
 # get all functions 
-from ModelCode.ModifyGeneralSettings import ReturnGeneralSettings
-from ModelCode.ModifyGeneralSettings import ModifyGeneralSettings
-from ModelCode.ModifyGeneralSettings import ResetGeneralSettings
+from ModelCode.ModifySettings import ReturnGeneralSettings
+from ModelCode.ModifySettings import ModifyGeneralSettings
+from ModelCode.ModifySettings import ResetGeneralSettings
+from ModelCode.ModifySettings import ReturnDefaultModelSettings
+from ModelCode.ModifySettings import ModifyDefaultModelSettings
+from ModelCode.ModifySettings import ResetDefaultModelSettings
 
 from ModelCode.SetFolderStructure import CheckFolderStructure
 from ModelCode.SetFolderStructure import CleanFolderStructure
@@ -41,13 +44,14 @@ from ModelCode.Auxiliary import MakeList
 from ModelCode.PandaGeneration import OpenPanda
 from ModelCode.PandaGeneration import SetUpNewCurrentPandas
 from ModelCode.PandaGeneration import OverViewCurrentPandaVariables
-from ModelCode.PandaHandling import ReadFromPanda
-from ModelCode.PandaHandling import PandaToPlot_GetResults
-from ModelCode.PandaHandling import PlotPandaMedian
-from ModelCode.PandaHandling import PlotPandaAggregate
 from ModelCode.PandaHandling import UpdatePandaWithAddInfo
-from ModelCode.PandaHandling import MainPandaPlotsFixedSettings
-from ModelCode.PandaHandling import PlotPenaltyVsProb
+from ModelCode.PandaHandling import ReadFromPanda
+from ModelCode.PandaPlotsSingleScenario import PandaToPlot_GetResultsSingScen
+from ModelCode.PandaPlotsSingleScenario import PlotPandaMedian
+from ModelCode.PandaPlotsSingleScenario import PlotPandaAll
+from ModelCode.PandaPlotsSingleScenario import PlotPandaAggregate
+from ModelCode.PandaPlotsSingleScenario import PandaPlotsCooperation
+from ModelCode.PandaPlotsSingleScenario import OtherPandaPlots
 
 # set up folder structure (if not already done)
 CheckFolderStructure()

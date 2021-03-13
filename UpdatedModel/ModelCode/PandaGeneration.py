@@ -123,14 +123,14 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                            "Average total cultivation costs": np.nanmean(np.nansum(meta_sol["yearly_fixed_costs"], axis = (1,2))),
                            "Expected total costs": meta_sol["exp_tot_costs"],
                            "Average food shortcomings (over all years and samples with shortcomings)": np.nanmean(meta_sol["shortcomings"][meta_sol["shortcomings"]>0]),
-                           "Average food shortcomings per 10^9 capita (over all years and samples with shortcomings)": np.nanmean(food_shortage_capita[food_shortage_capita>0])*1e9,
+                           "Average food shortcomings per capita (over all years and samples with shortcomings)": np.nanmean(food_shortage_capita[food_shortage_capita>0])*1e9,
                            "Number of occurrences per cluster where farmers make losses": list(meta_sol["num_years_with_losses"]),
                            "Average income per cluster in final run (over years and samples)": list(np.nanmean(meta_sol["profits"], axis = (0,1))),
                            "Average government payouts per cluster (over samples)": list(np.nanmean(np.nansum(meta_sol["payouts"], axis = 1), axis = 0)),
                            "Average final fund (over all samples with negative final fund)": np.nanmean(ff_neg),
                            "Averge final fund (over all samples with negative final fund) scaled with probability of insolvency": np.nanmean(ff_neg) * (1 - meta_sol["probS"]),
-                           "Averge final fund per 10^9 capita (over all samples with negative final fund)": np.nanmean(ff_neg / (pop_of_area[ter_years]/1e9)),
-                           "Averge final fund per 10^9 capita (over all samples with negative final fund) scaled with probability of insolvency": np.nanmean(ff_neg / (pop_of_area[ter_years]/1e9)) * (1 - meta_sol["probS"]),
+                           "Averge final fund per capita (over all samples with negative final fund)": np.nanmean(ff_neg / (pop_of_area[ter_years]/1e9)),
+                           "Averge final fund per capita (over all samples with negative final fund) scaled with probability of insolvency": np.nanmean(ff_neg / (pop_of_area[ter_years]/1e9)) * (1 - meta_sol["probS"]),
                            "Averge final fund as share of guaranteed income (over all samples with negative final fund)": np.nanmean(ff_neg / total_guar_inc[ter_years]),
                            "Averge final fund as share of guaranteed income (over all samples with negative final fund) scaled with probability of insolvency": np.nanmean(ff_neg / total_guar_inc[ter_years]) * (1 - meta_sol["probS"]),
                            "Number of samples with negative final fund": np.nansum(meta_sol["final_fund"] < 0),
@@ -147,8 +147,8 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
             
         if np.isnan(dict_for_pandas["Average food shortcomings (over all years and samples with shortcomings)"]):
             dict_for_pandas["Average food shortcomings (over all years and samples with shortcomings)"] = 0
-        if np.isnan(dict_for_pandas["Average food shortcomings per 10^9 capita (over all years and samples with shortcomings)"]):
-            dict_for_pandas["Average food shortcomings per 10^9 capita (over all years and samples with shortcomings)"] = 0
+        if np.isnan(dict_for_pandas["Average food shortcomings per capita (over all years and samples with shortcomings)"]):
+            dict_for_pandas["Average food shortcomings per capita (over all years and samples with shortcomings)"] = 0
             
         if not os.path.exists("ModelOutput/Pandas/" + file + ".csv"):
             CreateEmptyPanda(file)

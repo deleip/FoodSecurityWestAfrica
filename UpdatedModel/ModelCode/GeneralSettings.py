@@ -1,5 +1,4 @@
-# Last modified February 15, 2021, at 10:20
-# (reset to original values)
+# Last modified March 04, 2021, at 18:03
 
 # accuracy demanded from the probabilities as decimal places (given as float,
 # not as percentage)
@@ -18,7 +17,7 @@ accuracy_debt = 0.005
 
 # accuracy of imports used in the algorithm to find the right rhoF in cases
 # where probF cannot be reached (given as number of decimal places)
-accuracy_import = 3
+accuracy_import = 2
 
 # should model progress be logged?
 logs_on = True

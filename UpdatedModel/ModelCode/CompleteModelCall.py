@@ -61,7 +61,8 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
         the default as defined in ModelCode/GeneralSettings is used.
     panda_file : str
         Name of the csv file used to append the results of the model run for
-        plotting and easy accessibility. Default is "current_panda"
+        plotting and easy accessibility. If None, results are not saved to 
+        panda csv. Default is "current_panda"
     **kwargs
         settings for the model, passed to DefaultSettingsExcept()
         
@@ -165,9 +166,10 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     ----------
     settings : dict
         All input settings for the model framework.
-    panda_file : str
+    panda_file : str or None
         Name of the csv file used to append the results of the model run for
-        plotting and easy accessibility. Default is "current_panda"
+        plotting and easy accessibility. If None, results are not saved to 
+        panda csv. Default is "current_panda"
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
         outputs. If None, the default as defined in ModelCode/GeneralSettings 
@@ -312,10 +314,11 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
 
     # add results to pandas overview
     fn = GetFilename(settings)
-    write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
-                    population_information, crop_alloc, \
-                    meta_sol, meta_sol_vss, VSS_value, validation_values, \
-                    fn, console_output, panda_file)     
+    if panda_file is not None:
+        write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
+                        population_information, crop_alloc, \
+                        meta_sol, meta_sol_vss, VSS_value, validation_values, \
+                        fn, console_output, panda_file)     
             
     # timing
     all_end  = tm.time()   

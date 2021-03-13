@@ -215,3 +215,53 @@ def GetFilename(settings, groupSize = "", groupAim = "", \
     
     return(fn)
 
+
+def GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
+                num_crops, yield_projection, sim_start, pop_scenario,
+                risk, N, validation_size, T, seed, tax, perc_guaranteed,
+                ini_fund):
+                                    
+    
+    if PenMet == "default":
+        from ModelCode.DefaultModelSettings import PenMet
+    if probF == "default":
+        from ModelCode.DefaultModelSettings import probF
+    if probS == "default":
+        from ModelCode.DefaultModelSettings import probS
+    if rhoF == "default":
+        from ModelCode.DefaultModelSettings import rhoF
+    if rhoS == "default":
+        from ModelCode.DefaultModelSettings import rhoS
+    if k == "default":
+        from ModelCode.DefaultModelSettings import k
+    if k_using == "default":
+        from ModelCode.DefaultModelSettings import k_using
+    if num_crops == "default":
+        from ModelCode.DefaultModelSettings import num_crops
+    if yield_projection == "default":
+        from ModelCode.DefaultModelSettings import yield_projection
+    if sim_start == "default":
+        from ModelCode.DefaultModelSettings import sim_start
+    if pop_scenario == "default":
+        from ModelCode.DefaultModelSettings import pop_scenario
+    if risk == "default":
+        from ModelCode.DefaultModelSettings import risk
+    if N == "default":
+        from ModelCode.DefaultModelSettings import N
+    if validation_size == "default":
+        from ModelCode.DefaultModelSettings import validation_size
+    if T == "default":
+        from ModelCode.DefaultModelSettings import T
+    if seed == "default":
+        from ModelCode.DefaultModelSettings import seed
+    if tax == "default":
+        from ModelCode.DefaultModelSettings import tax
+    if perc_guaranteed == "default":
+        from ModelCode.DefaultModelSettings import perc_guaranteed
+    if ini_fund == "default":
+        from ModelCode.DefaultModelSettings import ini_fund
+        
+    return(PenMet, probF, probS, rhoF, rhoS, k, k_using,
+          num_crops, yield_projection, sim_start, pop_scenario,
+          risk, N, validation_size, T, seed, tax, perc_guaranteed,
+          ini_fund)

@@ -301,23 +301,37 @@ def CheckOptimalProbF(args, yield_information, probF, accuracy,
         Amount of food that needs to imported to reach the probability for
         food seecurity probF.    
     """
+              
+    from ModelCode.GeneralSettings import accuracy_import as accuracy_import  
     
-    from ModelCode.GeneralSettings import accuracy_import as accuracy_import
+    # try for rhoF = 1e9 (as a proxy for rhoF = inf)
+    status, crop_alloc, meta_sol, prob, durations = \
+         SolveReducedcLinearProblemGurobiPy(args, 1e12, 0, console_output = False, logs_on = False)  
+         
+    plt.figure()
+    plt.plot(range(0, args["T"]), crop_alloc[:,0,0])
+    plt.plot(range(0, args["T"]), crop_alloc[:,1,0])
+       
     
-    # find best crop per cluster (based on average yields)
-    yld_means = yield_information["yld_means"]  # t/ha
-    yld_means = np.swapaxes(np.swapaxes(yld_means, 1, 2) * \
-                            args["crop_cal"], 1, 2) # 10^6 kcal/ha
-    which_crop = np.argmax(yld_means, axis = 1)
+    # this should in thoery work (as yields cannot be negative) but if there
+    # is not enough samples (especially with yield trends where the last years
+    # will be the ones leading to the maximum import, where samples are the 
+    # lowest) it could be off?
+    
+    # # find best crop per cluster (based on average yields)
+    # yld_means = yield_information["yld_means"]  # t/ha
+    # yld_means = np.swapaxes(np.swapaxes(yld_means, 1, 2) * \
+    #                         args["crop_cal"], 1, 2) # 10^6 kcal/ha
+    # which_crop = np.argmax(yld_means, axis = 1)
 
-    # set area in the cluster to full area for the rigth crop
-    x = np.zeros((args["T"], args["num_crops"], len(args["k_using"])))
-    for t in range(0, args["T"]):
-        for k in range(0, len(args["k_using"])):
-            x[t, which_crop[t, k], k] = args["max_areas"][k]
+    # # set area in the cluster to full area for the rigth crop
+    # x = np.zeros((args["T"], args["num_crops"], len(args["k_using"])))
+    # for t in range(0, args["T"]):
+    #     for k in range(0, len(args["k_using"])):
+    #         x[t, which_crop[t, k], k] = args["max_areas"][k]
     
-    # run obective function for this area and the given settings
-    meta_sol = GetMetaInformation(x, args, rhoF = 0, rhoS = 0) 
+    # # run obective function for this area and the given settings
+    # meta_sol = GetMetaInformation(x, args, rhoF = 0, rhoS = 0) 
     
     # get resulting probabilities
     max_probF = meta_sol["probF"]
@@ -332,7 +346,7 @@ def CheckOptimalProbF(args, yield_information, probF, accuracy,
         printing("     Desired probF (" + str(np.round(probF * 100, accuracy - 1)) \
                              + "%) can be reached\n", console_output = console_output, logs_on = logs_on)
     else:
-        printing("     Import of " + str(np.round(needed_import, accuracy_import + 1)) + \
+        printing("     Import of " + str(np.round(needed_import, accuracy_import + 5)) + \
                  " 10^12 kcal is needed to reach probF = " + \
                  str(np.round(probF * 100, accuracy - 1)) + "%\n", \
                      console_output = console_output, logs_on = logs_on)
@@ -771,6 +785,9 @@ def MinimizeNecessaryImport(args, probF, rhoFini, checkedGuess, \
         status, crop_alloc, meta_sol, prob, durations = \
                 SolveReducedcLinearProblemGurobiPy(args, rhoFnew, 0, console_output = False, logs_on = False)
         
+        plt.figure()
+        plt.plot(range(0, args["T"]), crop_alloc[:,0,0])
+        plt.plot(range(0, args["T"]), crop_alloc[:,1,0])
         
         # We want to find the lowest penalty for which we get the right probability.
         # The accuracy interval is always the difference between the lowest 
@@ -796,6 +813,11 @@ def MinimizeNecessaryImport(args, probF, rhoFini, checkedGuess, \
             else:
                 accuracy_int = rhoFLastDown - rhoFnew
         elif np.round(meta_sol["necessary_import"], accuracy_import) < min_import:
+            plt.scatter(rhoFnew, meta_sol["necessary_import"], s = 10, color = "blue")
+            ReportProgressFindingRho(rhoFnew, meta_sol, accuracy, durations, \
+                                     "F", accuracy_int, imports = min_import, \
+                                     console_output = console_output, logs_on = logs_on)
+            
             sys.exit("Necessary import seems to be off, logic must be flawed.")
             
         # report
@@ -1885,7 +1907,7 @@ def ReportProgressFindingRho(rhoOld, meta_sol, accuracy, durations, \
         if np.round(meta_sol["necessary_import"], accuracy_import) == imports:
             import_text = ", nec. import at min."
         else:
-            import_text = ", nec. import: " + str(np.round(meta_sol["necessary_import"], accuracy_import)) + " 10^12kcal"
+            import_text = ", nec. import: " + str(np.round(meta_sol["necessary_import"], accuracy_import + 5)) + " 10^12kcal"
     else:
         import_text = ""
         
