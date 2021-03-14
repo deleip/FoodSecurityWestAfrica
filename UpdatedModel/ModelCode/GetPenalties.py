@@ -1244,7 +1244,7 @@ def MinimizeNecessaryDebt(args, probS, rhoSini, checkedGuess, \
                             UpperBorder, LowerBorder, rhoSvalley, debtsValley)
                     
             # report
-            debt_report = DebtReport(necessary_debt, debt_bottom, debt_top)
+            debt_report = DebtReport(necessary_debt1, debt_bottom, debt_top)
             ReportProgressFindingRho(rhoSnew1, meta_sol1, accuracy, durations1, \
                             "S", interval, debt = debt_report, \
                             prefix = "1. ", console_output = console_output,
