@@ -62,3 +62,5 @@ perc_guaranteed = 0.9
 # tax rate to be paied on farmers profit 
 ini_fund = 0 
 
+# food import that will be subtracted from demand in each year
+food_import = 0 

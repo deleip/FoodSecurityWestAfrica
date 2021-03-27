@@ -219,7 +219,7 @@ def GetFilename(settings, groupSize = "", groupAim = "", \
 def GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
                 num_crops, yield_projection, sim_start, pop_scenario,
                 risk, N, validation_size, T, seed, tax, perc_guaranteed,
-                ini_fund):
+                ini_fund, food_import):
                                     
     
     if PenMet == "default":
@@ -260,8 +260,10 @@ def GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
         from ModelCode.DefaultModelSettings import perc_guaranteed
     if ini_fund == "default":
         from ModelCode.DefaultModelSettings import ini_fund
+    if food_import == "default":
+        from ModelCode.DefaultModelSettings import food_import
         
     return(PenMet, probF, probS, rhoF, rhoS, k, k_using,
           num_crops, yield_projection, sim_start, pop_scenario,
           risk, N, validation_size, T, seed, tax, perc_guaranteed,
-          ini_fund)
+          ini_fund, food_import)

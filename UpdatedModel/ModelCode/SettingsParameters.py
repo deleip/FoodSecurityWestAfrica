@@ -35,7 +35,8 @@ def DefaultSettingsExcept(PenMet = "default",
                           seed = "default",
                           tax = "default",
                           perc_guaranteed = "default",
-                          ini_fund = "default"):     
+                          ini_fund = "default",
+                          food_import = "default"):     
     """
     Using the default for all settings not specified, this creates a 
     dictionary of all settings.
@@ -132,7 +133,7 @@ def DefaultSettingsExcept(PenMet = "default",
     ini_fund = GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
                 num_crops, yield_projection, sim_start, pop_scenario,
                 risk, N, validation_size, T, seed, tax, perc_guaranteed,
-                ini_fund)
+                ini_fund, food_import)
 
     if type(k_using) is int:
         k_using = [k_using]
@@ -179,13 +180,14 @@ def DefaultSettingsExcept(PenMet = "default",
                  "seed": seed, 
                  "tax": tax,
                  "perc_guaranteed": perc_guaranteed,
-                 "ini_fund": ini_fund}   
+                 "ini_fund": ini_fund,
+                 "import": food_import}   
      
 
     # return dictionary of all settings
     return(settings)
 
-def SetParameters(settings, AddInfo_CalcParameters,\
+def SetParameters(settings, expected_incomes = None,\
                   wo_yields = False, VSS = False, \
                   console_output = None, logs_on = None):
     """
@@ -197,9 +199,9 @@ def SetParameters(settings, AddInfo_CalcParameters,\
     ----------
     settings : dict
         Dictionary of settings as given by DefaultSettingsExcept().
-    AddInfo_CalcParameters : dict 
-        Additional information from calculatings expected income and penalties
-        which are not needed as model input.        
+    expected_incomes : np.array of size (len(k_using),)
+        The expected income of farmers in a scenario where the government is
+        not involved.
     wo_yields : boolean, optional
         If True, the function will do everything execept generating the yield
         samples (and return an empty list as placeholder for the ylds 
@@ -311,14 +313,8 @@ def SetParameters(settings, AddInfo_CalcParameters,\
     seed = settings["seed"]
     tax = settings["tax"]
     perc_guaranteed = settings["perc_guaranteed"]
-    expected_incomes = AddInfo_CalcParameters["expected_incomes"]
-    
-    if "needed_import" in AddInfo_CalcParameters.keys():
-        n_import = AddInfo_CalcParameters["needed_import"]
-        if n_import < 0:
-            n_import = 0
-    else:
-        n_import = 0
+    if expected_incomes is None:
+        expected_incomes = np.zeros(len(k_using))
     
 # 1. get cluster information (clusters given by k-Medoids on SPEI data) 
     with open("InputData/Clusters/Clustering/kMediods" + \
@@ -356,6 +352,7 @@ def SetParameters(settings, AddInfo_CalcParameters,\
     total_pop_GPW = np.sum(cluster_pop)
     cluster_pop_ratio_2015 = cluster_pop/total_pop_UN_2015
     total_pop_ratio_2015 = total_pop_GPW/total_pop_UN_2015
+    considered_pop_scen = total_pop_scen * total_pop_ratio_2015 # use 2015 ratio to scale down population scneario to considered area
     
 # 4. Country shares of area (for price calculation)
     with open("InputData/Prices/CountryCodesGridded.txt", "rb") as fp:    
@@ -603,7 +600,7 @@ def SetParameters(settings, AddInfo_CalcParameters,\
             "costs": costs,
             "demand": demand,
             "ini_fund": settings["ini_fund"],
-            "import": n_import,
+            "import": settings["import"],
             "tax": tax,
             "prices": prices,
             "T": T,
@@ -625,7 +622,8 @@ def SetParameters(settings, AddInfo_CalcParameters,\
              "share_maize_np": share_maize_np,
              "exp_profit": exp_profit}
     
-    population_information = {"total_pop_scen": total_pop_scen,
+    population_information = {"population": considered_pop_scen,
+                              "total_pop_scen": total_pop_scen, # full area WA
                               "pop_cluster_ratio2015": cluster_pop_ratio_2015}
         
     return(args, yield_information, population_information)

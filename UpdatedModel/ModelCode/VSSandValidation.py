@@ -15,7 +15,7 @@ from ModelCode.Auxiliary import printing
 
 # %% #################### VALUE OF THE STOCHASTIC SOLUTION ####################  
  
-def VSS(settings, AddInfo_CalcParameters, args):
+def VSS(settings, expected_incomes, args):
     """
     Calculating expected total costs using the optimal crop area allocation 
     assuming expected yield values as yield realization.
@@ -44,7 +44,7 @@ def VSS(settings, AddInfo_CalcParameters, args):
     # get arguments to calculate deterministic solution (in particular the 
     # expected yields instead of yield samples)
     args_vss, yield_information, population_information = \
-        SetParameters(settings, AddInfo_CalcParameters, VSS = True, console_output = False, logs_on = False)
+        SetParameters(settings, expected_incomes, VSS = True, console_output = False, logs_on = False)
     
     # solve model for the expected yields
     status, crop_alloc_vss, meta_sol, prob, durations = \
@@ -57,7 +57,7 @@ def VSS(settings, AddInfo_CalcParameters, args):
 
 # %% ################### OUT OF SAMLE VALIDATION OF RESULT ####################  
 
-def OutOfSampleVal(crop_alloc, settings, AddInfo_CalcParameters, rhoF, rhoS, \
+def OutOfSampleVal(crop_alloc, settings, expected_incomes, rhoF, rhoS, \
                    meta_sol, probS = None, console_output = None):
     """
     For validation, the objective function is re-evaluate, using the optimal
@@ -98,7 +98,7 @@ def OutOfSampleVal(crop_alloc, settings, AddInfo_CalcParameters, rhoF, rhoS, \
     # get yield samples
     printing("     Getting parameters and yield samples", console_output = console_output)
     args, yield_information, population_information = \
-                SetParameters(settings_val, AddInfo_CalcParameters, \
+                SetParameters(settings_val, expected_incomes, \
                               console_output = False, logs_on = False)
     
     # run objective function for higher sample size

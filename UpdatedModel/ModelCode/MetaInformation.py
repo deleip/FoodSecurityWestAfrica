@@ -153,7 +153,7 @@ def ObjectiveFunction(x, num_clusters, num_crops, N, \
         S, # shortcomings per realization and year
         exp_income, # expected income (T, k)
         P, # profits
-        np.nanmean(S, axis = 0) , # yearly avg shortcoming (T)
+        np.nanmean(S, axis = 0), # yearly avg shortcoming (T)
         rhoF * S, # yearly food demand penalty (N x T)
         np.nanmean(rhoF * S, axis = 0), # yearly avg fd penalty (T)
         rhoS * (- ff), # solvency penalty (N)
@@ -245,13 +245,20 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
     # calculationg additional quantities:
     # probability of solvency in case of catastrophe
     prob_staying_solvent = np.sum(final_fund >= 0) /  args["N"]
+    
     tmp = np.copy(shortcomings)
     np.seterr(invalid='ignore')
     tmp[tmp > 0] = 1
     np.seterr(invalid='warn')
     prob_food_security = 1 - np.nanmean(tmp)
+    
     np.seterr(invalid='ignore')
     num_years_with_losses = np.sum(profits<0, axis = (0,1))
+    np.seterr(invalid='warn')
+    
+    debt = -np.copy(final_fund)
+    np.seterr(invalid='ignore')
+    debt[debt < 0] = 0
     np.seterr(invalid='warn')
     
     # group information into a dictionary
@@ -262,24 +269,15 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
                 "avg_fd_penalty": avg_fd_penalty,
                 "sol_penalty": sol_penalty,
                 "shortcomings": shortcomings,
-                "exp_shortcomings": exp_shortcomings,
+                "exp_shortcomings": exp_shortcomings, # per year
                 "expected_incomes": exp_incomes,
                 "profits": profits,
                 "num_years_with_losses": num_years_with_losses,
                 "payouts": payouts,
                 "final_fund": final_fund,
                 "probF": prob_food_security,
-                "probS": prob_staying_solvent}
-    
-    if args["probF"] is not None:
-        meta_sol["necessary_import"] = np.quantile(meta_sol["shortcomings"]\
-                 [~np.isnan(meta_sol["shortcomings"])].flatten(), args["probF"])
-    else:
-        meta_sol["necessary_import"] = None 
-    if args["probS"] is not None:
-        meta_sol["necessary_debt"] = - np.quantile(meta_sol["final_fund"], \
-                                                   1 - args["probS"])
-    else:
-        meta_sol["necessary_debt"] = None 
+                "probS": prob_staying_solvent,
+                "avg_nec_import": np.nanmean(exp_shortcomings),
+                "avg_nec_debt": np.nanmean(debt)}
     
     return(meta_sol)  

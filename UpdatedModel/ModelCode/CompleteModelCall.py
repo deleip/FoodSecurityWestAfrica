@@ -257,28 +257,24 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     # get the right penalties
     penalties_start  = tm.time()
     if settings["PenMet"] == "prob":
-        rhoF, rhoS, necessary_debt, necessary_import, \
-        maxProbFareaF, maxProbSareaF, maxProbFareaS, maxProbSareaS = \
-            GetPenalties(settings, args, yield_information, console_output = console_output)
+        rhoF, rhoS, probF_onlyF, probS_onlyS, import_onlyF, debt_onlyS = \
+            GetPenalties(settings, args, console_output = console_output, logs_on = logs_on)
+            
         args["rhoF"] = rhoF
         args["rhoS"] = rhoS
         
-        AddInfo_CalcParameters["necessary_debt"] = necessary_debt
-        AddInfo_CalcParameters["necessary_import"] = necessary_import
-        AddInfo_CalcParameters["maxProbFareaF"] = maxProbFareaF
-        AddInfo_CalcParameters["maxProbSareaF"] = maxProbSareaF
-        AddInfo_CalcParameters["maxProbFareaS"] = maxProbFareaS
-        AddInfo_CalcParameters["maxProbSareaS"] = maxProbSareaS
+        AddInfo_CalcParameters["probF_onlyF"] = probF_onlyF
+        AddInfo_CalcParameters["probS_onlyS"] = probS_onlyS
+        AddInfo_CalcParameters["import_onlyF"] = import_onlyF
+        AddInfo_CalcParameters["debt_onlyS"] = debt_onlyS
     else:
         args["rhoF"] = settings["rhoF"]
         args["rhoS"] = settings["rhoS"]
         
-        AddInfo_CalcParameters["necessary_debt"] = None
-        AddInfo_CalcParameters["necessary_import"] = None
-        AddInfo_CalcParameters["maxProbFareaF"] = None
-        AddInfo_CalcParameters["maxProbSareaF"] = None
-        AddInfo_CalcParameters["maxProbFareaS"] = None
-        AddInfo_CalcParameters["maxProbSareaS"] = None
+        AddInfo_CalcParameters["probF_onlyF"] = None
+        AddInfo_CalcParameters["probS_onlyS"] = None
+        AddInfo_CalcParameters["import_onlyF"] = None
+        AddInfo_CalcParameters["debt_onlyS"] = None
         
     penalties_end  = tm.time()
     all_durations["GetPenalties"] = penalties_end - penalties_start
@@ -298,7 +294,7 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     # VSS
     vss_start  = tm.time()
     printing("\nCalculating VSS", console_output = console_output)
-    crop_alloc_vss, meta_sol_vss = VSS(settings, AddInfo_CalcParameters, args)
+    crop_alloc_vss, meta_sol_vss = VSS(settings, exp_incomes, args)
     VSS_value = meta_sol_vss["exp_tot_costs"] - meta_sol["exp_tot_costs"]
     vss_end  = tm.time()
     all_durations["VSS"] = vss_end - vss_start
@@ -307,7 +303,7 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     validation_start  = tm.time()
     if settings["validation_size"] is not None:
         printing("\nOut of sample validation", console_output = console_output)
-        validation_values = OutOfSampleVal(crop_alloc, settings, AddInfo_CalcParameters, args["rhoF"], \
+        validation_values = OutOfSampleVal(crop_alloc, settings, exp_incomes, args["rhoF"], \
                               args["rhoS"], meta_sol, args["probS"], console_output)
     validation_end  = tm.time()
     all_durations["Validation"] = validation_end - validation_start

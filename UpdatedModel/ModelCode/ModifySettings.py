@@ -284,6 +284,7 @@ def ReturnDefaultModelSettings():
     from ModelCode.DefaultModelSettings import tax
     from ModelCode.DefaultModelSettings import perc_guaranteed
     from ModelCode.DefaultModelSettings import ini_fund
+    from ModelCode.DefaultModelSettings import food_import
 
     
     print("Defaul Model Settings are", flush = True)
@@ -307,6 +308,7 @@ def ReturnDefaultModelSettings():
     print("  - tax: " + str(tax), flush = True)
     print("  - perc_guaranteed: " + str(perc_guaranteed), flush = True)
     print("  - ini_fund: " + str(ini_fund), flush = True)
+    print("  - food_import: " + str(food_import), flush = True)
     
     return(None)
 
@@ -328,7 +330,8 @@ def ModifyDefaultModelSettings(PenMet = None, \
                           seed = None, \
                           tax = None, \
                           perc_guaranteed = None, \
-                          ini_fund = None):
+                          ini_fund = None,
+                          food_import = None):
     """
     Updates the values for the given general settings by rewriting the
     ModelCode/GeneralSettings.py file, keeping the last value that was given
@@ -362,6 +365,7 @@ def ModifyDefaultModelSettings(PenMet = None, \
     from ModelCode.DefaultModelSettings import tax as taxbefore
     from ModelCode.DefaultModelSettings import perc_guaranteed as perc_guaranteedbefore
     from ModelCode.DefaultModelSettings import ini_fund as ini_fundbefore
+    from ModelCode.DefaultModelSettings import food_import as food_importbefore
     
     report = "Changed settings for "
     
@@ -526,6 +530,15 @@ def ModifyDefaultModelSettings(PenMet = None, \
             report += "ini_fund, "
     settings.close()
     
+    settings.write("# food import that will be subtracted from demand in each year \n")
+    if food_import is None:
+        settings.write("food_import = " + str(food_importbefore) + "\n\n")
+    else:
+        settings.write("food_import = " + str(food_import) + "\n\n")
+        if food_import != food_importbefore:
+            report += "food_import, "
+    settings.close()
+    
     if report == "Changed settings for ":
         print("No changes.")
     else:
@@ -607,6 +620,10 @@ def ResetDefaultModelSettings():
 
     settings.write("# tax rate to be paied on farmers profit \n")
     settings.write("ini_fund = 0 \n\n")
+    settings.close()
+    
+    settings.write("# food import that will be subtracted from demand in each year \n")
+    settings.write("food_import = 0 \n\n")
     settings.close()
     
     print("Settings reset to original values.")

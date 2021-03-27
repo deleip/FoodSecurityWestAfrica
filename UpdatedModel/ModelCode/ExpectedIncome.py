@@ -12,7 +12,7 @@ import sys
 from ModelCode.Auxiliary import printing
 from ModelCode.GetPenalties import GetInitialGuess
 from ModelCode.SettingsParameters import SetParameters
-from ModelCode.GetPenalties import GetRhoF_Wrapper
+from ModelCode.GetPenalties import GetRhoWrapper
 
 # %% ############### FUNCTIONS RUNNING MODEL TO GET EXP INCOME ################
 
@@ -89,7 +89,7 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
 
     Returns
     -------
-    expected_incomes :  np.array of size (T, len(k_using))
+    expected_incomes :  np.array of size (len(k_using),)
         The expected income of farmers in a scenario where the government is
         not involved.
 
@@ -103,7 +103,6 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     settings_ExpIn["yield_projection"] = "fixed"
     settings_ExpIn["pop_scenario"] = "fixed"
     settings_ExpIn["T"] = 1
-    AddInfo_CalcParameters = {"expected_incomes": np.zeros(len(settings["k_using"]))}
     probF = 0.99
     
     # settings affecting the food demand penalty
@@ -114,24 +113,17 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
             "sim_start" + str(settings_ExpIn["sim_start"]) + \
             "pop_scenario" + str(settings_ExpIn["pop_scenario"]) + \
             "T" + str(settings_ExpIn["T"])
-    SettingsMaxProbS = SettingsBasics + \
-            "risk" + str(settings["risk"]) + \
-            "tax" + str(settings["tax"]) + \
-            "perc_guaranteed" + str(settings["perc_guaranteed"]) + \
-            "N" + str(settings["N"])
-    SettingsMaxProbF = SettingsBasics + "N" + str(settings_ExpIn["N"])
     SettingsFirstGuess =  SettingsBasics + "probF" + str(probF)
     SettingsAffectingRhoF = SettingsFirstGuess + "N" + str(settings_ExpIn["N"])
     
     # first guess
     with open("PenaltiesAndIncome/RhoFs.txt", "rb") as fp:    
         dict_rhoFs = pickle.load(fp)
-    with open("PenaltiesAndIncome/Imports.txt", "rb") as fp:    
-        dict_imports = pickle.load(fp)
-    with open("PenaltiesAndIncome/MaxProbFforAreaF.txt", "rb") as fp:    
-        dict_maxProbF = pickle.load(fp)
-    with open("PenaltiesAndIncome/MaxProbSforAreaF.txt", "rb") as fp:    
-        dict_maxProbS = pickle.load(fp)
+    with open("PenaltiesAndIncome/resProbFs.txt", "rb") as fp:    
+        dict_probFs = pickle.load(fp)
+    with open("PenaltiesAndIncome/resAvgImport.txt", "rb") as fp:    
+        dict_import = pickle.load(fp)
+        
     rhoFini, checkedGuess = GetInitialGuess(dict_rhoFs, SettingsFirstGuess, settings["N"])
     
     # we assume that without government farmers aim for 95% probability of 
@@ -139,26 +131,21 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     # As we want the income in a scenario without government, the final run of
     # GetRhoF (with rohS = 0) automatically is the right run
     args, yield_information, population_information = \
-        SetParameters(settings_ExpIn, AddInfo_CalcParameters, \
-                      console_output = False, logs_on = False)
+        SetParameters(settings_ExpIn, console_output = False, logs_on = False)
     
-    rhoF, maxProbF, max_probS, needed_import, crop_alloc, meta_sol = \
-         GetRhoF_Wrapper(args, yield_information, probF, rhoFini, checkedGuess, \
-                         SettingsAffectingRhoF, console_output = False, logs_on = False)
+    rhoF, meta_sol = GetRhoWrapper(args, probF, rhoFini, checkedGuess, "F",
+                  SettingsAffectingRhoF, console_output = None, logs_on = None)
           
     dict_rhoFs[SettingsAffectingRhoF] = rhoF
-    dict_imports[SettingsAffectingRhoF] = needed_import
-    dict_maxProbF[SettingsMaxProbF] = maxProbF
-    dict_maxProbS[SettingsMaxProbS] = max_probS
+    dict_probFs[SettingsAffectingRhoF] = meta_sol["probF"]
+    dict_import[SettingsAffectingRhoF] = meta_sol["avg_nec_import"]
     
     # saving updated dicts
     with open("PenaltiesAndIncome/RhoFs.txt", "wb") as fp:    
          pickle.dump(dict_rhoFs, fp)
-    with open("PenaltiesAndIncome/Imports.txt", "wb") as fp:    
-         pickle.dump(dict_imports, fp)
-    with open("PenaltiesAndIncome/MaxProbFforAreaF.txt", "wb") as fp:    
-         pickle.dump(dict_maxProbF, fp)
-    with open("PenaltiesAndIncome/MaxProbSforAreaF.txt", "wb") as fp:    
-         pickle.dump(dict_maxProbS, fp)
+    with open("PenaltiesAndIncome/resProbFs.txt", "wb") as fp:    
+         pickle.dump(dict_probFs, fp)
+    with open("PenaltiesAndIncome/resAvgImport.txt", "wb") as fp:     
+         pickle.dump(dict_import, fp)
         
     return(meta_sol["expected_incomes"].flatten())
