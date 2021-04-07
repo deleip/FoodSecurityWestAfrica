@@ -94,7 +94,8 @@ def ReadFromPandaSingleClusterGroup(file = "current_panda",
                                     risk = "default",       
                                     tax = "default",       
                                     perc_guaranteed = "default",
-                                    ini_fund = "default",            
+                                    ini_fund = "default",    
+                                    food_import = "default",
                                     N = None, 
                                     validation_size = None,
                                     T = "default",
@@ -174,10 +175,10 @@ def ReadFromPandaSingleClusterGroup(file = "current_panda",
     PenMet, probF, probS, rhoF, rhoS, k, k_using, \
     num_crops, yield_projection, sim_start, pop_scenario, \
     risk, N, validation_size, T, seed, tax, perc_guaranteed, \
-    ini_fund = GetDefaults(None, probF, probS, rhoF, rhoS, k, k_using,
+    ini_fund, food_import = GetDefaults(None, probF, probS, rhoF, rhoS, k, k_using,
                 num_crops, yield_projection, sim_start, pop_scenario,
                 risk, N, validation_size, T, seed, tax, perc_guaranteed,
-                ini_fund)
+                ini_fund, food_import)
     
     if output_var is None:
         sys.exit("Please provide an output variable.")
@@ -219,7 +220,8 @@ def ReadFromPandaSingleClusterGroup(file = "current_panda",
                      (panda.loc[:, "Tax rate"] == tax) & \
                      (panda.loc[:, "Share of income that is guaranteed"] == perc_guaranteed) & \
                      (panda.loc[:, "Initial fund size"] == ini_fund) & \
-                     (panda.loc[:, "Number of covered years"] == T))]
+                     (panda.loc[:, "Number of covered years"] == T) & \
+                     (panda.loc[:, "Import (given as model input)"] == food_import))]
                   
     # no results for these settings?
     if sub_panda.empty:

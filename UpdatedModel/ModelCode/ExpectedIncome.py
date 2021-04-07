@@ -134,7 +134,7 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
         SetParameters(settings_ExpIn, console_output = False, logs_on = False)
     
     rhoF, meta_sol = GetRhoWrapper(args, probF, rhoFini, checkedGuess, "F",
-                  SettingsAffectingRhoF, console_output = None, logs_on = None)
+                  SettingsAffectingRhoF, console_output = False, logs_on = False)
           
     dict_rhoFs[SettingsAffectingRhoF] = rhoF
     dict_probFs[SettingsAffectingRhoF] = meta_sol["probF"]

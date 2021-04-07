@@ -113,8 +113,8 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                            "Average necessary debt (excluding food security constraint)": AddInfo_CalcParameters["debt_onlyS"],
                            "Average necessary debt": meta_sol["avg_nec_debt"],
                            "Average necessary debt (over all samples with negative final fund)": np.nanmean(ff_debt),
-                           "Averge necessary debt per capita (over all samples with negative final fund)": np.nanmean(ff_debt / (pop_of_area[ter_years]/1e9)),
-                           "Averge necessary debt per capita (over all samples)": np.nanmean(ff_debt_all / (pop_of_area[ter_years_all]/1e9)),
+                           "Average necessary debt per capita (over all samples with negative final fund)": np.nanmean(ff_debt / (pop_of_area[ter_years]/1e9)),
+                           "Average necessary debt per capita (over all samples)": np.nanmean(ff_debt_all / (pop_of_area[ter_years_all]/1e9)),
                            "Average final fund (over all samples)": np.nanmean(meta_sol["final_fund"]),
                            "Number of samples with negative final fund": np.nansum(meta_sol["final_fund"] < 0),
                            "Probability for a catastrophic year": yield_information["prob_cat_year"],
@@ -133,8 +133,8 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                            "Average total cultivation costs": np.nanmean(np.nansum(meta_sol["yearly_fixed_costs"], axis = (1,2))),
                            "Expected total costs": meta_sol["exp_tot_costs"],
                            "Number of occurrences per cluster where farmers make losses": list(meta_sol["num_years_with_losses"]),
-         # name                  "Average income per cluster in final run (over samples and then years)": list(np.nanmean(np.nanmean(meta_sol["profits"], axis = 0), axis = 0))),
-         # new                  "Average income per cluster in final run scaled with capita (over samples and then years)": list(np.nanmean(np.nanmean(meta_sol["profits"], axis = 0)/(pop_per_cluster/1e9), axis = 0)),
+                           "Average income per cluster in final run (over samples and then years)": list(np.nanmean(np.nanmean(meta_sol["profits"], axis = 0), axis = 0)),
+                           "Average income per cluster in final run scaled with capita (over samples and then years)": list(np.nanmean(np.nanmean(meta_sol["profits"], axis = 0)/(pop_per_cluster/1e9), axis = 0)),
                            "Average government payouts per cluster (over samples)": list(np.nanmean(np.nansum(meta_sol["payouts"], axis = 1), axis = 0)),
                            "Resulting probability for food security": meta_sol["probF"],
                            "Resulting probability for solvency": meta_sol["probS"],
@@ -147,10 +147,10 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                            "Seed (for yield generation)": settings["seed"],
                            "Filename for full results": fn_fullresults}
             
-        if np.isnan(dict_for_pandas["Average food shortcomings (over all years and samples with shortcomings)"]):
-            dict_for_pandas["Average food shortcomings (over all years and samples with shortcomings)"] = 0
-        if np.isnan(dict_for_pandas["Average food shortcomings per capita (over all years and samples with shortcomings)"]):
-            dict_for_pandas["Average food shortcomings per capita (over all years and samples with shortcomings)"] = 0
+        if np.isnan(dict_for_pandas["Average necessary add. import per capita (over samples and then years)"]):
+            dict_for_pandas["Average necessary add. import per capita (over samples and then years)"] = 0
+        # if np.isnan(dict_for_pandas["Average food shortcomings per capita (over all years and samples with shortcomings)"]):
+        #     dict_for_pandas["Average food shortcomings per capita (over all years and samples with shortcomings)"] = 0
             
         if not os.path.exists("ModelOutput/Pandas/" + file + ".csv"):
             CreateEmptyPanda(file)
@@ -260,6 +260,7 @@ def OpenPanda(file = "current_panda"):
         
     # get the subset of columns available in the demanded panda file
     dict_convert = {k:dict_convert[k] for k in  panda.columns.to_list()}
+    
 
     # substitute conversions that need local function
     for key in dict_convert.keys():
@@ -321,6 +322,7 @@ def SetUpPandaDicts():
         "Average necessary add. import excluding solvency constraint (over samples and then years)": "[$10^{12}\,$kcal]",
         "Average necessary add. import (over samples and then years)":"[$10^{12}\,$kcal]",
         "Average total necessary import (over samples and then years)": "[$10^{12}\,$kcal]",
+        # TODO include avg for cases where imports are needed
         "Average necessary add. import per capita (over samples and then years)": "[$10^{3}\,$kcal]",
         "Expected income (to calculate guaranteed income)": "[$10^9\,\$$]",
         "Penalty for food shortage": "[$\$/10^3\,$kcal]",
@@ -330,8 +332,8 @@ def SetUpPandaDicts():
         "Average necessary debt (excluding food security constraint)": "[$10^9\,\$$]",
         "Average necessary debt": "[$10^9\,\$$]",
         "Average necessary debt (over all samples with negative final fund)": "[$10^9\,\$$]",
-        "Averge necessary debt per capita (over all samples with negative final fund)": "[$\$$]",
-        "Averge necessary debt per capita (over all samples)": "[$\$$]",
+        "Average necessary debt per capita (over all samples with negative final fund)": "[$\$$]",
+        "Average necessary debt per capita (over all samples)": "[$\$$]",
         "Average final fund (over all samples)": "[$10^9\,\$$]",
         "Number of samples with negative final fund": "",
         "Probability for a catastrophic year": "",
@@ -391,8 +393,8 @@ def SetUpPandaDicts():
          "Average necessary debt (excluding food security constraint)": float,
          "Average necessary debt": float, 
          "Average necessary debt (over all samples with negative final fund)": float,
-         "Averge necessary debt per capita (over all samples with negative final fund)": float,
-         "Averge necessary debt per capita (over all samples)": float,
+         "Average necessary debt per capita (over all samples with negative final fund)": float,
+         "Average necessary debt per capita (over all samples)": float,
          "Average final fund (over all samples)": float,
          "Number of samples with negative final fund": int,
          "Probability for a catastrophic year": float,
@@ -409,8 +411,8 @@ def SetUpPandaDicts():
          "Average total cultivation costs": float,
          "Expected total costs": float,
          "Number of occurrences per cluster where farmers make losses": "list of ints",
-         "Average income per cluster in final run (over samples and then years)": "list of ints",
-         "Average income per cluster in final run scaled with capita (over samples and then years)": "list of ints",
+         "Average income per cluster in final run (over samples and then years)": "list of floats",
+         "Average income per cluster in final run scaled with capita (over samples and then years)": "list of floats",
          "Average government payouts per cluster (over samples)": "list of floats",
          "Resulting probability for food security": float,
          "Resulting probability for solvency": float,
@@ -452,8 +454,8 @@ def SetUpPandaDicts():
         'Average necessary debt (excluding food security constraint)',
         'Average necessary debt',
         'Average necessary debt (over all samples with negative final fund)',
-        'Averge necessary debt per capita (over all samples with negative final fund)',
-        'Averge necessary debt per capita (over all samples)',
+        'Average necessary debt per capita (over all samples with negative final fund)',
+        'Average necessary debt per capita (over all samples)',
         'Average final fund (over all samples)',
         'Number of samples with negative final fund',
         'Probability for a catastrophic year', 

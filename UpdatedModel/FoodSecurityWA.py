@@ -41,7 +41,7 @@ for s in [1, 2, 3, 5]:
 
 # group size, sample size N, validation sample size M
 comb1 = [(1, 10000, 50000),
-        (2, 20000, 100000),
+        (2, 20000, 50000),
         (3, 50000, 100000),
         (5, 100000, 200000),
         ("all", 100000, 200000)
@@ -62,13 +62,14 @@ comb3 = [(2, 100000, 200000),
 
 combs = [comb1, comb2, comb3]
 
-grouping_types = [("Dissimilar", "Adj"),
+grouping_types = [#("Dissimilar", "Adj"),
                   ("Dissimilar", ""),
-                  ("Similar", "Adj")]
+                  #("Similar", "Adj")
+                  ]
 
 for aim, adj in grouping_types:
-    if aim == "Dissimilar":
-        continue
+    # if aim == "Dissimilar":
+    #     continue
     if adj == "Adj":
         adj_text = "True"
     else:
@@ -201,6 +202,32 @@ FS.PandaPlotsCooperation(panda_file = "current_panda",
 
 
 
+# %% Plotting results for runs with trend, dissimilar, non-adjacent
+
+print("\nPlotting crop areas", flush = True)
+FS.CropAreasDependingOnColaboration(panda_file = "current_panda", 
+                                    groupAim = "Dissimilar",
+                                    adjacent = False,
+                                    console_output = None,
+                                    yield_projection = "trend",
+                                    pop_scenario = "Medium")
+
+print("\nPlotting coooperation plots", flush = True)
+FS.PandaPlotsCooperation(panda_file = "current_panda", 
+                                grouping_aim = "Dissimilar",
+                                adjacent = False,
+                                yield_projection = "trend",
+                                pop_scenario = "Medium")
+
+print("\n\nPlotting other plots", flush = True)
+FS.OtherPandaPlots(panda_file = "current_panda", 
+                   grouping_aim = "Dissimilar",
+                   adjacent = False,
+                   yield_projection = "trend",
+                   pop_scenario = "Medium")
+
+
+
 # %% ##################### 4. RUNS USING ONE CLUSTER ##########################
 
 # We use cluster 3 for some analysis using just a single cluster. 
@@ -273,7 +300,9 @@ for probF in [0.97, 0.99]:
 settings, args, AddInfo_CalcParameters, yield_information, \
 population_information, status, durations, crop_alloc, meta_sol, \
 crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
-    FS.FoodSecurityProblem(validation_size = 50000,
-                           k_using = [4],
-                           plotTitle = "Aim: Dissimilar, Adjacent: True",
-                           N = 10000)
+    FS.FoodSecurityProblem(validation_size = 200000,
+                           k_using = [4,7],
+                           # plotTitle = "Aim: Dissimilar, Adjacent: True",
+                           N = 55000,
+                           yield_projection = "trend",
+                           pop_scenario = "Medium")

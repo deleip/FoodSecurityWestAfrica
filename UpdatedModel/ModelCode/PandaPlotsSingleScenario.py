@@ -740,7 +740,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
         outputs. If None, the default as defined in ModelCode/GeneralSettings 
         is used.        
     **kwargs : 
-        Settings specifiying for which mode
+        Settings specifiying for which model runs we want the plots
     
     Returns
     -------
@@ -751,7 +751,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
     if console_output is None:
         from ModelCode.GeneralSettings import console_output
     
-    def __report(i, console_output = console_output, num_plots = 12):
+    def __report(i, console_output = console_output, num_plots = 9):
         if console_output:
             sys.stdout.write("\r     Plot " + str(i) + " of " + str(num_plots))
       
@@ -785,8 +785,8 @@ def PandaPlotsCooperation(panda_file = "current_panda",
     __report(1)    
         
     PlotPandaAggregate(panda_file = panda_file,
-                       output_var=['Necessary add. import (excluding solvency constraint, including theoretical export)', \
-                                   'Necessary debt (excluding food security constraint)'],
+                       output_var=['Average necessary add. import excluding solvency constraint (over samples and then years)', \
+                                   'Average necessary debt (excluding food security constraint)'],
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,
@@ -797,8 +797,8 @@ def PandaPlotsCooperation(panda_file = "current_panda",
     __report(2)    
         
     PlotPandaAggregate(panda_file = panda_file,
-                       output_var=['Total necessary import when including solvency constraint', \
-                                   'Necessary debt (including food security constraint)'],
+                       output_var=['Average total necessary import (over samples and then years)', \
+                                   'Average necessary debt'],
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,
@@ -833,55 +833,55 @@ def PandaPlotsCooperation(panda_file = "current_panda",
     __report(5)    
 
     PlotPandaSingle(panda_file = panda_file,
-                    output_var=['Average food shortcomings (over all years and samples with shortcomings)', \
-                                'Average food shortcomings per capita (over all years and samples with shortcomings)'],
+                    output_var=['Average necessary add. import per capita (over samples and then years)', \
+                                'Average necessary debt per capita (over all samples)'],
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
                     adjacent = adjacent,
-                    plt_file = filenames_prefix + "_FoodShortcomings",
+                    plt_file = filenames_prefix + "_ShortcomingsCapita",
                     foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
     __report(6)    
         
-    PlotPandaSingle(panda_file = panda_file,
-                    output_var=['Average final fund (over all samples with negative final fund)',
-                                'Averge final fund (over all samples with negative final fund) scaled with probability of insolvency'],
-                    scenarionames = scenarionames,
-                    grouping_aim = grouping_aim,
-                    adjacent = adjacent,
-                    plt_file = filenames_prefix + "_FinalFund",
-                    foldername = foldername,
-                    close_plots = close_plots,
-                    **kwargs)
-    __report(7)    
+    # PlotPandaSingle(panda_file = panda_file,
+    #                 output_var=['Average final fund (over all samples with negative final fund)',
+    #                             'Averge final fund (over all samples with negative final fund) scaled with probability of insolvency'],
+    #                 scenarionames = scenarionames,
+    #                 grouping_aim = grouping_aim,
+    #                 adjacent = adjacent,
+    #                 plt_file = filenames_prefix + "_FinalFund",
+    #                 foldername = foldername,
+    #                 close_plots = close_plots,
+    #                 **kwargs)
+    # __report(7)    
     
-    PlotPandaSingle(panda_file = panda_file,
-                    output_var=['Averge final fund per capita (over all samples with negative final fund)',
-                                'Averge final fund per capita (over all samples with negative final fund) scaled with probability of insolvency'],
-                    scenarionames = scenarionames,
-                    grouping_aim = grouping_aim,
-                    adjacent = adjacent,
-                    plt_file = filenames_prefix + "_FinalFundPerCapita",
-                    foldername = foldername,
-                    close_plots = close_plots,
-                    **kwargs)
-    __report(8)    
+    # PlotPandaSingle(panda_file = panda_file,
+    #                 output_var=['Averge final fund per capita (over all samples with negative final fund)',
+    #                             'Averge final fund per capita (over all samples with negative final fund) scaled with probability of insolvency'],
+    #                 scenarionames = scenarionames,
+    #                 grouping_aim = grouping_aim,
+    #                 adjacent = adjacent,
+    #                 plt_file = filenames_prefix + "_FinalFundPerCapita",
+    #                 foldername = foldername,
+    #                 close_plots = close_plots,
+    #                 **kwargs)
+    # __report(8)    
         
-    PlotPandaSingle(panda_file = panda_file,
-                    output_var=['Averge final fund as share of guaranteed income (over all samples with negative final fund)',
-                                'Averge final fund as share of guaranteed income (over all samples with negative final fund) scaled with probability of insolvency'],
-                    scenarionames = scenarionames,
-                    grouping_aim = grouping_aim,
-                    adjacent = adjacent,
-                    plt_file = filenames_prefix + "_FinalFundShareGovInc",
-                    foldername = foldername,
-                    close_plots = close_plots,
-                    **kwargs)
-    __report(9)    
+    # PlotPandaSingle(panda_file = panda_file,
+    #                 output_var=['Averge final fund as share of guaranteed income (over all samples with negative final fund)',
+    #                             'Averge final fund as share of guaranteed income (over all samples with negative final fund) scaled with probability of insolvency'],
+    #                 scenarionames = scenarionames,
+    #                 grouping_aim = grouping_aim,
+    #                 adjacent = adjacent,
+    #                 plt_file = filenames_prefix + "_FinalFundShareGovInc",
+    #                 foldername = foldername,
+    #                 close_plots = close_plots,
+    #                 **kwargs)
+    # __report(9)    
     
     PlotPandaAggregate(panda_file = panda_file,
-                       output_var=['Average food demand penalty (over years and samples)', \
+                       output_var=['Average food demand penalty (over samples and then years)', \
                                    'Average solvency penalty (over samples)'],
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
@@ -890,7 +890,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                        foldername = foldername,
                        close_plots = close_plots,
                        **kwargs)
-    __report(10)    
+    __report(7)    
         
     PlotPandaSingle(panda_file = panda_file,
                     output_var=['Value of stochastic solution', \
@@ -903,7 +903,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
-    __report(11)    
+    __report(8)    
         
     PlotPandaSingle(panda_file = panda_file,
                     output_var=['Resulting probability for food security for VSS',\
@@ -915,7 +915,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
-    __report(12)    
+    __report(9)    
     
     
     return(None)

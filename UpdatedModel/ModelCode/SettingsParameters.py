@@ -130,7 +130,7 @@ def DefaultSettingsExcept(PenMet = "default",
     PenMet, probF, probS, rhoF, rhoS, k, k_using, \
     num_crops, yield_projection, sim_start, pop_scenario, \
     risk, N, validation_size, T, seed, tax, perc_guaranteed, \
-    ini_fund = GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
+    ini_fund, food_import = GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
                 num_crops, yield_projection, sim_start, pop_scenario,
                 risk, N, validation_size, T, seed, tax, perc_guaranteed,
                 ini_fund, food_import)

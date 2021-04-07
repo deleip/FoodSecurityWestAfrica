@@ -19,6 +19,10 @@ accuracy_debt = 0.005
 # where probF cannot be reached (given as number of decimal places)
 accuracy_import = 2
 
+# if penalty is found according to areas, what accuracy should be used (number
+# of decimal places)
+accuracy_areas = 2
+
 # should model progress be logged?
 logs_on = True
 # should model progress be reported in console?

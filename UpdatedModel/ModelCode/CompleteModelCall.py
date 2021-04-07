@@ -252,7 +252,7 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     all_durations["GetExpectedIncome"] = ex_income_end - ex_income_start
     printing("\nGetting parameters", console_output = console_output)
     args, yield_information, population_information = \
-                    SetParameters(settings, AddInfo_CalcParameters)
+                    SetParameters(settings, exp_incomes)
     
     # get the right penalties
     penalties_start  = tm.time()

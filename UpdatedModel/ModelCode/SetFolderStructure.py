@@ -61,6 +61,12 @@ def CheckFolderStructure():
         os.mkdir("Figures/rhoFvsImports")
     if not os.path.isdir("Figures/Samples"):
         os.mkdir("Figures/Samples")
+    if not os.path.isdir("Figures/GetPenaltyFigures"):
+        os.mkdir("Figures/GetPenaltyFigures")
+    if not os.path.isdir("Figures/GetPenaltyFigures/rhoF"):
+        os.mkdir("Figures/GetPenaltyFigures/rhoF")
+    if not os.path.isdir("Figures/GetPenaltyFigures/rhoS"):
+        os.mkdir("Figures/GetPenaltyFigures/rhoS")
     __GroupingPlotFolders("DissimilarAdjacent")
     __GroupingPlotFolders("SimilarAdjacent")
     __GroupingPlotFolders("DissimilarNonAdjacent")
@@ -117,33 +123,29 @@ def CheckFolderStructure():
     if not os.path.isdir("PenaltiesAndIncome"):
             os.mkdir("PenaltiesAndIncome")
     
-    if not os.path.exists("PenaltiesAndIncome/ExpectedIncomes.txt"):
-        with open("PenaltiesAndIncome/ExpectedIncomes.txt", "wb") as fp:
-            pickle.dump({}, fp)
     if not os.path.exists("PenaltiesAndIncome/RhoFs.txt"):
         with open("PenaltiesAndIncome/RhoFs.txt", "wb") as fp:
             pickle.dump({}, fp)
+    if not os.path.exists("PenaltiesAndIncome/resProbFs.txt"):
+        with open("PenaltiesAndIncome/resProbFs.txt", "wb") as fp:
+            pickle.dump({}, fp)
+    if not os.path.exists("PenaltiesAndIncome/resAvgImport.txt"):
+        with open("PenaltiesAndIncome/resAvgImport.txt", "wb") as fp:
+            pickle.dump({}, fp) 
     if not os.path.exists("PenaltiesAndIncome/RhoSs.txt"):
         with open("PenaltiesAndIncome/RhoSs.txt", "wb") as fp:
             pickle.dump({}, fp) 
-    if not os.path.exists("PenaltiesAndIncome/Imports.txt"):
-        with open("PenaltiesAndIncome/Imports.txt", "wb") as fp:
+    if not os.path.exists("PenaltiesAndIncome/resProbSs.txt"):
+        with open("PenaltiesAndIncome/resProbSs.txt", "wb") as fp:
             pickle.dump({}, fp) 
-    if not os.path.exists("PenaltiesAndIncome/MaxProbFforAreaF.txt"):
-        with open("PenaltiesAndIncome/MaxProbFforAreaF.txt", "wb") as fp:
+    if not os.path.exists("PenaltiesAndIncome/resAvgDebt.txt"):
+        with open("PenaltiesAndIncome/resAvgDebt.txt", "wb") as fp:
             pickle.dump({}, fp) 
-    if not os.path.exists("PenaltiesAndIncome/MaxProbSforAreaS.txt"):
-        with open("PenaltiesAndIncome/MaxProbSforAreaS.txt", "wb") as fp:
+            
+    if not os.path.exists("PenaltiesAndIncome/ExpectedIncomes.txt"):
+        with open("PenaltiesAndIncome/ExpectedIncomes.txt", "wb") as fp:
             pickle.dump({}, fp) 
-    if not os.path.exists("PenaltiesAndIncome/MaxProbFforAreaS.txt"):
-        with open("PenaltiesAndIncome/MaxProbFforAreaS.txt", "wb") as fp:
-            pickle.dump({}, fp) 
-    if not os.path.exists("PenaltiesAndIncome/MaxProbSforAreaF.txt"):
-        with open("PenaltiesAndIncome/MaxProbSforAreaF.txt", "wb") as fp:
-            pickle.dump({}, fp)
-    if not os.path.exists("PenaltiesAndIncome/MinimizedNecessaryDebt.txt"):
-        with open("PenaltiesAndIncome/MinimizedNecessaryDebt.txt", "wb") as fp:
-            pickle.dump({}, fp)
+            
     return(None)
             
             
