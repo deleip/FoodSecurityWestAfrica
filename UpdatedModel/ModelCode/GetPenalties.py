@@ -7,13 +7,14 @@ Created on Fri Jan  1 14:05:11 2021
 """
 import numpy as np
 import pickle
+import os
 # import sys
 import matplotlib.pyplot as plt
 
 # from ModelCode.MetaInformation import GetMetaInformation
 from ModelCode.Auxiliary import printing
 from ModelCode.ModelCore import SolveReducedcLinearProblemGurobiPy
-
+from ModelCode.SettingsParameters import DefaultSettingsExcept
 
 # %% ########################## WRAPPING FUNCTION #############################
 
@@ -72,13 +73,13 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
     else:   
         # all settings that affect the calculation of rhoF
         SettingsBasics = "k" + str(settings["k"]) + \
-                "using" +  '_'.join(str(n) for n in settings["k_using"]) + \
-                "num_crops" + str(settings["num_crops"]) + \
-                "yield_projection" + str(settings["yield_projection"]) + \
-                "sim_start" + str(settings["sim_start"]) + \
-                "pop_scenario" + str(settings["pop_scenario"]) + \
+                "Using" +  '_'.join(str(n) for n in settings["k_using"]) + \
+                "Crops" + str(settings["num_crops"]) + \
+                "Yield" + str(settings["yield_projection"]).capitalize() + \
+                "Start" + str(settings["sim_start"]) + \
+                "Pop" + str(settings["pop_scenario"]).capitalize() + \
                 "T" + str(settings["T"])
-        SettingsFirstGuess =  SettingsBasics + "probF" + str(probF)
+        SettingsFirstGuess =  SettingsBasics + "ProbF" + str(probF)
         SettingsAffectingRhoF = SettingsFirstGuess + "N" + str(settings["N"])
                         
         # get dictionary of settings for which rhoF has been calculated already
@@ -130,19 +131,19 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
     else:         
         # all settings that affect the calculation of rhoS
         SettingsBasics = "k" + str(settings["k"]) + \
-                "using" +  '_'.join(str(n) for n in settings["k_using"]) + \
-                "num_crops" + str(settings["num_crops"]) + \
-                "yield_projection" + str(settings["yield_projection"]) + \
-                "sim_start" + str(settings["sim_start"]) + \
-                "pop_scenario" + str(settings["pop_scenario"]) +  \
+                "Using" +  '_'.join(str(n) for n in settings["k_using"]) + \
+                "Crops" + str(settings["num_crops"]) + \
+                "Yield" + str(settings["yield_projection"]).capitalize() + \
+                "Start" + str(settings["sim_start"]) + \
+                "Pop" + str(settings["pop_scenario"]).capitalize() +  \
                 "T" + str(settings["T"])
         # SettingsMaxProbF = SettingsBasics + "N" + str(settings["N"])
         SettingsBasics = SettingsBasics + \
-                "risk" + str(settings["risk"]) + \
-                "tax" + str(settings["tax"]) + \
-                "perc_guaranteed" + str(settings["perc_guaranteed"])
+                "Risk" + str(settings["risk"]) + \
+                "Tax" + str(settings["tax"]) + \
+                "PercGuar" + str(settings["perc_guaranteed"])
         # SettingsMaxProbS = SettingsBasics + "N" + str(settings["N"])
-        SettingsFirstGuess = SettingsBasics + "probS" + str(probS)
+        SettingsFirstGuess = SettingsBasics + "ProbS" + str(probS)
         SettingsAffectingRhoS = SettingsFirstGuess + \
                 "N" + str(settings["N"])
                      
@@ -567,8 +568,15 @@ def RhoCropAreas(args, prob, rhoIni, checkedGuess, objective, \
         return(rhoF, rhoS)
     
     def __right_area(crop_alloc):
-        return(np.sum(np.round(crop_alloc, accuracy_areas) != np.round(crop_alloc_conv, accuracy_areas)) == 0) 
+        tol = args["max_areas"] * accuracy_areas
+        s = np.sum(np.abs(crop_alloc - crop_alloc_conv) > tol)
+        return(s == 0) 
     
+    def __get_necessary_help(meta_sol, objective = objective):
+        if objective == "F":
+            return(meta_sol["avg_nec_import"])
+        elif objective == "S":
+            return(meta_sol["avg_nec_debt"])
     
     # accuracy information
     printing("     accuracy that we demand for rho" + objective + ": 1/" + 
@@ -602,12 +610,16 @@ def RhoCropAreas(args, prob, rhoIni, checkedGuess, objective, \
     # crop_alloc_lowestCorrect = []
     crop_allocs = []
     rhos_tried = []
+    probabilities = []
+    necessary_help = []
     
     # calculate initial guess
     status, crop_alloc, meta_sol, sto_prob, durations = \
                 SolveReducedcLinearProblemGurobiPy(args, rhoFini, rhoSini, console_output = False, logs_on = False)
     crop_allocs.append(crop_alloc)
     rhos_tried.append(rhoIni)
+    probabilities.append(meta_sol["prob"+objective])
+    necessary_help.append(__get_necessary_help(meta_sol))
     
     # update information
     right_area = __right_area(crop_alloc)
@@ -628,7 +640,7 @@ def RhoCropAreas(args, prob, rhoIni, checkedGuess, objective, \
         # find next guess
         rhoNew, rhoLastDown, rhoLastUp = UpdatedRhoGuess(rhoLastUp, 
                      rhoLastDown, rhoOld, crop_alloc = crop_alloc,
-                     crop_alloc_conv = crop_alloc_conv)
+                     crop_alloc_conv = crop_alloc_conv, max_areas = args["max_areas"])
         rhoFnew, rhoSnew = __setGuesses(rhoNew, objective)
         
         # solve model for guess
@@ -637,6 +649,8 @@ def RhoCropAreas(args, prob, rhoIni, checkedGuess, objective, \
                                                    console_output = False, logs_on = False)
         crop_allocs.append(crop_alloc)
         rhos_tried.append(rhoNew)
+        probabilities.append(meta_sol["prob"+objective])
+        necessary_help.append(__get_necessary_help(meta_sol))
         right_area = __right_area(crop_alloc)
         
         
@@ -681,40 +695,137 @@ def RhoCropAreas(args, prob, rhoIni, checkedGuess, objective, \
                          objective, method = "area", testPassed = right_area, 
                          accuracy_int = accuracy_int, console_output = console_output, logs_on = logs_on)
 
-    # plot of crop areas
-    s = sorted(zip(rhos_tried, crop_allocs))
-    rhos_tried = [x for x,_ in s]
-    crop_allocs = [x for _,x in s]
-    
-    nrows = int(np.floor(np.sqrt(len(crop_allocs))))
-    if nrows * nrows >= len(crop_allocs):
-        ncols = nrows
-    elif nrows * (nrows + 1) >= len(crop_allocs):
-        ncols = nrows + 1
-    else:
-        nrows = nrows + 1
-        ncols = nrows
-    
-    cols = ["royalblue", "darkred", "grey", "gold", \
-                "limegreen", "darkturquoise", "darkorchid", "seagreen", 
-                "indigo"]
+
+    # ploting of information
+    if args["T"] > 1:
+        folder_path = "Figures/GetPenaltyFigures/rho" + objective + "/" + file
+        if not os.path.isdir(folder_path):
+            os.mkdir(folder_path)
+        file = file.split("Crop")[0]
         
-    fig = plt.figure()
-    fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.95,
-                    wspace=0.15, hspace=0.35)
-    for idx, crops in enumerate(crop_allocs):
-        ax = fig.add_subplot(nrows, ncols, idx + 1)
-        [T, num_crops, num_cluster] = crops.shape
-        for cl in range(0, num_cluster):
-            ax.plot(range(0, T), crops[:,0,cl], ls = "-", color = cols[cl])
-            ax.plot(range(0, T), crops[:,1,cl], ls = "--", color = cols[cl])
-        ax.set_title("rho" + objective + ": " + str(rhos_tried[idx]))
-        ax.set_xlabel("Years")
-        ax.set_ylabel("Crop areas")
-    plt.suptitle("Crop areas for different penalties rho" + objective)
-    fig.savefig("Figures/GetPenaltyFigures/rho" + objective + "/" + file + ".jpg", \
-                bbox_inches = "tight", pad_inches = 1)
-    plt.close() 
+        s = sorted(zip(rhos_tried, crop_allocs, probabilities, necessary_help))
+        rhos_tried_order = rhos_tried.copy()
+        rhos_tried = [x for x,_,_,_ in s]
+        crop_allocs = [x for _,x,_,_ in s]
+        probabilities = [x for _,_,x,_ in s]
+        necessary_help = [x for _,_,_,x in s]
+        
+        nrows = int(np.floor(np.sqrt(len(crop_allocs))))
+        if nrows * nrows >= len(crop_allocs):
+            ncols = nrows
+        elif nrows * (nrows + 1) >= len(crop_allocs):
+            ncols = nrows + 1
+        else:
+            nrows = nrows + 1
+            ncols = nrows
+        
+        cols = ["royalblue", "darkred", "grey", "gold", \
+                    "limegreen", "darkturquoise", "darkorchid", "seagreen", 
+                    "indigo"]
+            
+        from ModelCode.GeneralSettings import figsize
+        
+        if objective == "F":
+            helptype = "import"
+        elif objective == "S":
+            helptype = "debt"
+        
+        T = crop_allocs[0].shape[0]
+        
+        fig = plt.figure(figsize = figsize)
+        fig.subplots_adjust(bottom=0.1, top=0.9, left=0.05, right=0.95,
+                    wspace=0.15, hspace=0.4)
+        years = range(2017, 2017 + T)
+        ticks = np.arange(2017, 2017 + T + 0.1, 3)
+        for idx, crops in enumerate(crop_allocs):
+            ax = fig.add_subplot(nrows, ncols, idx + 1)
+            [T, num_crops, num_cluster] = crops.shape
+            for cl in range(0, num_cluster):
+                if cl == num_cluster -1:
+                    ax.plot(years, crops[:,0,cl], ls = "-", color = cols[cl], label = "Rice")
+                    ax.plot(years, crops[:,1,cl], ls = "--", color = cols[cl], label = "Maize")
+                else:
+                    ax.plot(years, crops[:,0,cl], ls = "-", color = cols[cl])
+                    ax.plot(years, crops[:,1,cl], ls = "--", color = cols[cl])
+                    
+            ax.set_xlim(years[0] - 0.5, years[-1] + 0.5)
+            ax.set_xticks(ticks)
+            ax.xaxis.set_tick_params(labelsize=8)
+            ax.yaxis.set_tick_params(labelsize=8)
+            ax.set_title("rho" + objective + ": " + "{:.2e}".format(rhos_tried[idx]) + 
+                         ", prob" + objective + ": " + str(round(probabilities[idx], 2)) + 
+                         ", " + helptype + ": " + str(round(necessary_help[idx], 2)), fontsize = 14)
+            if rhos_tried[idx] == rho:
+                idx_rho = idx
+                ax.set_title("rho" + objective + ": " + "{:.2e}".format(rhos_tried[idx]) + 
+                         ", prob" + objective + ": " + str(round(probabilities[idx], 2)) + 
+                         ", " + helptype + ": " + str(round(necessary_help[idx], 2)), fontsize = 14, color = "red")
+            if (idx % ncols) == 0:
+                ax.set_ylabel("Crop areas", fontsize = 14)
+            if idx >= len(crop_allocs) - ncols:
+                ax.set_xlabel("Years", fontsize = 14)
+        plt.legend()
+        plt.suptitle("Crop areas for different penalties rho" + objective, fontsize = 22)
+        fig.savefig(folder_path + "/CropAreas_" + file + ".jpg", \
+                    bbox_inches = "tight", pad_inches = 1)
+        plt.close() 
+        
+        fig = plt.figure(figsize = figsize)
+        plt.scatter(rhos_tried, probabilities, color = "royalblue")
+        plt.scatter(rhos_tried[idx_rho], probabilities[idx_rho], color = "red")
+        plt.scatter(rhos_tried[np.argmin(probabilities)], min(probabilities), color = "green")
+        plt.xlabel("rho" + objective, fontsize = 16)
+        plt.ylabel("prob" + objective, fontsize = 16)
+        plt.title("Probability of meeting objective for different penalties", fontsize = 24, pad = 10)
+        fig.savefig(folder_path + "/Prob_" + file + ".jpg", \
+                    bbox_inches = "tight", pad_inches = 1)
+        plt.close() 
+        
+        fig = plt.figure(figsize = figsize)
+        plt.scatter(rhos_tried, probabilities, color = "royalblue")
+        plt.scatter(rhos_tried[idx_rho], probabilities[idx_rho], color = "red")
+        plt.scatter(rhos_tried[np.argmin(probabilities)], min(probabilities), color = "green")
+        plt.xlabel("rho" + objective, fontsize = 16)
+        plt.ylabel("prob" + objective, fontsize = 16)
+        plt.title("Probability of meeting objective for different penalties", fontsize = 24, pad = 10)
+        plt.xscale("log", base = 4)
+        fig.savefig(folder_path + "/ProbLog_" + file + ".jpg", \
+                    bbox_inches = "tight", pad_inches = 1)
+        plt.close() 
+        
+            
+        fig = plt.figure(figsize = figsize)
+        plt.scatter(rhos_tried, necessary_help, color = "royalblue")
+        plt.scatter(rhos_tried[idx_rho], necessary_help[idx_rho], color = "red")
+        plt.scatter(rhos_tried[np.argmin(necessary_help)], min(necessary_help), color = "green")
+        plt.xlabel("rho" + objective, fontsize = 16)
+        plt.ylabel("prob" + objective, fontsize = 16)
+        plt.title("Necessary " + helptype + " to reach objective", fontsize = 24, pad = 10)
+        fig.savefig(folder_path + "/Nec" + helptype.capitalize() + 
+                    "_" + file + ".jpg", bbox_inches = "tight", pad_inches = 1)
+        plt.close() 
+        
+        fig = plt.figure(figsize = figsize)
+        plt.scatter(rhos_tried, necessary_help, color = "royalblue")
+        plt.scatter(rhos_tried[idx_rho], necessary_help[idx_rho], color = "red")
+        plt.scatter(rhos_tried[np.argmin(necessary_help)], min(necessary_help), color = "green")
+        plt.xlabel("rho" + objective, fontsize = 16)
+        plt.ylabel("prob" + objective, fontsize = 16)
+        plt.title("Necessary " + helptype + " to reach objective", fontsize = 24, pad = 10)
+        plt.xscale("log", base = 4)
+        fig.savefig(folder_path + "/Nec" + helptype.capitalize() 
+                    + "Log_" + file + ".jpg", bbox_inches = "tight", pad_inches = 1)
+        plt.close() 
+        
+        dictData = {"final_rho": rho,
+                    "rhos_tried_order": rhos_tried_order,
+                    "rhos_tried": rhos_tried,
+                    "crop_allocs": crop_allocs,
+                    "probabilities": probabilities,
+                    "necessary_help": necessary_help}
+        
+        with open(folder_path + "/DictData_" + file + ".txt", "wb") as fp:    
+             pickle.dump(dictData, fp)
         
     return(rho, meta_sol_out)
 
@@ -793,7 +904,8 @@ def UpdatedRhoGuess(rhoLastUp,
                     objective = None,
                     accuracy = None,
                     crop_alloc = None,
-                    crop_alloc_conv = None):
+                    crop_alloc_conv = None,
+                    max_areas = None):
     """
     For GetRhoF and GetRhoS (which have the same structure), this provides
     the next guess for the penalty.
@@ -819,6 +931,8 @@ def UpdatedRhoGuess(rhoLastUp,
     objective : string, "F" or "S"
         Specifies whether the function is called to find the next guess for 
         rhoS or for rhoF.
+    max_areas : np.array
+        Maximum available agricultural area per cluster
 
     Returns
     -------
@@ -854,15 +968,15 @@ def UpdatedRhoGuess(rhoLastUp,
     elif crop_alloc_conv is not None:
         from ModelCode.GeneralSettings import accuracy_areas
         # find next guess
-        if np.sum(np.round(crop_alloc, accuracy_areas) != \
-                          np.round(crop_alloc_conv, accuracy_areas)) > 0:
+        tol = max_areas * accuracy_areas
+        s = np.sum(np.abs(crop_alloc - crop_alloc_conv) > tol)
+        if s > 0:
             rhoLastUp = rhoOld
             if rhoLastDown == np.inf:
                 rhoNew = rhoOld * 4
             else:
                 rhoNew = (rhoOld + rhoLastDown) / 2 
-        elif np.sum(np.round(crop_alloc, accuracy_areas) != \
-                          np.round(crop_alloc_conv, accuracy_areas)) == 0:
+        elif s == 0:
             rhoLastDown = rhoOld
             if rhoLastUp == 0:
                 rhoNew = rhoOld / 4
@@ -1031,4 +1145,45 @@ def ReportProgressFindingRho(rho,
         
     return(None)
 
+def LoadPenaltyStuff(objective, **kwargs):
+    settings = DefaultSettingsExcept(**kwargs)
+    if objective == "F":
+        file = "k" + str(settings["k"]) + \
+                "Using" +  '_'.join(str(n) for n in settings["k_using"]) + \
+                "Crops" + str(settings["num_crops"]) + \
+                "Yield" + str(settings["yield_projection"]).capitalize() + \
+                "Start" + str(settings["sim_start"]) + \
+                "Pop" + str(settings["pop_scenario"]).capitalize() + \
+                "T" + str(settings["T"]) + \
+                "ProbF" + str(settings["probF"]) + \
+                "N" + str(settings["N"])    
+    elif objective == "S":
+        file = "k" + str(settings["k"]) + \
+                "Using" +  '_'.join(str(n) for n in settings["k_using"]) + \
+                "Crops" + str(settings["num_crops"]) + \
+                "Yield" + str(settings["yield_projection"]).capitalize() + \
+                "Start" + str(settings["sim_start"]) + \
+                "Pop" + str(settings["pop_scenario"]).capitalize() +  \
+                "T" + str(settings["T"]) + \
+                "Risk" + str(settings["risk"]) + \
+                "Tax" + str(settings["tax"]) + \
+                "PercGuar" + str(settings["perc_guaranteed"]) + \
+                "ProbS" + str(settings["probS"]) + \
+                "N" + str(settings["N"])
+                    
+    folder_path = "Figures/GetPenaltyFigures/rho" + objective + "/" + file
     
+    file_short = file.split("Crop")[0]
+    
+    with open(folder_path + "/DictData_" + file_short + ".txt", "rb") as fp:    
+        dictData = pickle.load(fp)
+        
+    final_rho = dictData["final_rho"]
+    rhos_tried_order = dictData["rhos_tried_order"]
+    rhos_tried = dictData["rhos_tried"]
+    crop_allocs = dictData["crop_allocs"]
+    probabilities = dictData["probabilities"]
+    necessary_help = dictData["necessary_help"]
+    
+    return(final_rho, rhos_tried_order, rhos_tried, crop_allocs,
+           probabilities, necessary_help, file, objective)

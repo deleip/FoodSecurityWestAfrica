@@ -177,8 +177,8 @@ def ModifyGeneralSettings(accuracyF = None, \
         settings.write("accuracy_import = " + str(accuracy_import) + "\n\n")
         if accuracy_import != accuracy_importbefore:
              report += "accuracy_debt, "
-    settings.write("# # if penalty is found according to areas, what accuracy should be used (number\n")
-    settings.write("# of decimal places)\n")
+    settings.write("# if penalty is found according to areas, what accuracy should be used (share\n")
+    settings.write("# of total available agricultural area)\n")
     if accuracy_areas is None:
         settings.write("accuracy_areas = " + str(accuracy_areasbefore) + "\n\n")
     else:
@@ -251,9 +251,9 @@ def ResetGeneralSettings():
     settings.write("# accuracy of imports used in the algorithm to find the right rhoF in cases\n")
     settings.write("# where probF cannot be reached (given as number of decimal places)\n")
     settings.write("accuracy_import = 3\n\n")
-    settings.write("# if penalty is found according to areas, what accuracy should be used (number\n")
-    settings.write("# of decimal places))\n")
-    settings.write("accuracy_areas = 2\n\n")
+    settings.write("# if penalty is found according to areas, what accuracy should be used (share\n")
+    settings.write("# of total available agricultural area)\n")
+    settings.write("accuracy_areas = 0.02\n\n")
     settings.write("# should model progress be logged?\n")
     settings.write("logs_on = True\n")
     settings.write("# should model progress be reported in console?" + "\n")

@@ -1,4 +1,5 @@
-# Last modified March 04, 2021, at 18:03
+# Last modified April 10, 2021, at 19:05
+# (reset to original values)
 
 # accuracy demanded from the probabilities as decimal places (given as float,
 # not as percentage)
@@ -17,11 +18,11 @@ accuracy_debt = 0.005
 
 # accuracy of imports used in the algorithm to find the right rhoF in cases
 # where probF cannot be reached (given as number of decimal places)
-accuracy_import = 2
+accuracy_import = 3
 
-# if penalty is found according to areas, what accuracy should be used (number
-# of decimal places)
-accuracy_areas = 2
+# if penalty is found according to areas, what accuracy should be used (share
+# of total available agricultural area)
+accuracy_areas = 0.02
 
 # should model progress be logged?
 logs_on = True

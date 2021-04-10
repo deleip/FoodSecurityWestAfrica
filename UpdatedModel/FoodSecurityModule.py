@@ -26,6 +26,8 @@ from ModelCode.CompleteModelCall import FoodSecurityProblem
 from ModelCode.CompleteModelCall import LoadModelResults
 from ModelCode.CompleteModelCall import PlotCropAlloc
 
+from ModelCode.GetPenalties import LoadPenaltyStuff
+
 from ModelCode.ModelCore import SolveReducedcLinearProblemGurobiPy
 
 from ModelCode.MetaInformation import GetMetaInformation
