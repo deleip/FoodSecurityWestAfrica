@@ -117,6 +117,7 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
     # get filename of model results
     fn = GetFilename(settings)
     
+    
     # if model output does not exist yet it is calculated
     if not os.path.isfile("ModelOutput/SavedRuns/" + fn + ".txt"):
         try:
@@ -131,11 +132,12 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
                                               panda_file = panda_file)
         except KeyboardInterrupt:
             print(colored("\nThe model run was interupted by the user.", "red"), flush = True)
-            if logs_on:
-                log = open("ModelLogs/tmp.txt", "a")
+            import ModelCode.GeneralSettings as GS
+            if logs_on or (logs_on is None and GS.logs_on):                
+                log = open("ModelLogs/" + GS.fn_log + ".txt", "a")
                 log.write("\n\nThe model run was interupted by the user.")
                 log.close()
-                os.rename("ModelLogs/tmp.txt", "ModelLogs/" + fn + ".txt")
+                del GS.fn_log
         
     # if it does, it is loaded
     else:            
@@ -232,10 +234,19 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     if logs_on is None:
         from ModelCode.GeneralSettings import logs_on
         
+    fn = GetFilename(settings)
+    
     if logs_on:
-        if os.path.exists("ModelLogs/tmp.txt"):
-            os.remove("ModelLogs/tmp.txt")
-        log = open("ModelLogs/tmp.txt", "a")
+        import ModelCode.GeneralSettings as GS
+        GS.fn_log = fn
+        
+        if os.path.exists("ModelLogs/" + GS.fn_log  + ".txt"):
+            i = 1
+            while os.path.exists("ModelLogs/" + GS.fn_log  + "_" + str(i) + ".txt"):
+                i += 1
+            GS.fn_log = GS.fn_log + "_" + str(i)
+            
+        log = open("ModelLogs/" + GS.fn_log + ".txt", "a")
         log.write("Model started " + str(datetime.now().strftime("%B %d, %Y, at %H:%M")) + "\n")
         log.write("\nModel Settings: ")
         for key in settings.keys():
@@ -284,7 +295,7 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     status, crop_alloc, meta_sol, prob, durations = \
         SolveReducedcLinearProblemGurobiPy(args, \
                                            console_output = console_output, \
-                                           logs_on = True)
+                                           logs_on = logs_on)
     all_durations["MainModelRun"] = durations[2]
         
     printing("\nResulting probabilities:\n" + \
@@ -343,14 +354,9 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
             pickle.dump(VSS_value, fp)
             pickle.dump(validation_values, fp)
      
-    # rename the temporal log file
+    # remove the global variable fn_log
     if logs_on:
-        if os.path.exists("ModelLogs/" + fn  + ".txt"):
-            i = 1
-            while os.path.exists("ModelLogs/" + fn  + "_" + str(i) + ".txt"):
-                i += 1
-            fn = fn + "_" + str(i)
-        os.rename("ModelLogs/tmp.txt", "ModelLogs/" + fn + ".txt") 
+        del GS.fn_log
         
     return(settings, args, AddInfo_CalcParameters, yield_information, \
            population_information, status, all_durations, crop_alloc, meta_sol, \

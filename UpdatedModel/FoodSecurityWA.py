@@ -60,7 +60,7 @@ comb3 = [(2, 100000, 200000),
         ("all", 500000, 600000)
         ]
 
-combs = [comb1, comb2, comb3]
+combs = [comb2]
 
 grouping_types = [#("Dissimilar", "Adj"),
                   ("Dissimilar", ""),
@@ -227,6 +227,25 @@ FS.OtherPandaPlots(panda_file = "current_panda",
                    pop_scenario = "Medium")
 
 
+# %% Plotting results for runs without trend, dissimilar, non-adjacent
+
+print("\nPlotting crop areas", flush = True)
+FS.CropAreasDependingOnColaboration(panda_file = "current_panda", 
+                                    groupAim = "Dissimilar",
+                                    adjacent = False,
+                                    console_output = None)
+
+print("\nPlotting cooperation plots", flush = True)
+FS.PandaPlotsCooperation(panda_file = "current_panda", 
+                                grouping_aim = "Dissimilar",
+                                adjacent = False)
+
+print("\n\nPlotting other plots", flush = True)
+FS.OtherPandaPlots(panda_file = "current_panda", 
+                   grouping_aim = "Dissimilar",
+                   adjacent = False)
+
+
 
 # %% ##################### 4. RUNS USING ONE CLUSTER ##########################
 
@@ -300,10 +319,9 @@ for probF in [0.97, 0.99]:
 settings, args, AddInfo_CalcParameters, yield_information, \
 population_information, status, durations, crop_alloc, meta_sol, \
 crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
-    FS.FoodSecurityProblem(validation_size = 50000,
-                           k_using = [4,7],
-                           # plotTitle = "Aim: Dissimilar, Adjacent: True",
-                           N = 20000)
+    FS.FoodSecurityProblem(validation_size = 300000,
+                           k_using = [4,7], 
+                           N = 200000)
     
     
 rho, rhos_tried_order, rhos_tried, crop_allocs, \
@@ -312,3 +330,12 @@ objective = FS.LoadPenaltyStuff(objective = "F",
                            validation_size = 50000,
                            k_using = [4,7],
                            N = 20000)
+
+# %%
+
+settings, args, AddInfo_CalcParameters, yield_information, \
+population_information, status, durations, crop_alloc, meta_sol, \
+crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
+    FS.FoodSecurityProblem(validation_size = 5000,
+                           k_using = [1], 
+                           N = 1000)

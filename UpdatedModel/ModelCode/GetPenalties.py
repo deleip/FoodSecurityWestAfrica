@@ -1023,7 +1023,9 @@ def checkIniGuess(rhoIni,
                 tmp = "prob" + objective
                 testPassed = (np.round(meta_sol[tmp], accuracy) == prob)
             elif method == "area":
-                testPassed = (np.sum(np.round(crop_alloc, accuracy_areas) != np.round(area, accuracy_areas)) == 0)
+                tol = args["max_areas"] * accuracy_areas
+                s = np.sum(np.abs(crop_alloc - area) > tol)
+                testPassed = (s == 0)
             return(testPassed)
   
         # check if rhoF from run with smaller N works here as well:
@@ -1041,7 +1043,7 @@ def checkIniGuess(rhoIni,
             status, crop_alloc_check, meta_sol_check, sto_prob, durations = \
                     SolveReducedcLinearProblemGurobiPy(args, rhoFcheck, rhoScheck,
                                                        console_output = False, logs_on = False) 
-            testPassed = __test(crop_alloc, meta_sol)
+            testPassed = __test(crop_alloc_check, meta_sol_check)
             ReportProgressFindingRho(rhoCheck, meta_sol_check, accuracy, durations, \
                                 objective, method, testPassed, prefix = "Check: ", console_output = console_output, \
                                  logs_on = logs_on)

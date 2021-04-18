@@ -85,7 +85,8 @@ def printing(content, console_output = None, flush = True, logs_on = None):
     
     # output to log file
     if logs_on:
-        log = open("ModelLogs/tmp.txt", "a")
+        import ModelCode.GeneralSettings as GS
+        log = open("ModelLogs/" + GS.fn_log + ".txt", "a")
         log.write("\n" + content)
         log.close()
         

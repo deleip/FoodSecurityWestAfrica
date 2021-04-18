@@ -399,9 +399,9 @@ def GetResultsToCompare(ResType = "k_using", panda_file = "current_panda", \
     Ns = []
     Ms = []
     
-    printing("  Fetching data", console_output = console_output)
+    printing("  Fetching data", console_output = console_output, logs_on = False)
     for idx, val in enumerate(ToIterate):
-        printing("     " + ResType + ": " + str(val), console_output = console_output)
+        printing("     " + ResType + ": " + str(val), console_output = console_output, logs_on = False)
         
         settings, args, AddInfo_CalcParameters, yield_information, \
         population_information, status, durations, crop_alloc, meta_sol, \
@@ -556,7 +556,7 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
     else:
         foldername = foldername + "NonAdjacent"
         
-    printing("\nGroup size " + str(1), console_output = console_output)
+    printing("\nGroup size " + str(1), console_output = console_output, logs_on = False)
     with open("InputData/Clusters/ClusterGroups/GroupingSize" \
                   + str(1) + groupAim + add + ".txt", "rb") as fp:
                 BestGrouping = pickle.load(fp)    
@@ -578,7 +578,7 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
     kwargs["validation_size"] = None
         
     # return(CropAllocs, MaxAreas, labels)
-    printing("  Plotting", console_output = console_output)
+    printing("  Plotting", console_output = console_output, logs_on = False)
     CompareCropAllocs(CropAllocs = CropAllocs,
                       MaxAreas = MaxAreas,
                       labels = labels,
@@ -592,7 +592,7 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
         
         
     for size in [2,3,5,9]:
-        printing("\nGroup size " + str(size), console_output = console_output)
+        printing("\nGroup size " + str(size), console_output = console_output, logs_on = False)
         with open("InputData/Clusters/ClusterGroups/GroupingSize" \
                       + str(size) + groupAim + add + ".txt", "rb") as fp:
                     BestGrouping = pickle.load(fp)
@@ -617,7 +617,7 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
         kwargs["N"] = None
         kwargs["validation_size"] = None
         
-        printing("  Plotting", console_output = console_output)
+        printing("  Plotting", console_output = console_output, logs_on = False)
         CompareCropAllocs(CropAllocs = CropAllocs_pooling,
                           MaxAreas = MaxAreas_pooling,
                           labels = labels_pooling,
