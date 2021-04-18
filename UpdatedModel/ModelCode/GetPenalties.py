@@ -595,6 +595,9 @@ def RhoCropAreas(args, prob, rhoIni, checkedGuess, objective, \
                                               logs_on = logs_on)
    
   
+    if rho is not None:
+        return(rho, meta_sol)
+    
     # else we start from scratch
     if objective == "F":
         rhoIni = 1
