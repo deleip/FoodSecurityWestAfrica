@@ -799,7 +799,7 @@ def RhoCropAreas(args, prob, rhoIni, checkedGuess, objective, \
         plt.scatter(rhos_tried[idx_rho], necessary_help[idx_rho], color = "red")
         plt.scatter(rhos_tried[np.argmin(necessary_help)], min(necessary_help), color = "green")
         plt.xlabel("rho" + objective, fontsize = 16)
-        plt.ylabel("prob" + objective, fontsize = 16)
+        plt.ylabel("necessary" + helptype, fontsize = 16)
         plt.title("Necessary " + helptype + " to reach objective", fontsize = 24, pad = 10)
         fig.savefig(folder_path + "/Nec" + helptype.capitalize() + 
                     "_" + file + ".jpg", bbox_inches = "tight", pad_inches = 1)
@@ -810,7 +810,7 @@ def RhoCropAreas(args, prob, rhoIni, checkedGuess, objective, \
         plt.scatter(rhos_tried[idx_rho], necessary_help[idx_rho], color = "red")
         plt.scatter(rhos_tried[np.argmin(necessary_help)], min(necessary_help), color = "green")
         plt.xlabel("rho" + objective, fontsize = 16)
-        plt.ylabel("prob" + objective, fontsize = 16)
+        plt.ylabel("necessary" + helptype, fontsize = 16)
         plt.title("Necessary " + helptype + " to reach objective", fontsize = 24, pad = 10)
         plt.xscale("log", base = 4)
         fig.savefig(folder_path + "/Nec" + helptype.capitalize() 
