@@ -26,7 +26,7 @@ def ReturnGeneralSettings():
     from ModelCode.GeneralSettings import shareDiffS
     from ModelCode.GeneralSettings import accuracy_debt
     from ModelCode.GeneralSettings import accuracy_import
-    from ModelCode.GeneralSettings import accuracy_areas
+    from ModelCode.GeneralSettings import accuracy_help
     from ModelCode.GeneralSettings import logs_on
     from ModelCode.GeneralSettings import console_output
     from ModelCode.GeneralSettings import figsize
@@ -48,8 +48,8 @@ def ReturnGeneralSettings():
           "Current value: " + colored(str(accuracy_debt), "cyan"), flush = True)
     print("  - accuracy_import: accuracy of imports in cases where probF cannot be reached. " + \
           "Current value: " + colored(str(accuracy_import), "cyan"), flush = True)
-    print("  - accuracy_areas: accuracy of crop areas in cases where probF/S cannot be reached. " + \
-          "Current value: " + colored(str(accuracy_areas), "cyan"), flush = True)
+    print("  - accuracy_help: accuracy of import/debt in cases where probF/S cannot be reached. " + \
+          "Current value: " + colored(str(accuracy_help), "cyan"), flush = True)
     print("  - logs_on: should model progress be logged? " + \
          "Current value: " + colored(str(logs_on), "cyan"), flush = True)
     print("  - console_output: should model progress be reported in console? " + \
@@ -67,7 +67,7 @@ def ModifyGeneralSettings(accuracyF = None, \
                           shareDiffS = None, \
                           accuracy_debt = None, \
                           accuracy_import = None, \
-                          accuracy_areas = None, \
+                          accuracy_help = None, \
                           logs_on = None, \
                           console_output = None, \
                           figsize = None, \
@@ -122,7 +122,7 @@ def ModifyGeneralSettings(accuracyF = None, \
     from ModelCode.GeneralSettings import shareDiffS as shareDiffSbefore
     from ModelCode.GeneralSettings import accuracy_debt as accuracy_debtbefore
     from ModelCode.GeneralSettings import accuracy_import as accuracy_importbefore
-    from ModelCode.GeneralSettings import accuracy_areas as accuracy_areasbefore
+    from ModelCode.GeneralSettings import accuracy_help as accuracy_helpbefore
     from ModelCode.GeneralSettings import logs_on as logs_onFbefore
     from ModelCode.GeneralSettings import console_output as console_outputbefore
     from ModelCode.GeneralSettings import figsize as figsizebefore
@@ -176,15 +176,15 @@ def ModifyGeneralSettings(accuracyF = None, \
     else:
         settings.write("accuracy_import = " + str(accuracy_import) + "\n\n")
         if accuracy_import != accuracy_importbefore:
-             report += "accuracy_debt, "
-    settings.write("# if penalty is found according to areas, what accuracy should be used (share\n")
-    settings.write("# of total available agricultural area)\n")
-    if accuracy_areas is None:
-        settings.write("accuracy_areas = " + str(accuracy_areasbefore) + "\n\n")
+             report += "accuracy_debt, "       
+    settings.write("# if penalty is found according to import/debt, what accuracy should be used \n")
+    settings.write("# (share of minimal import/debt)\n")
+    if accuracy_help is None:
+        settings.write("accuracy_help = " + str(accuracy_helpbefore) + "\n\n")
     else:
-        settings.write("accuracy_areas = " + str(accuracy_areas) + "\n\n")
-        if accuracy_areas != accuracy_areasbefore:
-             report += "accuracy_areas, "
+        settings.write("accuracy_help = " + str(accuracy_help) + "\n\n")
+        if accuracy_help != accuracy_helpbefore:
+             report += "accuracy_help, "
     settings.write("# should model progress be logged?\n")
     if logs_on is None:
         settings.write("logs_on = " + str(logs_onFbefore) + "\n")
@@ -251,9 +251,9 @@ def ResetGeneralSettings():
     settings.write("# accuracy of imports used in the algorithm to find the right rhoF in cases\n")
     settings.write("# where probF cannot be reached (given as number of decimal places)\n")
     settings.write("accuracy_import = 3\n\n")
-    settings.write("# if penalty is found according to areas, what accuracy should be used (share\n")
-    settings.write("# of total available agricultural area)\n")
-    settings.write("accuracy_areas = 0.02\n\n")
+    settings.write("# if penalty is found according to import/debt, what accuracy should be used \n")
+    settings.write("# (share of minimal import/debt)\n")
+    settings.write("accuracy_help = 0.01\n\n")
     settings.write("# should model progress be logged?\n")
     settings.write("logs_on = True\n")
     settings.write("# should model progress be reported in console?" + "\n")

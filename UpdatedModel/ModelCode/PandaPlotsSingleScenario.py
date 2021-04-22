@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 from textwrap import wrap
 
 from ModelCode.PandaHandling import ReadFromPanda
+from ModelCode.SettingsParameters import DefaultSettingsExcept
+from ModelCode.Auxiliary import GetFilename
 
 # %% ############### PLOTTING FUNCTIONS USING RESULTS PANDA CSV ###############
 #
@@ -514,6 +516,7 @@ def PlotPenaltyVsProb(panda_file = "current_panda",
                       adjacent = False,
                       figsize = None,
                       close_plots = None,
+                      fn_suffix = None,
                       **kwargs):
     """
     Creates a plot of penalties vs. resulting probabilities using model runs 
@@ -560,7 +563,7 @@ def PlotPenaltyVsProb(panda_file = "current_panda",
     else:
         foldername = foldername + "NonAdjacent/"
     
-    plt_file = grouping_aim + add + "_PenaltiesProbabilities"
+    plt_file = "PenaltiesProbabilities" + fn_suffix
     
     cols = ["royalblue", "darkred", "grey", "gold", "limegreen"]
     markers = ["o", "X", "^", "D", "s"]
@@ -612,6 +615,7 @@ def PlotProbDetVsSto(panda_file = "current_panda",
                      adjacent = False,
                      figsize = None,
                      close_plots = None,
+                     fn_suffix = None,
                      **kwargs):
     """
     Creates a plot of penalties vs. resulting probabilities using model runs 
@@ -658,7 +662,7 @@ def PlotProbDetVsSto(panda_file = "current_panda",
     else:
         foldername = foldername + "NonAdjacent/"
     
-    plt_file = grouping_aim + add + "_ProbabilitiesDetVsSto"
+    plt_file = "ProbabilitiesDetVsSto" + fn_suffix
     
     cols = ["royalblue", "darkred", "grey", "gold", "limegreen"]
     markers = ["o", "X", "^", "D", "s"]
@@ -711,7 +715,7 @@ def PlotProbDetVsSto(panda_file = "current_panda",
 
 def PandaPlotsCooperation(panda_file = "current_panda", 
                           scenarionames = None,
-                          filenames_prefix = None,
+                          fn_suffix = None,
                           grouping_aim = "Dissimilar",
                           adjacent = False,
                           close_plots = None,
@@ -764,13 +768,13 @@ def PandaPlotsCooperation(panda_file = "current_panda",
     else:
         foldername = "ComparingScenarios"
         
-    if adjacent:
-        add = "Adj"
-    else:
-        add = ""
-        
-    if filenames_prefix is None:
-        filenames_prefix = grouping_aim + add
+    if fn_suffix is None:
+        settingsIterate = DefaultSettingsExcept(**kwargs)
+        settingsIterate["N"] = ""
+        settingsIterate["validation_size"] = ""
+        settingsIterate["k_using"] = ""
+        fn_suffix = "_" + GetFilename(settingsIterate, groupSize = "", groupAim = grouping_aim, \
+                          adjacent = adjacent)
         
     PlotPandaAggregate(panda_file = panda_file,
                        output_var=['Average yearly total cultivated area', \
@@ -778,7 +782,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,
-                       plt_file = filenames_prefix + "_TotalAllocArea_TotalCultCosts",
+                       plt_file = "TotalAllocArea_TotalCultCosts" + fn_suffix,
                        foldername = foldername,
                        close_plots = close_plots,
                        **kwargs)
@@ -790,7 +794,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,
-                       plt_file = filenames_prefix + "_NecImportsPen_NecDebtPen",
+                       plt_file = "NecImportsPen_NecDebtPen" + fn_suffix,
                        foldername = foldername,
                        close_plots = close_plots,
                        **kwargs)
@@ -802,7 +806,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,
-                       plt_file = filenames_prefix + "_NecImports_NecDebt",
+                       plt_file = "NecImports_NecDebt" + fn_suffix,
                        foldername = foldername,
                        close_plots = close_plots,
                        **kwargs)
@@ -814,7 +818,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
                     adjacent = adjacent,
-                    plt_file = filenames_prefix + "_Penalties",
+                    plt_file = "Penalties" + fn_suffix,
                     foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
@@ -826,7 +830,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
                     adjacent = adjacent,
-                    plt_file = filenames_prefix + "_ResProbabilities",
+                    plt_file = "ResProbabilities" + fn_suffix,
                     foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
@@ -838,7 +842,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
                     adjacent = adjacent,
-                    plt_file = filenames_prefix + "_ShortcomingsCapita",
+                    plt_file = "ShortcomingsCapita" + fn_suffix,
                     foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
@@ -886,7 +890,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,
-                       plt_file = filenames_prefix + "_PenaltiesPaied",
+                       plt_file = "PenaltiesPaied" + fn_suffix,
                        foldername = foldername,
                        close_plots = close_plots,
                        **kwargs)
@@ -899,7 +903,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
                     adjacent = adjacent,
-                    plt_file = filenames_prefix + "_VSScosts",
+                    plt_file = "VSScosts" + fn_suffix,
                     foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
@@ -911,7 +915,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
                     adjacent = adjacent,
-                    plt_file = filenames_prefix + "_VSSprobabilities",
+                    plt_file = "VSSprobabilities" + fn_suffix,
                     foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
@@ -925,6 +929,7 @@ def OtherPandaPlots(panda_file = "current_panda",
                     adjacent = False,
                     close_plots = None,
                     console_output = None,
+                    fn_suffix = None,
                     **kwargs):
     
     if console_output is None:
@@ -936,16 +941,26 @@ def OtherPandaPlots(panda_file = "current_panda",
     else:
         foldername = foldername + "NonAdjacent"
         
+    if fn_suffix is None:
+        settingsIterate = DefaultSettingsExcept(**kwargs)
+        settingsIterate["N"] = ""
+        settingsIterate["validation_size"] = ""
+        settingsIterate["k_using"] = ""
+        fn_suffix = "_" + GetFilename(settingsIterate, groupSize = "", groupAim = grouping_aim, \
+                          adjacent = adjacent)
+            
     PlotPenaltyVsProb(panda_file = panda_file, 
                   grouping_aim = grouping_aim,
                   adjacent = adjacent,
                   close_plots = close_plots,
+                  fn_suffix = fn_suffix, 
                   **kwargs)
     
     PlotProbDetVsSto(panda_file = panda_file, 
                      grouping_aim = grouping_aim,
                      adjacent = adjacent,
                      close_plots = close_plots,
+                     fn_suffix = fn_suffix, 
                      **kwargs)
     return(None)
 

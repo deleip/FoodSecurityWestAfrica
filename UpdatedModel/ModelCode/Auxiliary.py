@@ -177,16 +177,20 @@ def GetFilename(settings, groupSize = "", groupAim = "", \
         ad = "Adj"
     else:
         ad = ""     
-        
-    fn = fn + "K" + '_'.join(str(n) for n in settingsTmp["k"]) + \
-        "using" +  '_'.join(str(n) for n in settingsTmp["k_using"]) + \
-        groupAim + groupSize + ad + \
+    
+    
+    fn = fn + "K" + '_'.join(str(n) for n in settingsTmp["k"])
+    if settingsTmp["k_using"] != [""]:
+        fn = fn + "using" +  '_'.join(str(n) for n in settingsTmp["k_using"]) 
+    fn = fn + groupAim + groupSize + ad + \
         "Yield" + '_'.join(str(n).capitalize() for n in settingsTmp["yield_projection"]) + \
         "Pop" + '_'.join(str(n).capitalize() for n in settingsTmp["pop_scenario"]) +  \
-        "Risk" + '_'.join(str(n) for n in settingsTmp["risk"]) + \
-        "N" + '_'.join(str(n) for n in settingsTmp["N"]) + \
-        "M" + '_'.join(str(n) for n in validationTmp) + \
-        "Tax" + '_'.join(str(n) for n in settingsTmp["tax"]) + \
+        "Risk" + '_'.join(str(n) for n in settingsTmp["risk"])
+    if settingsTmp["N"] != [""]:
+        fn = fn + "N" + '_'.join(str(n) for n in settingsTmp["N"])
+    if validationTmp != [""]:
+        fn = fn + "M" + '_'.join(str(n) for n in validationTmp)
+    fn = fn + "Tax" + '_'.join(str(n) for n in settingsTmp["tax"]) + \
         "PercIgov" + '_'.join(str(n) for n in settingsTmp["perc_guaranteed"])
     
     

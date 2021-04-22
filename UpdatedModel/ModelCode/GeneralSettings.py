@@ -20,9 +20,9 @@ accuracy_debt = 0.005
 # where probF cannot be reached (given as number of decimal places)
 accuracy_import = 3
 
-# if penalty is found according to areas, what accuracy should be used (share
-# of total available agricultural area)
-accuracy_areas = 0.02
+# if penalty is found according to import/debt, what accuracy should be used 
+# (share of minimal import/debt)
+accuracy_help = 0.01
 
 # should model progress be logged?
 logs_on = True

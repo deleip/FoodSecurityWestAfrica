@@ -55,10 +55,6 @@ def CheckFolderStructure():
         os.mkdir("Figures/ClusterGroups")
     if not os.path.isdir("Figures/CropAllocs"):
         os.mkdir("Figures/CropAllocs")
-    if not os.path.isdir("Figures/rhoSvsDebts"):
-        os.mkdir("Figures/rhoSvsDebts")
-    if not os.path.isdir("Figures/rhoFvsImports"):
-        os.mkdir("Figures/rhoFvsImports")
     if not os.path.isdir("Figures/Samples"):
         os.mkdir("Figures/Samples")
     if not os.path.isdir("Figures/GetPenaltyFigures"):

@@ -40,10 +40,10 @@ def GetExpectedIncome(settings, console_output = None):
     # not all settings affect the expected income (as no government is 
     # included)
     SettingsAffectingGuaranteedIncome = "k" + str(settings["k"]) + \
-            "using" +  '_'.join(str(n) for n in settings["k_using"]) + \
-            "num_crops" + str(settings["num_crops"]) + \
-            "sim_start" + str(settings["sim_start"]) + \
-            "N" + str(settings["N"]) 
+                "Using" +  '_'.join(str(n) for n in settings["k_using"]) + \
+                "Crops" + str(settings["num_crops"]) + \
+                "Start" + str(settings["sim_start"]) + \
+                "N" + str(settings["N"])
     
     # open dict with all expected incomes that were calculated so far
     with open("PenaltiesAndIncome/ExpectedIncomes.txt", "rb") as fp:    
@@ -107,13 +107,13 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     
     # settings affecting the food demand penalty
     SettingsBasics = "k" + str(settings_ExpIn["k"]) + \
-            "using" +  '_'.join(str(n) for n in settings_ExpIn["k_using"]) + \
-            "num_crops" + str(settings_ExpIn["num_crops"]) + \
-            "yield_projection" + str(settings_ExpIn["yield_projection"]) + \
-            "sim_start" + str(settings_ExpIn["sim_start"]) + \
-            "pop_scenario" + str(settings_ExpIn["pop_scenario"]) + \
-            "T" + str(settings_ExpIn["T"])
-    SettingsFirstGuess =  SettingsBasics + "probF" + str(probF)
+                "Using" +  '_'.join(str(n) for n in settings_ExpIn["k_using"]) + \
+                "Crops" + str(settings_ExpIn["num_crops"]) + \
+                "Yield" + str(settings_ExpIn["yield_projection"]).capitalize() + \
+                "Start" + str(settings_ExpIn["sim_start"]) + \
+                "Pop" + str(settings_ExpIn["pop_scenario"]).capitalize() + \
+                "T" + str(settings_ExpIn["T"])
+    SettingsFirstGuess =  SettingsBasics + "ProbF" + str(probF)
     SettingsAffectingRhoF = SettingsFirstGuess + "N" + str(settings_ExpIn["N"])
     
     # first guess
