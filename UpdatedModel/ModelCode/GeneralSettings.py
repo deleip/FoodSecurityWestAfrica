@@ -1,4 +1,4 @@
-# Last modified April 10, 2021, at 19:05
+# Last modified April 22, 2021, at 09:06
 # (reset to original values)
 
 # accuracy demanded from the probabilities as decimal places (given as float,
@@ -11,18 +11,9 @@ accuracyS = 3
 shareDiffF = 10
 shareDiffS = 10
 
-# accuracy of debts used in the algorithm to find the right rhoS in cases where
-# probS cannot be reached (given as the share of the difference between
-# debt_bottom and debt_top)
-accuracy_debt = 0.005
-
-# accuracy of imports used in the algorithm to find the right rhoF in cases
-# where probF cannot be reached (given as number of decimal places)
-accuracy_import = 3
-
 # if penalty is found according to import/debt, what accuracy should be used 
 # (share of minimal import/debt)
-accuracy_help = 0.01
+accuracy_help = 0.02
 
 # should model progress be logged?
 logs_on = True

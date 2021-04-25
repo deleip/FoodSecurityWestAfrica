@@ -1,5 +1,5 @@
 # Default Model Settings 
-# Last modified March 07, 2021, at 14:25
+# Last modified April 22, 2021, at 09:07
 
 # (reset to original values)
 
@@ -62,5 +62,6 @@ perc_guaranteed = 0.9
 # tax rate to be paied on farmers profit 
 ini_fund = 0 
 
-# food import that will be subtracted from demand in each year
+# food import that will be subtracted from demand in each year 
 food_import = 0 
+

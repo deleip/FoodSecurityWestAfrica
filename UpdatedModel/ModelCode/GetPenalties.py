@@ -8,10 +8,8 @@ Created on Fri Jan  1 14:05:11 2021
 import numpy as np
 import pickle
 import os
-# import sys
 import matplotlib.pyplot as plt
 
-# from ModelCode.MetaInformation import GetMetaInformation
 from ModelCode.Auxiliary import printing
 from ModelCode.ModelCore import SolveReducedcLinearProblemGurobiPy
 from ModelCode.SettingsParameters import DefaultSettingsExcept
@@ -262,12 +260,12 @@ def GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
     # if probF cannot be reached find rhoF that minimizes the import that is
     # necessary for to provide the food demand in probF of the samples
     else:
-        if objective == "F":
-            printing("     Finding lowest penalty minimizing average import (" + \
-                     str(round(nec_help, 2)) + " 10^12 kcal)\n", console_output, logs_on = logs_on)
+        if objective == "F": 
+            printing(f"     Finding lowest penalty minimizing average total import ({nec_help:.2e} 10^12 kcal)\n", 
+                     console_output, logs_on = logs_on)
         elif objective == "S":
-            printing("     Finding lowest penalty minimizing total debt (" + \
-                     str(round(nec_help, 2)) + " 10^9 $)\n", console_output, logs_on = logs_on)
+            printing(f"     Finding lowest penalty minimizing average total debt ({nec_help:.2e} 10^9 $)\n", 
+                     console_output, logs_on = logs_on)
         rho, meta_sol = RhoMinHelp(args, prob, rhoIni,
                 checkedGuess, objective, nec_help, shareDiff, accuracy, file, \
                 console_output = console_output, logs_on = logs_on)
@@ -740,217 +738,15 @@ def RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
     # ploting of information
     if args["T"] > 1:
         PlotPenatlyStuff(rho, rhos_tried, crop_allocs, probabilities, \
-                         necessary_help, objective, "MinHelp", file)
+                         necessary_help, objective, "MinHelp", file, nec_help)
         
     return(rho, meta_sol_out)
-    
-
-# def RhoCropAreas(args, prob, rhoIni, checkedGuess, objective, \
-#                 crop_alloc_conv, shareDiff, accuracy, file, \
-#                 console_output = None, logs_on = None):
-#     """
-#     In cases where the probability probF cannot be reached, we instead look
-#     for the lowest penalty that minimizes the necessary import to cover the
-#     food demand in probF of the cases.
-
-#     Parameters
-#     ----------
-#     args : dict
-#         Dictionary of arguments needed as model input.  
-#     probF : float
-#         demanded probability of keeping the food demand constraint 
-#     rhoFini : float or None 
-#         Initial guess for rhoF.
-#     checkedGuess : boolean
-#         True if there is an initial guess that we are already sure about, as 
-#         it was confirmed for two sample sizes N and N' with N >= 2N' (and the
-#         current N* > N'). False if there is no initial guess or the initial 
-#         guess was not yet confirmed
-#     necessary_import : float
-#         Import that is needed to cover food demand in probF of the cases when 
-#         using all agricultural area with the more productive crop in all years.
-#     shareDiff : float
-#         accuracy of the penalties given thorugh size of the accuracy interval;
-#         the size needs to be smaller than final rho / shareDiff
-#     accuracy : int
-#         Desired decimal places of accuracy of the obtained probF.
-#     file : str
-#         String combining all settings affecting rhoF, used to save a plot 
-#         of rhoF vs. necessary import. 
-#     console_output : boolean, optional
-#         Specifying whether the progress should be documented thorugh console 
-#         outputs. If None, the default as defined in ModelCode/GeneralSettings is used.
-#     logs_on : boolean, optional
-#         Specifying whether the progress should be documented in a log document.
-#         If None, the default as defined in ModelCode/GeneralSettings is used.
-
-#     Returns
-#     -------
-#     rhoF : float
-#         The resulting penalty rhoF    
-#     crop_alloc_out : np.array
-#         The optimal crop allocations using the penalty rhoF and setting rhoS 
-#         to zero in the given settings.
-#     meta_sol_out : dict
-#         Dictionary of meta information to the optimal crop allocations
-
-#     """
-    
-#     from ModelCode.GeneralSettings import accuracy_areas
-    
-#     def __setGuesses(nextGuess, objective = objective):
-#         if objective == "F":
-#             rhoF = nextGuess
-#             rhoS = 0
-#         elif objective == "S":
-#             rhoS = nextGuess
-#             rhoF = 0
-#         return(rhoF, rhoS)
-    
-#     def __right_area(crop_alloc):
-#         tol = args["max_areas"] * accuracy_areas
-#         s = np.sum(np.abs(crop_alloc - crop_alloc_conv) > tol)
-#         return(s == 0) 
-    
-#     def __get_necessary_help(meta_sol, objective = objective):
-#         if objective == "F":
-#             return(meta_sol["avg_nec_import"])
-#         elif objective == "S":
-#             return(meta_sol["avg_nec_debt"])
-    
-#     # accuracy information
-#     printing("     accuracy that we demand for rho" + objective + ": 1/" + 
-#              str(shareDiff) + " of final rho" + objective, console_output = console_output, logs_on = logs_on)
-    
-#     # check if rhoF from run with smaller N works here as well:
-#     rho, crop_alloc, meta_sol = checkIniGuess(rhoIni, 
-#                                               args,
-#                                               checkedGuess,
-#                                               area = crop_alloc_conv,
-#                                               objective = objective,
-#                                               shareDiff = shareDiff,
-#                                               accuracy = accuracy,
-#                                               accuracy_areas = accuracy_areas,
-#                                               console_output = console_output,
-#                                               logs_on = logs_on)
-   
-  
-#     if rho is not None:
-#         return(rho, meta_sol)
-    
-#     # else we start from scratch
-#     if objective == "F":
-#         rhoIni = 1
-#     elif objective == "S":
-#         rhoIni = 100
-#     rhoFini, rhoSini = __setGuesses(rhoIni, objective)
-    
-#     # initialize values for search algorithm
-#     rhoLastDown = np.inf
-#     rhoLastUp = 0
-#     lowestCorrect = np.inf
-#     meta_sol_lowestCorrect = np.inf
-#     # crop_alloc_lowestCorrect = []
-#     crop_allocs = []
-#     rhos_tried = []
-#     probabilities = []
-#     necessary_help = []
-    
-#     # calculate initial guess
-#     status, crop_alloc, meta_sol, sto_prob, durations = \
-#                 SolveReducedcLinearProblemGurobiPy(args, rhoFini, rhoSini, console_output = False, logs_on = False)
-#     crop_allocs.append(crop_alloc)
-#     rhos_tried.append(rhoIni)
-#     probabilities.append(meta_sol["prob"+objective])
-#     necessary_help.append(__get_necessary_help(meta_sol))
-    
-#     # update information
-#     right_area = __right_area(crop_alloc)
-#     if right_area:
-#         lowestCorrect = rhoIni
-                
-#     # remember guess
-#     rhoOld = rhoIni
-    
-#     # report
-#     accuracy_int = lowestCorrect - rhoLastUp
-#     ReportProgressFindingRho(rhoOld, meta_sol, accuracy, durations, \
-#                             objective, method = "area", testPassed = right_area, 
-#                             accuracy_int = accuracy_int, 
-#                             console_output = console_output, logs_on = logs_on)
-
-#     while True:   
-#         # find next guess
-#         rhoNew, rhoLastDown, rhoLastUp = UpdatedRhoGuess(rhoLastUp, 
-#                      rhoLastDown, rhoOld, crop_alloc = crop_alloc,
-#                      crop_alloc_conv = crop_alloc_conv, max_areas = args["max_areas"])
-#         rhoFnew, rhoSnew = __setGuesses(rhoNew, objective)
-        
-#         # solve model for guess
-#         status, crop_alloc, meta_sol, sto_prob, durations = \
-#                 SolveReducedcLinearProblemGurobiPy(args, rhoFnew, rhoSnew,
-#                                                    console_output = False, logs_on = False)
-#         crop_allocs.append(crop_alloc)
-#         rhos_tried.append(rhoNew)
-#         probabilities.append(meta_sol["prob"+objective])
-#         necessary_help.append(__get_necessary_help(meta_sol))
-#         right_area = __right_area(crop_alloc)
-        
-        
-#         # We want to find the lowest penalty for which we get the right probability.
-#         # The accuracy interval is always the difference between the lowest 
-#         # penalty for which we get the right probability and the highest penalty
-#         # that gives a smaller probability (which is the rhoLastUp). If that is 
-#         # smaller than a certain share of the lowest correct penalte we have
-#         # reached the necessary accuracy.
-#         if right_area:
-#             accuracy_int = rhoNew - rhoLastUp
-#             if accuracy_int < rhoNew/shareDiff:
-#                 rho = rhoNew
-#                 meta_sol_out = meta_sol
-#                 # crop_alloc_out = crop_alloc
-#                 break
-#         else:
-#             if lowestCorrect != np.inf:
-#                 accuracy_int = lowestCorrect - rhoNew
-#                 if accuracy_int < lowestCorrect/shareDiff:
-#                     rho = lowestCorrect
-#                     meta_sol_out = meta_sol_lowestCorrect
-#                     # crop_alloc_out = crop_alloc_lowestCorrect
-#                     break
-#             else:
-#                 accuracy_int = rhoLastDown - rhoNew
-            
-#         # report
-#         ReportProgressFindingRho(rhoNew, meta_sol, accuracy, durations, \
-#                              objective, method = "area", testPassed = right_area, 
-#                              accuracy_int = accuracy_int, console_output = console_output, logs_on = logs_on)
-            
-#         # remember guess
-#         rhoOld = rhoNew
-#         if  __right_area(crop_alloc) and lowestCorrect > rhoNew:
-#             lowestCorrect = rhoNew
-#             meta_sol_lowestCorrect = meta_sol
-#             # crop_alloc_lowestCorrect = crop_alloc
-    
-#     # last report
-#     ReportProgressFindingRho(rhoNew, meta_sol, accuracy, durations, \
-#                          objective, method = "area", testPassed = right_area, 
-#                          accuracy_int = accuracy_int, console_output = console_output, logs_on = logs_on)
-
-
-#     # ploting of information
-#     if args["T"] > 1:
-#         PlotPenatlyStuff(rho, rhos_tried, crop_allocs, probabilities, \
-#                          necessary_help, objective, file)
-        
-#     return(rho, meta_sol_out)
 
 
 # %% ######################### AUXILIARY FUNCTIONS ############################
 
 def PlotPenatlyStuff(rho, rhos_tried, crop_allocs, probabilities, necessary_help, \
-                     objective, method, file):
+                     objective, method, file, min_nec_help = None):
     folder_path = "Figures/GetPenaltyFigures/rho" + objective + "/" + method + "_" + file
     if not os.path.isdir(folder_path):
         os.mkdir(folder_path)
@@ -1051,6 +847,7 @@ def PlotPenatlyStuff(rho, rhos_tried, crop_allocs, probabilities, necessary_help
     plt.scatter(rhos_tried, necessary_help, color = "royalblue")
     plt.scatter(rhos_tried[np.argmin(necessary_help)], min(necessary_help), color = "green")
     plt.scatter(rhos_tried[idx_rho], necessary_help[idx_rho], color = "red")
+    plt.plot([min(rhos_tried), max(rhos_tried)], [min_nec_help, min_nec_help], color = "green")
     plt.xlabel("rho" + objective, fontsize = 16)
     plt.ylabel("necessary " + helptype, fontsize = 16)
     plt.title("Necessary " + helptype + " to reach objective", fontsize = 24, pad = 10)
@@ -1062,6 +859,7 @@ def PlotPenatlyStuff(rho, rhos_tried, crop_allocs, probabilities, necessary_help
     plt.scatter(rhos_tried, necessary_help, color = "royalblue")
     plt.scatter(rhos_tried[np.argmin(necessary_help)], min(necessary_help), color = "green")
     plt.scatter(rhos_tried[idx_rho], necessary_help[idx_rho], color = "red")
+    plt.plot([min(rhos_tried), max(rhos_tried)], [min_nec_help, min_nec_help], color = "green")
     plt.xlabel("rho" + objective, fontsize = 16)
     plt.ylabel("necessary " + helptype, fontsize = 16)
     plt.title("Necessary " + helptype + " to reach objective", fontsize = 24, pad = 10)
@@ -1141,8 +939,6 @@ def GetInitialGuess(dictGuesses, name, N):
             break
         
     return(rhoBest, checked)
-
-
 
 
 def UpdatedRhoGuess(rhoLastUp, 

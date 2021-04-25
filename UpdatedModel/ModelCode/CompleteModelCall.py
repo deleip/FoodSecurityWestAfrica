@@ -34,7 +34,6 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
                         save = True, plotTitle = None, close_plots = None, 
                         panda_file = "current_panda", **kwargs):
     """
-        
     Setting up and solving the food security problem. Returns model output
     and additional information on the solution, as well as the VSS and a 
     validation of the model output. The results are also saved. If the model
@@ -55,7 +54,7 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
         whether the results should be saved. The default is True.
     plotTitle : str or None
         If not None, a plot of the resulting crop allocations will be made 
-        with that title and saved to Figures/CropAllocs.
+        with that title and saved to Figures/CropAllocs/numclusters/.
     close_plots : boolean or None
         Whether plots should be closed after plotting (and saving). If None, 
         the default as defined in ModelCode/GeneralSettings is used.
@@ -73,7 +72,7 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
     args : dict
         Dictionary of arguments needed as direct model input.
     AddInfo_CalcParameters : dict
-        Additional information from calculatings expected income and penalties
+        Additional information from calculating expected income and penalties
         which are not needed as model input.
     yield_information : dict
         Information on the yield distributions for the considered clusters.
@@ -90,7 +89,7 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
         'fix_costs', 'yearly_fixed_costs', 'fd_penalty', 'avg_fd_penalty', 
         'sol_penalty', 'shortcomings', 'exp_shortcomings', 'expected_incomes', 
         'profits', 'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
-        'probS', 'necessary_import', 'necessary_debt')
+        'probS', 'avg_nec_import', 'avg_nec_debt')
     crop_alloc_vss : np.array
         deterministic solution for optimal crop areas    
     meta_sol_vss : dict
@@ -100,12 +99,14 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
         deterministic solution for crop allocation and stochastic solution
         for crop allocation       
     validation_values : dict
-        total costs and penalties for the model result and a higher sample 
-        size for validation ("sample_size", "total_costs", "total_costs_val", 
-        "fd_penalty", "fd_penalty_val", "sol_penalty", "sol_penalty_val", 
-        "total_penalties", "total_penalties_val", "deviation_penalties")
+        total costs and penalty costs for the resulted crop areas but a higher 
+        sample size of crop yields for validation ("sample_size", 
+        "total_costs", "total_costs_val", "fd_penalty", "fd_penalty_val", 
+        "sol_penalty", "sol_penalty_val", "total_penalties", 
+        "total_penalties_val", "deviation_penalties")
     fn : str
-        all settings combined to a single file name to save/load results
+        all settings combined to a single file name to save/load results and 
+        for log file
     """    
     
     # set up folder structure (if not already done)
@@ -114,9 +115,8 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
     # defining settings
     settings = DefaultSettingsExcept(**kwargs)
     
-    # get filename of model results
+    # get filename for model results
     fn = GetFilename(settings)
-    
     
     # if model output does not exist yet it is calculated
     if not os.path.isfile("ModelOutput/SavedRuns/" + fn + ".txt"):
@@ -139,7 +139,7 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
                 log.close()
                 del GS.fn_log
         
-    # if it does, it is loaded
+    # if it does, it is loaded from output file
     else:            
         printing("Loading results", console_output = console_output, logs_on = False)
         
@@ -230,11 +230,12 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     all_start  = tm.time()
     all_durations = {}
     
+    # file name used for log file and saving results
+    fn = GetFilename(settings)
+    
     # initialize log file
     if logs_on is None:
         from ModelCode.GeneralSettings import logs_on
-        
-    fn = GetFilename(settings)
     
     if logs_on:
         import ModelCode.GeneralSettings as GS
@@ -261,7 +262,7 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     AddInfo_CalcParameters = {"expected_incomes": exp_incomes}
     ex_income_end  = tm.time()
     all_durations["GetExpectedIncome"] = ex_income_end - ex_income_start
-    printing("\nGetting parameters", console_output = console_output)
+    printing("\nGetting parameters", console_output = console_output, logs_on = logs_on)
     args, yield_information, population_information = \
                     SetParameters(settings, exp_incomes)
     
@@ -300,11 +301,13 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
         
     printing("\nResulting probabilities:\n" + \
             "     probF: " + str(np.round(meta_sol["probF"]*100, 2)) + "%\n" + \
-            "     probS: " + str(np.round(meta_sol["probS"]*100, 2)) + "%", console_output)
+            "     probS: " + str(np.round(meta_sol["probS"]*100, 2)) + "%", 
+            console_output = console_output,
+            logs_on = logs_on)
         
     # VSS
     vss_start  = tm.time()
-    printing("\nCalculating VSS", console_output = console_output)
+    printing("\nCalculating VSS", console_output = console_output, logs_on = logs_on)
     crop_alloc_vss, meta_sol_vss = VSS(settings, exp_incomes, args)
     VSS_value = meta_sol_vss["exp_tot_costs"] - meta_sol["exp_tot_costs"]
     vss_end  = tm.time()
@@ -313,7 +316,7 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     # out of sample validation
     validation_start  = tm.time()
     if settings["validation_size"] is not None:
-        printing("\nOut of sample validation", console_output = console_output)
+        printing("\nOut of sample validation", console_output = console_output, logs_on = logs_on)
         validation_values = OutOfSampleVal(crop_alloc, settings, exp_incomes, args["rhoF"], \
                               args["rhoS"], meta_sol, args["probS"], console_output)
     validation_end  = tm.time()
@@ -330,7 +333,8 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     # timing
     all_end  = tm.time()   
     full_time = all_end - all_start
-    printing("\nTotal time: " + str(np.round(full_time, 2)) + "s", console_output = console_output)
+    printing("\nTotal time: " + str(np.round(full_time, 2)) + "s", 
+             console_output = console_output, logs_on = logs_on)
     all_durations["TotalTime"] = full_time
        
     

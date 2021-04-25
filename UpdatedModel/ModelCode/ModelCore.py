@@ -12,7 +12,6 @@ import warnings as warn
 import gurobipy as gp
 
 from ModelCode.Auxiliary import printing
-from ModelCode.Auxiliary import flatten
 from ModelCode.MetaInformation import GetMetaInformation
 
 # %% ############ IMPLEMENTING AND SOLVING LINEAR VERSION OF MODEL ############
@@ -58,6 +57,10 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
 
     """
         
+    def __flatten(ListOfLists):
+        return(list(it.chain(*ListOfLists)))
+    
+    
     if rhoF is None:
         rhoF = args["rhoF"]
     if rhoS is None:
@@ -85,13 +88,13 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
     termyear_p1 = termyear_p1.astype(int)
     
     # index tupes for variables and constraints
-    indVfood = flatten([[(t, s) for t in range(0, termyear_p1[s])] \
+    indVfood = __flatten([[(t, s) for t in range(0, termyear_p1[s])] \
                         for s in range(0, N)])
     
-    indW = flatten(flatten([[[(t, k, s) for t in range(0, termyear_p1[s])] \
+    indW = __flatten(__flatten([[[(t, k, s) for t in range(0, termyear_p1[s])] \
                              for k in range(0,K)] for s in range(0, N)]))   
             
-    indCultCosts = flatten([[(t, j, k) for (t,j,k) in \
+    indCultCosts = __flatten([[(t, j, k) for (t,j,k) in \
               it.product(range(0,termyear_p1[s]), range(0, J), range(0, K))] \
               for s in range(0, N)])
             

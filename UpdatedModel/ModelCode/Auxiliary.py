@@ -9,22 +9,6 @@ import itertools as it
 
 # %% ############################### AUXILIARY ################################  
 
-def flatten(ListOfLists):
-    """
-    Turn list of lists into a list.
-
-    Parameters
-    ----------
-    ListOfLists : list
-        A lits with lists as elements.
-
-    Returns
-    -------
-    FlatList : list
-        List made out of single elements.
-
-    """
-    return(list(it.chain(*ListOfLists)))
 
 def MakeList(grouping):
     """
@@ -226,7 +210,6 @@ def GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
                 risk, N, validation_size, T, seed, tax, perc_guaranteed,
                 ini_fund, food_import):
                                     
-    
     if PenMet == "default":
         from ModelCode.DefaultModelSettings import PenMet
     if probF == "default":

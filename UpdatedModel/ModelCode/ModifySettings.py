@@ -24,8 +24,6 @@ def ReturnGeneralSettings():
     from ModelCode.GeneralSettings import accuracyS
     from ModelCode.GeneralSettings import shareDiffF
     from ModelCode.GeneralSettings import shareDiffS
-    from ModelCode.GeneralSettings import accuracy_debt
-    from ModelCode.GeneralSettings import accuracy_import
     from ModelCode.GeneralSettings import accuracy_help
     from ModelCode.GeneralSettings import logs_on
     from ModelCode.GeneralSettings import console_output
@@ -44,10 +42,6 @@ def ReturnGeneralSettings():
           "Current value: " + colored(str(shareDiffF), "cyan"), flush = True)
     print("  - shareDiffS: accuracy of the solvency penalty relative to the final rhoS. " + \
           "Current value: " + colored(str(shareDiffS), "cyan"), flush = True)
-    print("  - accuracy_debt: accuracy of debts in cases where probS cannot be reached. " + \
-          "Current value: " + colored(str(accuracy_debt), "cyan"), flush = True)
-    print("  - accuracy_import: accuracy of imports in cases where probF cannot be reached. " + \
-          "Current value: " + colored(str(accuracy_import), "cyan"), flush = True)
     print("  - accuracy_help: accuracy of import/debt in cases where probF/S cannot be reached. " + \
           "Current value: " + colored(str(accuracy_help), "cyan"), flush = True)
     print("  - logs_on: should model progress be logged? " + \
@@ -120,8 +114,6 @@ def ModifyGeneralSettings(accuracyF = None, \
     from ModelCode.GeneralSettings import accuracyS as accuracySbefore
     from ModelCode.GeneralSettings import shareDiffF as shareDiffFbefore
     from ModelCode.GeneralSettings import shareDiffS as shareDiffSbefore
-    from ModelCode.GeneralSettings import accuracy_debt as accuracy_debtbefore
-    from ModelCode.GeneralSettings import accuracy_import as accuracy_importbefore
     from ModelCode.GeneralSettings import accuracy_help as accuracy_helpbefore
     from ModelCode.GeneralSettings import logs_on as logs_onFbefore
     from ModelCode.GeneralSettings import console_output as console_outputbefore
@@ -160,23 +152,6 @@ def ModifyGeneralSettings(accuracyF = None, \
         settings.write("shareDiffS = " + str(shareDiffS) + "\n\n")
         if shareDiffS != shareDiffS:
             report += "shareDiffS, "
-    settings.write("# accuracy of debts used in the algorithm to find the right rhoS in cases where\n")
-    settings.write("# probS cannot be reached (given as the share of the difference between\n")
-    settings.write("# debt_bottom and debt_top)\n")
-    if accuracy_debt is None:
-        settings.write("accuracy_debt = " + str(accuracy_debtbefore) + "\n\n")
-    else:
-        settings.write("accuracy_debt = " + str(accuracy_debt) + "\n\n")
-        if accuracy_debt != accuracy_debtbefore:
-             report += "accuracy_debt, "
-    settings.write("# accuracy of imports used in the algorithm to find the right rhoF in cases\n")
-    settings.write("# where probF cannot be reached (given as number of decimal places)\n")
-    if accuracy_import is None:
-        settings.write("accuracy_import = " + str(accuracy_importbefore) + "\n\n")
-    else:
-        settings.write("accuracy_import = " + str(accuracy_import) + "\n\n")
-        if accuracy_import != accuracy_importbefore:
-             report += "accuracy_debt, "       
     settings.write("# if penalty is found according to import/debt, what accuracy should be used \n")
     settings.write("# (share of minimal import/debt)\n")
     if accuracy_help is None:
@@ -244,16 +219,9 @@ def ResetGeneralSettings():
     settings.write("# the size needs to be smaller than final rho / shareDiff\n")
     settings.write("shareDiffF = 10\n")
     settings.write("shareDiffS = 10\n\n")
-    settings.write("# accuracy of debts used in the algorithm to find the right rhoS in cases where\n")
-    settings.write("# probS cannot be reached (given as the share of the difference between\n")
-    settings.write("# debt_bottom and debt_top)\n")
-    settings.write("accuracy_debt = 0.005\n\n")
-    settings.write("# accuracy of imports used in the algorithm to find the right rhoF in cases\n")
-    settings.write("# where probF cannot be reached (given as number of decimal places)\n")
-    settings.write("accuracy_import = 3\n\n")
     settings.write("# if penalty is found according to import/debt, what accuracy should be used \n")
     settings.write("# (share of minimal import/debt)\n")
-    settings.write("accuracy_help = 0.01\n\n")
+    settings.write("accuracy_help = 0.02\n\n")
     settings.write("# should model progress be logged?\n")
     settings.write("logs_on = True\n")
     settings.write("# should model progress be reported in console?" + "\n")
@@ -636,7 +604,6 @@ def ResetDefaultModelSettings():
 
     settings.write("# tax rate to be paied on farmers profit \n")
     settings.write("ini_fund = 0 \n\n")
-    settings.close()
     
     settings.write("# food import that will be subtracted from demand in each year \n")
     settings.write("food_import = 0 \n\n")
