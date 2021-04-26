@@ -60,7 +60,8 @@ def GetExpectedIncome(settings, console_output = None):
         dict_incomes[SettingsAffectingGuaranteedIncome] = expected_incomes
         with open("PenaltiesAndIncome/ExpectedIncomes.txt", "wb") as fp:    
              pickle.dump(dict_incomes, fp)
-        
+     
+    # should not happen
     if np.sum(expected_incomes < 0) > 0:
         sys.exit("Negative expected income")
         
@@ -126,10 +127,10 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
         
     rhoFini, checkedGuess = GetInitialGuess(dict_rhoFs, SettingsFirstGuess, settings["N"])
     
-    # we assume that without government farmers aim for 95% probability of 
-    # food security, therefore we find the right penalty for probF = 95%.
-    # As we want the income in a scenario without government, the final run of
-    # GetRhoF (with rohS = 0) automatically is the right run
+    # we assume that without government farmers aim for 99% probability of 
+    # food security, therefore we find the right penalty for probF = 99%.
+    # As we want the income in a scenario without government, the resulting run
+    # of GetRhoF (with rohS = 0) automatically is the right run
     args, yield_information, population_information = \
         SetParameters(settings_ExpIn, console_output = False, logs_on = False)
     

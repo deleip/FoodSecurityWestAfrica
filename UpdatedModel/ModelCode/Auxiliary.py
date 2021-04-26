@@ -5,35 +5,8 @@ Created on Fri Jan  1 14:09:14 2021
 
 @author: Debbora Leip
 """
-import itertools as it
 
-# %% ############################### AUXILIARY ################################  
-
-
-def MakeList(grouping):
-    """
-    Function to make a single list out of the clusters in a grouping (which 
-    is given by a list of tuples)
-
-    Parameters
-    ----------
-    grouping : list
-        all groups (given by tuples of clusters within a group)
-
-    Returns
-    -------
-    clusters : list
-        all clusters within that grouping
-
-    """
-    res = []
-    for gr in grouping:
-        if type(gr) is int:
-            res.append(gr)
-        else:
-            for i in range(0, len(gr)):
-                res.append(gr[i])
-    return(res)        
+# %% ############################### AUXILIARY ################################   
     
 def printing(content, console_output = None, flush = True, logs_on = None):
     """
@@ -98,8 +71,9 @@ def GetFilename(settings, groupSize = "", groupAim = "", \
         grouping, this states whether clusters within a group had to be 
         adjacent (relevant for filename of figures)
     allNames : boolean
-        if True, also the names  for SettingsAffectingRhoF etc are returned.
-        Else only the filename for model outputs. Default is False.
+        if True, also the names for the dicts from GetPenalties are returned.
+        Else only the filename for model outputs are returned. Default is 
+        False.
         
     Returns
     -------
@@ -114,12 +88,21 @@ def GetFilename(settings, groupSize = "", groupAim = "", \
     SettingsAffectingRhoS : str
         Only if allNames is True.
     """
-        
+    def __MakeList(grouping):
+        res = []
+        for gr in grouping:
+            if type(gr) is int:
+                res.append(gr)
+            else:
+                for i in range(0, len(gr)):
+                    res.append(gr[i])
+        return(res)          
+    
     settingsTmp = settings.copy()
     if type(settingsTmp["k_using"]) is tuple:
         settingsTmp["k_using"] = list(settingsTmp["k_using"])
     if type(settingsTmp["k_using"]) is list:
-        settingsTmp["k_using"] = MakeList(settingsTmp["k_using"])
+        settingsTmp["k_using"] = __MakeList(settingsTmp["k_using"])
     
     if sorted(settingsTmp["k_using"]) == list(range(1, settingsTmp["k"] + 1)):
         settingsTmp["k_using"] = ["All"]
@@ -209,6 +192,158 @@ def GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
                 num_crops, yield_projection, sim_start, pop_scenario,
                 risk, N, validation_size, T, seed, tax, perc_guaranteed,
                 ini_fund, food_import):
+    """
+    Getting the default values for model settings that are not specified.
+
+    Parameters
+    ----------
+    PenMet : "prob" or "penalties", or "default"
+        "prob" if desired probabilities are given and penalties are to be 
+        calculated accordingly. "penalties" if input penalties are to be used
+        directly. The default is defined in ModelCode/DefaultModelSettings.py.
+    probF : float, or "default"
+        demanded probability of keeping the food demand constraint (only 
+        relevant if PenMet == "prob"). The default is defined in 
+        ModelCode/DefaultModelSettings.py.
+    probS : float, or "default"
+        demanded probability of keeping the solvency constraint (only 
+        relevant if PenMet == "prob"). The default is defined in 
+        ModelCode/DefaultModelSettings.py.
+    rhoF : float or None, or "default" 
+        If PenMet == "penalties", this is the value that will be used for rhoF.
+        if PenMet == "prob" and rhoF is None, a initial guess for rhoF will 
+        be calculated in GetPenalties, else this will be used as initial guess 
+        for the penalty which will give the correct probability for reaching 
+        food demand. The default is defined in ModelCode/DefaultModelSettings.py.
+    rhoS : float or None, or "default" 
+        If PenMet == "penalties", this is the value that will be used for rhoS.
+        if PenMet == "prob" and rhoS is None, a initial guess for rhoS will 
+        be calculated in GetPenalties, else this will be used as initial guess 
+        for the penalty which will give the correct probability for solvency.
+        The default is defined in ModelCode/DefaultModelSettings.py.
+    k : int, or "default"
+        Number of clusters in which the area is to be devided. 
+        The default is defined in ModelCode/DefaultModelSettings.py.
+    k_using : "all" or a list of int i\in{1,...,k}, optional
+        Specifies which of the clusters are to be considered in the model. 
+        The default is defined in ModelCode/DefaultModelSettings.py.
+    num_crops : int, or "default"
+        The number of crops that are used. The default is defined in
+        ModelCode/DefaultModelSettings.py.
+    yield_projection : "fixed" or "trend", or "default"
+        If "fixed", the yield distribtuions of the year prior to the first
+        year of simulation are used for all years. If "trend", the mean of 
+        the yield distributions follows the linear trend.
+        The default is defined in ModelCode/DefaultModelSettings.py.
+    sim_start : int, or "default"
+        The first year of the simulation. The default is defined in
+        ModelCode/DefaultModelSettings.py.
+    pop_scenario : str, or "default"
+        Specifies which population scenario should be used. "fixed" uses the
+        population of the year prior to the first year of the simulation for
+        all years. The other options are 'Medium', 'High', 'Low', 
+        'ConstantFertility', 'InstantReplacement', 'ZeroMigration', 
+        'ConstantMortality', 'NoChange' and 'Momentum', referring to different
+        UN_WPP population scenarios. All scenarios have the same estimates up 
+        to (including) 2019, scenariospecific predictions start from 2020
+        The default is defined in ModelCode/DefaultModelSettings.py.
+    risk : int, or "default"
+        The risk level that is covered by the government. Eg. if risk is 0.05,
+        yields in the lower 5% quantile of the yield distributions will be 
+        considered as catastrophic. The default is defined in
+        ModelCode/DefaultModelSettings.py.
+    N : int, or "default"
+        Number of yield samples to be used to approximate the expected value
+        in the original objective function. The default is defined in
+        ModelCode/DefaultModelSettings.py.
+    validation_size : None or int, or "default"
+        if not None, the objevtice function will be re-evaluated for 
+        validation with a higher sample size as given by this parameter. 
+        The default is defined in ModelCode/DefaultModelSettings.py.
+    T : int, or "default"
+        Number of years to cover in the simulation. The default is defined in 
+        ModelCode/DefaultModelSettings.py.
+    seed : int, or "default"
+        Seed to allow for reproduction of the results. The default is defined 
+        in ModelCode/DefaultModelSettings.py.
+    tax : float, or "default"
+        Tax rate to be paied on farmers profits. The default is defined in#
+        ModelCode/DefaultModelSettings.py.
+    perc_guaranteed : float, or "default"
+        The percentage that determines how high the guaranteed income will be 
+        depending on the expected income of farmers in a scenario excluding
+        the government. The default is defined in ModelCode/DefaultModelSettings.py.
+    ini_fund : float, or "default"
+        Initial fund size. The default is defined in 
+        ModelCode/DefaultModelSettings.py.
+
+    Returns
+    -------
+    PenMet : "prob" or "penalties"
+        "prob" if desired probabilities are given and penalties are to be 
+        calculated accordingly. "penalties" if input penalties are to be used
+        directly.
+    probF : float
+        demanded probability of keeping the food demand constraint (only 
+        relevant if PenMet == "prob").
+    probS : float
+        demanded probability of keeping the solvency constraint (only 
+        relevant if PenMet == "prob").
+    rhoF : float or None
+        If PenMet == "penalties", this is the value that will be used for rhoF.
+        if PenMet == "prob" and rhoF is None, a initial guess for rhoF will 
+        be calculated in GetPenalties, else this will be used as initial guess 
+        for the penalty which will give the correct probability for reaching 
+        food demand.
+    rhoS : float or None
+        If PenMet == "penalties", this is the value that will be used for rhoS.
+        if PenMet == "prob" and rhoS is None, a initial guess for rhoS will 
+        be calculated in GetPenalties, else this will be used as initial guess 
+        for the penalty which will give the correct probability for solvency.
+    k : int
+        Number of clusters in which the area is to be devided. 
+    k_using : "all" or a list of int i\in{1,...,k}
+        Specifies which of the clusters are to be considered in the model. 
+    num_crops : int
+        The number of crops that are used.
+    yield_projection : "fixed" or "trend"
+        If "fixed", the yield distribtuions of the year prior to the first
+        year of simulation are used for all years. If "trend", the mean of 
+        the yield distributions follows the linear trend.
+    sim_start : int
+        The first year of the simulation. The default is defined in
+        ModelCode/DefaultModelSettings.py.
+    pop_scenario : str
+        Specifies which population scenario should be used. "fixed" uses the
+        population of the year prior to the first year of the simulation for
+        all years. The other options are 'Medium', 'High', 'Low', 
+        'ConstantFertility', 'InstantReplacement', 'ZeroMigration', 
+        'ConstantMortality', 'NoChange' and 'Momentum', referring to different
+        UN_WPP population scenarios. All scenarios have the same estimates up 
+        to (including) 2019, scenariospecific predictions start from 2020
+    risk : int
+        The risk level that is covered by the government. Eg. if risk is 0.05,
+        yields in the lower 5% quantile of the yield distributions will be 
+        considered as catastrophic.
+    N : int
+        Number of yield samples to be used to approximate the expected value
+        in the original objective function. 
+    validation_size : None or int
+        if not None, the objevtice function will be re-evaluated for 
+        validation with a higher sample size as given by this parameter. 
+    T : int
+        Number of years to cover in the simulation. 
+    seed : int
+        Seed to allow for reproduction of the results.
+    tax : float
+        Tax rate to be paied on farmers profits.
+    perc_guaranteed : float
+        The percentage that determines how high the guaranteed income will be 
+        depending on the expected income of farmers in a scenario excluding
+        the government.
+    ini_fund : float
+        Initial fund size.
+    """
                                     
     if PenMet == "default":
         from ModelCode.DefaultModelSettings import PenMet

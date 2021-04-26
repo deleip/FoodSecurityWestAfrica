@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from ModelCode.Auxiliary import printing
 from ModelCode.ModelCore import SolveReducedcLinearProblemGurobiPy
 from ModelCode.SettingsParameters import DefaultSettingsExcept
+from ModelCode.MetaInformation import GetMetaInformation
 
 # %% ########################## WRAPPING FUNCTION #############################
 
@@ -34,7 +35,7 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
     logs_on : boolean, optional
         Specifying whether the progress should be documented in a log file.
         If None, the default as defined in ModelCode/GeneralSettings is used.
-
+(rhoF, rhoS, probF_onlyF, probS_onlyS, avg_nec_import, avg_nec_debt
     Returns
     -------
     rhoF : float
@@ -43,22 +44,18 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
     rhoS : float
         The correct penalty rhoF to reach the probability probS (or the highest
         possible probS).
-    necessary_debt : float
-        The necessary debt to cover the payouts in probS of the cases (when 
-        rhoF = 0).
-    needed_import : float
-        Amount of food that needs to imported to reach the probability for
-        food seecurity probF (when using only rhoF and setting rhoS = 0)
-    maxProbFareaF : float
-        Maximum possible probability for food security for the given settings.
-    maxProbSareaF : float
-        Probability for solvency for areas to reach maximum porbability for food 
-        security.
-    maxProbFareaS : float
-        Probability for food security for areas to reach maximum porbability 
-        for solvency.
-    maxProbSareaS : float
-        Maximum possible probability for solvency for the given settings.
+    probF_onlyF : float
+        The probability for food security when only including the final rhoF 
+        with rhoS = 0.
+    probS_onlyS : float
+        The probability for solvency when only including the final rhoF 
+        with rhoS = 0.
+    avg_nec_import : float
+        The average necessary import needed when only including the final rhoF 
+        with rhoS = 0.
+    avg_nec_debt : float
+        The average necessary debt needed when only including the final rhoF 
+        with rhoS = 0.
     """
     # extract some settings (that were originally passed on directly...)
     probF = args["probF"]
@@ -101,9 +98,9 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
             # to 1)
             if rhoFini is None:
                 rhoFini, checkedGuess = GetInitialGuess(dict_rhoFs, SettingsFirstGuess, settings["N"])
+                
             # calculating rhoF
             printing("Calculating rhoF and import", console_output = console_output, logs_on = logs_on)
-            
             rhoF, meta_solF = \
                 GetRhoWrapper(args, probF, rhoFini, checkedGuess, "F",
                   SettingsAffectingRhoF, console_output = None, logs_on = None)
@@ -135,12 +132,10 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
                 "Start" + str(settings["sim_start"]) + \
                 "Pop" + str(settings["pop_scenario"]).capitalize() +  \
                 "T" + str(settings["T"])
-        # SettingsMaxProbF = SettingsBasics + "N" + str(settings["N"])
         SettingsBasics = SettingsBasics + \
                 "Risk" + str(settings["risk"]) + \
                 "Tax" + str(settings["tax"]) + \
                 "PercGuar" + str(settings["perc_guaranteed"])
-        # SettingsMaxProbS = SettingsBasics + "N" + str(settings["N"])
         SettingsFirstGuess = SettingsBasics + "ProbS" + str(probS)
         SettingsAffectingRhoS = SettingsFirstGuess + \
                 "N" + str(settings["N"])
@@ -166,6 +161,7 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
             # to 100)
             if rhoSini is None:
                 rhoSini, checkedGuess = GetInitialGuess(dict_rhoSs, SettingsFirstGuess, settings["N"])
+                
             # calculating rhoS
             printing("\nCalculating rhoS", console_output = console_output, logs_on = logs_on)
             rhoS, meta_solS = \
@@ -199,18 +195,18 @@ def GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
     ----------
     args : dict
         Dictionary of arguments needed as model input.  
-    yield_information : dict
-        Information on the yield distributions.
-    probF : float
-        demanded probability of keeping the food security constraint (only 
-        relevant if PenMet == "prob").
-    rhoFini : float or None 
-        Initial guess for rhoF.
+    prob : float
+        demanded probability of keeping the food security constraint or the
+        solvency constraint (depending on objective).
+    rhoIni : float or None 
+        Initial guess for rhoF or rhoS (depending on objective).
     checkedGuess : boolean
         True if there is an initial guess that we are already sure about, as 
         it was confirmed for two sample sizes N and N' with N >= 2N' (and the
         current N* > N'). False if there is no initial guess or the initial 
         guess was not yet confirmed.
+    objective : "F" or "S"
+        Specifying whether we are looking for rhoF or rhoS
     file : str
         String combining all settings affecting rhoF, used to save a plot 
         of rhoF vs. necessary import in MinimizeNecessaryImport. 
@@ -527,7 +523,7 @@ def RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff,
    
     # ploting of information
     if args["T"] > 1:
-        PlotPenatlyStuff(rho, rhos_tried, crop_allocs, probabilities, \
+        PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, \
                          necessary_help, objective, "GivenProb", file)
              
     return(rho, meta_sol_out)
@@ -737,7 +733,7 @@ def RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
         
     # ploting of information
     if args["T"] > 1:
-        PlotPenatlyStuff(rho, rhos_tried, crop_allocs, probabilities, \
+        PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, \
                          necessary_help, objective, "MinHelp", file, nec_help)
         
     return(rho, meta_sol_out)
@@ -745,8 +741,11 @@ def RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
 
 # %% ######################### AUXILIARY FUNCTIONS ############################
 
-def PlotPenatlyStuff(rho, rhos_tried, crop_allocs, probabilities, necessary_help, \
+def PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, necessary_help, \
                      objective, method, file, min_nec_help = None):
+    
+    meta_zero = GetMetaInformation(np.zeros(crop_allocs[0].shape), args, 0, 0)
+    
     folder_path = "Figures/GetPenaltyFigures/rho" + objective + "/" + method + "_" + file
     if not os.path.isdir(folder_path):
         os.mkdir(folder_path)
@@ -776,8 +775,12 @@ def PlotPenatlyStuff(rho, rhos_tried, crop_allocs, probabilities, necessary_help
     
     if objective == "F":
         helptype = "import"
+        help_zero = meta_zero["avg_nec_import"]
     elif objective == "S":
         helptype = "debt"
+        help_zero = meta_zero["avg_nec_debt"]
+    
+    
     
     T = crop_allocs[0].shape[0]
     
@@ -819,9 +822,14 @@ def PlotPenatlyStuff(rho, rhos_tried, crop_allocs, probabilities, necessary_help
                 bbox_inches = "tight", pad_inches = 1)
     plt.close() 
     
+    rhos_tried = [0] + rhos_tried
+    probabilities = [0] + probabilities
+    necessary_help = [help_zero] + necessary_help
+    idx_rho = idx_rho + 1
+    
     fig = plt.figure(figsize = figsize)
     plt.scatter(rhos_tried, probabilities, color = "royalblue")
-    plt.scatter(rhos_tried[np.argmin(probabilities)], min(probabilities), color = "green")
+    plt.scatter(rhos_tried[np.argmax(probabilities)], max(probabilities), color = "green")
     plt.scatter(rhos_tried[idx_rho], probabilities[idx_rho], color = "red")
     plt.xlabel("rho" + objective, fontsize = 16)
     plt.ylabel("prob" + objective, fontsize = 16)
@@ -832,7 +840,7 @@ def PlotPenatlyStuff(rho, rhos_tried, crop_allocs, probabilities, necessary_help
     
     fig = plt.figure(figsize = figsize)
     plt.scatter(rhos_tried, probabilities, color = "royalblue")
-    plt.scatter(rhos_tried[np.argmin(probabilities)], min(probabilities), color = "green")
+    plt.scatter(rhos_tried[np.argmax(probabilities)], max(probabilities), color = "green")
     plt.scatter(rhos_tried[idx_rho], probabilities[idx_rho], color = "red")
     plt.xlabel("rho" + objective, fontsize = 16)
     plt.ylabel("prob" + objective, fontsize = 16)

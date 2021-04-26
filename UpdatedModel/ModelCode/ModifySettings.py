@@ -221,7 +221,7 @@ def ResetGeneralSettings():
     settings.write("shareDiffS = 10\n\n")
     settings.write("# if penalty is found according to import/debt, what accuracy should be used \n")
     settings.write("# (share of minimal import/debt)\n")
-    settings.write("accuracy_help = 0.02\n\n")
+    settings.write("accuracy_help = 0.05\n\n")
     settings.write("# should model progress be logged?\n")
     settings.write("logs_on = True\n")
     settings.write("# should model progress be reported in console?" + "\n")

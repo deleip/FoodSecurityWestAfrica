@@ -193,7 +193,7 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     args : dict
         Dictionary of arguments needed as direct model input.
     AddInfo_CalcParameters : dict
-        Additional information from calculatings expected income and penalties
+        Additional information from calculating expected income and penalties
         which are not needed as model input.
     yield_information : dict
         Information on the yield distributions for the considered clusters.
@@ -210,7 +210,7 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
         'fix_costs', 'yearly_fixed_costs', 'fd_penalty', 'avg_fd_penalty', 
         'sol_penalty', 'shortcomings', 'exp_shortcomings', 'expected_incomes', 
         'profits', 'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
-        'probS', 'necessary_import', 'necessary_debt')
+        'probS', 'avg_nec_import', 'avg_nec_debt')
     crop_alloc_vss : np.array
         deterministic solution for optimal crop areas    
     meta_sol_vss : dict
@@ -220,10 +220,11 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
         deterministic solution for crop allocation and stochastic solution
         for crop allocation       
     validation_values : dict
-        total costs and penalties for the model result and a higher sample 
-        size for validation ("sample_size", "total_costs", "total_costs_val", 
-        "fd_penalty", "fd_penalty_val", "sol_penalty", "sol_penalty_val", 
-        "total_penalties", "total_penalties_val", "deviation_penalties")
+        total costs and penalty costs for the resulted crop areas but a higher 
+        sample size of crop yields for validation ("sample_size", 
+        "total_costs", "total_costs_val", "fd_penalty", "fd_penalty_val", 
+        "sol_penalty", "sol_penalty_val", "total_penalties", 
+        "total_penalties_val", "deviation_penalties")
     """
     
     # timing
@@ -292,7 +293,7 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     all_durations["GetPenalties"] = penalties_end - penalties_start
     
         
-    # run the optimizer
+    # run the optimization
     status, crop_alloc, meta_sol, prob, durations = \
         SolveReducedcLinearProblemGurobiPy(args, \
                                            console_output = console_output, \
@@ -383,7 +384,7 @@ def LoadModelResults(filename):
     args : dict
         Dictionary of arguments needed as direct model input.
     AddInfo_CalcParameters : dict
-        Additional information from calculatings expected income and penalties
+        Additional information from calculating expected income and penalties
         which are not needed as model input.
     yield_information : dict
         Information on the yield distributions for the considered clusters.
@@ -400,7 +401,7 @@ def LoadModelResults(filename):
         'fix_costs', 'yearly_fixed_costs', 'fd_penalty', 'avg_fd_penalty', 
         'sol_penalty', 'shortcomings', 'exp_shortcomings', 'expected_incomes', 
         'profits', 'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
-        'probS', 'necessary_import', 'necessary_debt')
+        'probS', 'avg_nec_import', 'avg_nec_debt')
     crop_alloc_vss : np.array
         deterministic solution for optimal crop areas    
     meta_sol_vss : dict
@@ -410,10 +411,11 @@ def LoadModelResults(filename):
         deterministic solution for crop allocation and stochastic solution
         for crop allocation       
     validation_values : dict
-        total costs and penalties for the model result and a higher sample 
-        size for validation ("sample_size", "total_costs", "total_costs_val", 
-        "fd_penalty", "fd_penalty_val", "sol_penalty", "sol_penalty_val", 
-        "total_penalties", "total_penalties_val", "deviation_penalties")
+        total costs and penalty costs for the resulted crop areas but a higher 
+        sample size of crop yields for validation ("sample_size", 
+        "total_costs", "total_costs_val", "fd_penalty", "fd_penalty_val", 
+        "sol_penalty", "sol_penalty_val", "total_penalties", 
+        "total_penalties_val", "deviation_penalties")
 
     """
     # load results
@@ -447,9 +449,9 @@ def PlotCropAlloc(crop_alloc, k, k_using, max_areas, cols = None, cols_b = None,
 
     Parameters
     ----------
-    crop_alloc : np.array of size (T*num_crops*len(k_using),)
-        Gives allocation of area to each crop in each cluster.
-    k : int, optional
+    crop_alloc : np.array 
+        Alllocation of area to each crop in each cluster.
+    k : int
         Number of clusters in which the area is to be devided. 
     k_using :  "all" or a list of int
         Specifies which of the clusters are to be considered in the model. 
@@ -504,7 +506,7 @@ def PlotCropAlloc(crop_alloc, k, k_using, max_areas, cols = None, cols_b = None,
     else:
         title = " - " + title
         
-    # props = dict(boxstyle='round', facecolor='wheat', alpha=0.2)
+    # plot settings
     [T, J, K] = crop_alloc.shape
     years = range(sim_start, sim_start + T)
     fig = plt.figure(figsize = figsize)
@@ -526,7 +528,6 @@ def PlotCropAlloc(crop_alloc, k, k_using, max_areas, cols = None, cols_b = None,
         l3, = plt.plot(years, crop_alloc[:,1,cl], color = cols[k_using[cl]-1], \
                  lw = 1.8, label = "Cluster " + str(k_using[cl]))
     plt.xlim(years[0] - 0.5, years[-1] + 0.5)
-    # plt.ylim(-0.05 * np.max(max_areas), 1.1 * np.max(max_areas))
     ax.xaxis.set_tick_params(labelsize=24)
     ax.yaxis.set_tick_params(labelsize=24)
     ax.yaxis.offsetText.set_fontsize(24)
@@ -572,7 +573,7 @@ def PlotCropAlloc(crop_alloc, k, k_using, max_areas, cols = None, cols_b = None,
             ax.yaxis.offsetText.set_fontsize(16)
             ax.xaxis.offsetText.set_fontsize(16)
     
-    
+    # save plot
     if file is not None:
         if not os.path.isdir("Figures/CropAllocs/" + str(K) + "clusters"):
             os.mkdir("Figures/CropAllocs/" + str(K) + "clusters") 
