@@ -108,8 +108,8 @@ for aim, adj in grouping_types:
 # %% ############# 2.RUN WITH TRENDS FOR DIFFERENT GROUP TYPES  ###############
 
 # group size, sample size N, validation sample size M
-comb1 = [# (1, 10000, 50000),
-        # (2, 20000, 50000),
+comb1 = [(1, 10000, 50000),
+        (2, 20000, 50000),
         (3, 50000, 100000),
         (5, 100000, 200000),
         ("all", 100000, 200000)
@@ -161,9 +161,6 @@ for aim, adj in grouping_types:
                     print("\u2017"*65)
                     print("Aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: " + str(cluster_active) + ", comb: " + str(idx + 1))
                     print("\u033F "*65)
-                    if cluster_active in [(1,), (2,), (3,), (5,)]:
-                        print("Currently not relevant")
-                        continue
                     
                     settings, args, AddInfo_CalcParameters, yield_information, \
                     population_information, status, durations, crop_alloc, meta_sol, \
@@ -323,7 +320,7 @@ settings, args, AddInfo_CalcParameters, yield_information, \
 population_information, status, durations, crop_alloc, meta_sol, \
 crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
     FS.FoodSecurityProblem(validation_size = 50000,
-                           k_using = [8], 
+                           k_using = [7], 
                            N =  10000,
                            yield_projection = "trend",
                            pop_scenario = "Medium")

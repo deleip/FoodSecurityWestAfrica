@@ -42,7 +42,6 @@ from ModelCode.CropAreaComparisons import CropAreasDependingOnColaboration
 from ModelCode.CropAreaComparisons import NumberOfSamples
 
 from ModelCode.Auxiliary import GetFilename
-from ModelCode.Auxiliary import MakeList
 from ModelCode.PandaGeneration import OpenPanda
 from ModelCode.PandaGeneration import SetUpNewCurrentPandas
 from ModelCode.PandaGeneration import OverViewCurrentPandaVariables
