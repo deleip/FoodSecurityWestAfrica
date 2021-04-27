@@ -584,7 +584,7 @@ def RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
         help_type = "debt"
         nec_help_zero = meta_zero["avg_nec_debt"]
         
-    accuracy_help = accuracy_help_perc * nec_help_zero
+    accuracy_help = accuracy_help_perc * (nec_help_zero - nec_help)
         
     def __setGuesses(nextGuess, objective = objective):
         if objective == "F":
