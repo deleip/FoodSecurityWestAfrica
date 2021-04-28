@@ -608,7 +608,8 @@ def RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
     
         
     printing("     accuracy that we demand for necessary " + help_type + ": " + \
-             str(round(accuracy_help_perc * 100, 1)) + "% of maximal necessary " + help_type, \
+             str(round(accuracy_help_perc * 100, 1)) + \
+                 "% of diff between maximal and minimal necessary " + help_type, \
              console_output = console_output, logs_on = logs_on)
     printing("     accuracy that we demand for rho" + objective + ": 1/" + str(shareDiff) + \
              " of final rho" + objective + "\n", \
