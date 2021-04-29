@@ -153,7 +153,7 @@ def ModifyGeneralSettings(accuracyF = None, \
         if shareDiffS != shareDiffS:
             report += "shareDiffS, "
     settings.write("# if penalty is found according to import/debt, what accuracy should be used \n")
-    settings.write("# (share of minimal import/debt)\n")
+    settings.write("# (share of diff between max and min import/debt)\n")
     if accuracy_help is None:
         settings.write("accuracy_help = " + str(accuracy_helpbefore) + "\n\n")
     else:
@@ -220,7 +220,7 @@ def ResetGeneralSettings():
     settings.write("shareDiffF = 10\n")
     settings.write("shareDiffS = 10\n\n")
     settings.write("# if penalty is found according to import/debt, what accuracy should be used \n")
-    settings.write("# (share of minimal import/debt)\n")
+    settings.write("# (share of diff between max and min import/debt)\n")
     settings.write("accuracy_help = 0.01\n\n")
     settings.write("# should model progress be logged?\n")
     settings.write("logs_on = True\n")
