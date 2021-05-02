@@ -18,8 +18,8 @@ import math
 from ModelCode.SetFolderStructure import CheckFolderStructure
 from ModelCode.SettingsParameters import DefaultSettingsExcept
 from ModelCode.Auxiliary import GetFilename
-from ModelCode.PandaGeneration import write_to_pandas
-from ModelCode.Auxiliary import printing
+from ModelCode.PandaGeneration import _WriteToPandas
+from ModelCode.Auxiliary import _printing
 from ModelCode.MetaInformation import GetMetaInformation
 from ModelCode.SettingsParameters import SetParameters
 from ModelCode.ExpectedIncome import GetExpectedIncome
@@ -124,7 +124,7 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
            settings, args, AddInfo_CalcParameters, yield_information, \
            population_information, status, all_durations, crop_alloc, meta_sol, \
            crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \
-                                OptimizeModel(settings,
+                                _OptimizeModel(settings,
                                               console_output = console_output,
                                               save = save,
                                               logs_on = logs_on,
@@ -141,7 +141,7 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
         
     # if it does, it is loaded from output file
     else:            
-        printing("Loading results", console_output = console_output, logs_on = False)
+        _printing("Loading results", console_output = console_output, logs_on = False)
         
         settings, args, AddInfo_CalcParameters, yield_information, \
         population_information, status, all_durations, crop_alloc, meta_sol, \
@@ -150,7 +150,7 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
         
     # if a plottitle is provided, crop allocations over time are plotted
     if plotTitle is not None:        
-        PlotCropAlloc(crop_alloc = crop_alloc, k = settings["k"], k_using = settings["k_using"], 
+        _PlotCropAlloc(crop_alloc = crop_alloc, k = settings["k"], k_using = settings["k_using"], 
                       max_areas = args["max_areas"], close_plots = close_plots,
                       title = plotTitle, file = fn)
     
@@ -158,7 +158,7 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
            population_information, status, all_durations, crop_alloc, meta_sol, \
            crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn)          
 
-def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
+def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
                   save = True, plotTitle = None):
     """
     Function combines setting up and solving the model, calculating additional
@@ -263,7 +263,7 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     AddInfo_CalcParameters = {"expected_incomes": exp_incomes}
     ex_income_end  = tm.time()
     all_durations["GetExpectedIncome"] = ex_income_end - ex_income_start
-    printing("\nGetting parameters", console_output = console_output, logs_on = logs_on)
+    _printing("\nGetting parameters", console_output = console_output, logs_on = logs_on)
     args, yield_information, population_information = \
                     SetParameters(settings, exp_incomes)
     
@@ -295,12 +295,12 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
         
     # run the optimization
     status, crop_alloc, meta_sol, prob, durations = \
-        SolveReducedcLinearProblemGurobiPy(args, \
+        SolveReducedLinearProblemGurobiPy(args, \
                                            console_output = console_output, \
                                            logs_on = logs_on)
     all_durations["MainModelRun"] = durations[2]
         
-    printing("\nResulting probabilities:\n" + \
+    _printing("\nResulting probabilities:\n" + \
             "     probF: " + str(np.round(meta_sol["probF"]*100, 2)) + "%\n" + \
             "     probS: " + str(np.round(meta_sol["probS"]*100, 2)) + "%", 
             console_output = console_output,
@@ -308,7 +308,7 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
         
     # VSS
     vss_start  = tm.time()
-    printing("\nCalculating VSS", console_output = console_output, logs_on = logs_on)
+    _printing("\nCalculating VSS", console_output = console_output, logs_on = logs_on)
     crop_alloc_vss, meta_sol_vss = VSS(settings, exp_incomes, args)
     VSS_value = meta_sol_vss["exp_tot_costs"] - meta_sol["exp_tot_costs"]
     vss_end  = tm.time()
@@ -317,7 +317,7 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     # out of sample validation
     validation_start  = tm.time()
     if settings["validation_size"] is not None:
-        printing("\nOut of sample validation", console_output = console_output, logs_on = logs_on)
+        _printing("\nOut of sample validation", console_output = console_output, logs_on = logs_on)
         validation_values = OutOfSampleVal(crop_alloc, settings, exp_incomes, args["rhoF"], \
                               args["rhoS"], meta_sol, console_output, logs_on = logs_on)
     validation_end  = tm.time()
@@ -326,7 +326,7 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     # add results to pandas overview
     fn = GetFilename(settings)
     if panda_file is not None:
-        write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
+        _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
                         population_information, crop_alloc, \
                         meta_sol, meta_sol_vss, VSS_value, validation_values, \
                         fn, console_output, logs_on, panda_file)     
@@ -334,7 +334,7 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     # timing
     all_end  = tm.time()   
     full_time = all_end - all_start
-    printing("\nTotal time: " + str(np.round(full_time, 2)) + "s", 
+    _printing("\nTotal time: " + str(np.round(full_time, 2)) + "s", 
              console_output = console_output, logs_on = logs_on)
     all_durations["TotalTime"] = full_time
        
@@ -442,7 +442,7 @@ def LoadModelResults(filename):
            crop_alloc_vss, meta_sol_vss, VSS_value, validation_values) 
         
         
-def PlotCropAlloc(crop_alloc, k, k_using, max_areas, cols = None, cols_b = None, \
+def _PlotCropAlloc(crop_alloc, k, k_using, max_areas, cols = None, cols_b = None, \
                   figsize = None, close_plots = None, title = None, file = None, sim_start = 2017):
     """
     Plots crop area allocations over the years for all given clusters.

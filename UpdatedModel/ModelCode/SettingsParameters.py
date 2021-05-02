@@ -12,8 +12,8 @@ import pickle
 import pandas as pd
 import sys
 
-from ModelCode.Auxiliary import printing
-from ModelCode.Auxiliary import GetDefaults
+from ModelCode.Auxiliary import _printing
+from ModelCode.Auxiliary import _GetDefaults
 
 # %% ############# FUNCTIONS TO GET INPUT FOR FOOD SECURITY MODEL #############
 
@@ -136,7 +136,7 @@ def DefaultSettingsExcept(PenMet = "default",
     PenMet, probF, probS, rhoF, rhoS, k, k_using, \
     num_crops, yield_projection, sim_start, pop_scenario, \
     risk, N, validation_size, T, seed, tax, perc_guaranteed, \
-    ini_fund, food_import = GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
+    ini_fund, food_import = _GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
                 num_crops, yield_projection, sim_start, pop_scenario,
                 risk, N, validation_size, T, seed, tax, perc_guaranteed,
                 ini_fund, food_import)
@@ -551,21 +551,21 @@ def SetParameters(settings,
 
     # get yield realizations:
     # what is the probability of a catastrophic year for given settings?
-    printing("\nOverview on yield samples", console_output = console_output, logs_on = logs_on)
+    _printing("\nOverview on yield samples", console_output = console_output, logs_on = logs_on)
     prob_cat_year = RiskForCatastrophe(risk, len(k_using))
-    printing("     Prob for catastrophic year: " + \
+    _printing("     Prob for catastrophic year: " + \
              str(np.round(prob_cat_year*100, 2)) + "%", \
              console_output = console_output, logs_on = logs_on)    
     # create realizations of presence of catastrophic yields and corresponding
     # yield distributions
     np.random.seed(seed)
     cat_clusters, terminal_years, ylds, yld_means = \
-          YieldRealisations(slopes, constants, residual_stds, sim_start, \
+          _YieldRealisations(slopes, constants, residual_stds, sim_start, \
                            N, risk, T, len(k_using), num_crops, \
                            yield_projection, VSS, wo_yields)
     # probability to not have a catastrophe
     no_cat = np.sum(terminal_years == -1) / N
-    printing("     Share of samples without catastrophe: " + str(np.round(no_cat*100, 2)), \
+    _printing("     Share of samples without catastrophe: " + str(np.round(no_cat*100, 2)), \
               console_output = console_output, logs_on = logs_on) 
     # share of non-profitable crops
     if wo_yields:
@@ -573,24 +573,24 @@ def SetParameters(settings,
         share_maize_np = 0
     else:
         share_rice_np = np.sum(ylds[:,:,0,:] < y_profit[0,:])/np.sum(~np.isnan(ylds[:,:,0,:]))
-        printing("     Share of cases with rice yields too low to provide profit: " + \
+        _printing("     Share of cases with rice yields too low to provide profit: " + \
                  str(np.round(share_rice_np * 100, 2)), console_output = console_output, \
                  logs_on = logs_on)
         share_maize_np = np.sum(ylds[:,:,1,:] < y_profit[1,:])/np.sum(~np.isnan(ylds[:,:,1,:]))
-        printing("     Share of cases with maize yields too low to provide profit: " + \
+        _printing("     Share of cases with maize yields too low to provide profit: " + \
                  str(np.round(share_maize_np * 100, 2)), console_output = console_output, \
                  logs_on = logs_on)
     # in average more profitable crop
     exp_profit = yld_means * prices - costs
     avg_time_profit = np.nanmean(exp_profit, axis = 0)
     more_profit = np.argmax(avg_time_profit, axis = 0) # per cluster
-    printing("     On average more profit (per cluster): " + \
+    _printing("     On average more profit (per cluster): " + \
              str([crops[i] for i in more_profit]), \
              console_output = console_output, logs_on = logs_on)
     # in average more productive crop
     avg_time_production = np.nanmean(yld_means, axis = 0)
     more_food = np.argmax(avg_time_production, axis = 0)
-    printing("     On average higher productivity (per cluster): " + \
+    _printing("     On average higher productivity (per cluster): " + \
              str([crops[i] for i in more_food]) + "\n", \
              console_output = console_output, logs_on = logs_on)
     
@@ -660,7 +660,7 @@ def RiskForCatastrophe(risk, num_clusters):
              
     return(res)
 
-def YieldRealisations(yld_slopes, yld_constants, resid_std, sim_start, N, \
+def _YieldRealisations(yld_slopes, yld_constants, resid_std, sim_start, N, \
                       risk, T, num_clusters, num_crops, \
                       yield_projection, VSS = False, wo_yields = False):  
     """
@@ -723,11 +723,11 @@ def YieldRealisations(yld_slopes, yld_constants, resid_std, sim_start, N, \
     """
     
     # generating catastrophes 
-    cat_clusters, terminal_years = CatastrophicYears(risk, \
+    cat_clusters, terminal_years = _CatastrophicYears(risk, \
                                     N, T, num_clusters, VSS)
     
     # generating yields according to catastrophes
-    ylds, yld_means = ProjectYields(yld_slopes, yld_constants, resid_std, sim_start, \
+    ylds, yld_means = _ProjectYields(yld_slopes, yld_constants, resid_std, sim_start, \
                              N, cat_clusters, terminal_years, T, risk, \
                              num_clusters, num_crops, yield_projection, \
                              VSS, wo_yields)
@@ -740,7 +740,7 @@ def YieldRealisations(yld_slopes, yld_constants, resid_std, sim_start, N, \
     
     return(cat_clusters, terminal_years, ylds, yld_means)
 
-def CatastrophicYears(risk, N, T, num_clusters, VSS):
+def _CatastrophicYears(risk, N, T, num_clusters, VSS):
     """
     Given the risk level that is to be covered, this creates a np.array 
     indicating which clusters should be catastrophic for each year.
@@ -801,7 +801,7 @@ def CatastrophicYears(risk, N, T, num_clusters, VSS):
             terminal_years[i] = np.min(np.where(cat_years[i, :] == 1))
     return(cat_clusters, terminal_years)
 
-def ProjectYields(yld_slopes, yld_constants, resid_std, sim_start, \
+def _ProjectYields(yld_slopes, yld_constants, resid_std, sim_start, \
                   N, cat_clusters, terminal_years, T, risk, \
                   num_clusters, num_crops, yield_projection, \
                   VSS = False, wo_yields = False):

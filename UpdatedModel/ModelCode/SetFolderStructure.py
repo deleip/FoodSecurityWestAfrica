@@ -12,7 +12,7 @@ import pickle
 import shutil
 from termcolor import colored
 
-from ModelCode.PandaGeneration import SetUpPandaDicts
+from ModelCode.PandaGeneration import _SetUpPandaDicts
 from ModelCode.PandaGeneration import CreateEmptyPanda
 
 # %% ################ SETTING UP FOLDER STRUCTURE FOR RESULTS #################
@@ -35,7 +35,7 @@ def CheckFolderStructure():
     if not os.path.isdir("Figures"):
         os.mkdir("Figures")
     
-    def __GroupingPlotFolders(main, a = True):
+    def _GroupingPlotFolders(main, a = True):
         if not os.path.isdir("Figures/" + main):
             os.mkdir("Figures/" + main)
         if a:
@@ -68,11 +68,11 @@ def CheckFolderStructure():
         os.mkdir("Figures/GetPenaltyFigures/rhoF")
     if not os.path.isdir("Figures/GetPenaltyFigures/rhoS"):
         os.mkdir("Figures/GetPenaltyFigures/rhoS")
-    __GroupingPlotFolders("DissimilarAdjacent")
-    __GroupingPlotFolders("SimilarAdjacent")
-    __GroupingPlotFolders("DissimilarNonAdjacent")
-    __GroupingPlotFolders("SimilarNonAdjacent")
-    __GroupingPlotFolders("ComparingScenarios", a = False)
+    _GroupingPlotFolders("DissimilarAdjacent")
+    _GroupingPlotFolders("SimilarAdjacent")
+    _GroupingPlotFolders("DissimilarNonAdjacent")
+    _GroupingPlotFolders("SimilarNonAdjacent")
+    _GroupingPlotFolders("ComparingScenarios", a = False)
         
     if not os.path.isdir("InputData"):
         warn.warn("You are missing the input data")
@@ -117,7 +117,7 @@ def CheckFolderStructure():
     if not os.path.isdir("ModelOutput/Pandas"):
         os.mkdir("ModelOutput/Pandas")
     if not os.path.exists("ModelOutput/Pandas/ColumnNames.txt"):
-        SetUpPandaDicts()
+        _SetUpPandaDicts()
     if not os.path.exists("ModelOutput/Pandas/current_panda.csv"):
         CreateEmptyPanda()
         

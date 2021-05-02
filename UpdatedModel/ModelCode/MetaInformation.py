@@ -9,7 +9,7 @@ import numpy as np
 
 # %% ########### FUNCTIONS TO GET META INFORMATION ON MODEL OUTPUT ############
 
-def ObjectiveFunction(x, num_clusters, num_crops, N, \
+def _ObjectiveFunction(x, num_clusters, num_crops, N, \
                     cat_clusters, terminal_years, ylds, costs, demand, imports, \
                     ini_fund, tax, prices, T, guaranteed_income, crop_cal, 
                     rhoF, rhoS): 
@@ -220,7 +220,7 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
     # intermediate results of the calculation
     exp_tot_costs, fix_costs, shortcomings, exp_incomes, profits, \
     exp_shortcomings,  fd_penalty, avg_fd_penalty, sol_penalty, final_fund, \
-    payouts, yearly_fixed_costs = ObjectiveFunction(crop_alloc, 
+    payouts, yearly_fixed_costs = _ObjectiveFunction(crop_alloc, 
                                            args["k"], 
                                            args["num_crops"],
                                            args["N"], 

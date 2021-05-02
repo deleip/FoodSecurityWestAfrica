@@ -10,11 +10,11 @@ import os
 import pickle
 from termcolor import colored
 
-from ModelCode.Auxiliary import printing
+from ModelCode.Auxiliary import _printing
 
 # %% ############## FUNCTIONS DEALING WITH THE RESULTS PANDA CSV ##############
 
-def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
+def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
                     population_information, crop_alloc, \
                     meta_sol, meta_sol_vss, VSS_value, validation_values, \
                     fn_fullresults, console_output = None, logs_on = None,
@@ -88,7 +88,7 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
     # shortcomings_capita = meta_sol["shortcomings"]/(pop_of_area/1e9)
     
     # setting up dictionary of parameters to add to the panda object as new row
-    printing("\nAdding results to pandas", console_output = console_output, logs_on = logs_on)
+    _printing("\nAdding results to pandas", console_output = console_output, logs_on = logs_on)
     if settings["PenMet"] == "prob":
         dict_for_pandas = {"Input probability food security": settings["probF"],
                            "Input probability solvency": settings["probS"],
@@ -179,32 +179,6 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
             
     return(None)
 
-def SetUpNewCurrentPandas(name_old_pandas):
-    """
-    Renames the current pandas csv according to the given name and sets up a
-    new current pandas csv.
-
-    Parameters
-    ----------
-    name_old_pandas : str
-        filenme for the csv.
-
-    Returns
-    -------
-    None.
-
-    """
-    
-    # save old panda
-    current_panda = pd.read_csv("ModelOutput/Pandas/current_panda.csv")
-    current_panda.to_csv("ModelOutput/Pandas/" + name_old_pandas + ".csv", index = False)
-    
-    # create new empty panda
-    os.remove("ModelOutput/Pandas/current_panda.csv")
-    CreateEmptyPanda()
-    
-    return(None)
-
 def CreateEmptyPanda(file = "current_panda"):
     """
     Creating a new empty pandas object with the correct columns.    
@@ -245,14 +219,14 @@ def OpenPanda(file = "current_panda"):
 
     """
  
-    def __ConvertListsInts(arg):
+    def _ConvertListsInts(arg):
         arg = arg.strip("][").split(", ")
         res = []
         for j in range(0, len(arg)):
             res.append(int(arg[j]))
         return(res)
     
-    def __ConvertListsFloats(arg):
+    def _ConvertListsFloats(arg):
         arg = arg.strip("][").split(", ")
         res = []
         for j in range(0, len(arg)):
@@ -273,9 +247,9 @@ def OpenPanda(file = "current_panda"):
     # substitute conversions that need local function
     for key in dict_convert.keys():
         if dict_convert[key] == "list of floats":
-            dict_convert[key] = __ConvertListsFloats
+            dict_convert[key] = _ConvertListsFloats
         elif dict_convert[key] == "list of ints":
-            dict_convert[key] = __ConvertListsInts
+            dict_convert[key] = _ConvertListsInts
     
     # re-read panda with conversions
     panda = pd.read_csv("ModelOutput/Pandas/" + file + ".csv", converters = dict_convert)
@@ -298,7 +272,7 @@ def OverViewCurrentPandaVariables():
             
     return(colnames)
     
-def SetUpPandaDicts():
+def _SetUpPandaDicts():
     """
     Sets up and saves the dicts that are needed to deal with the panda csvs.
     Dictonaries are defined here and saved so they can be loaded from other

@@ -11,16 +11,16 @@ import matplotlib.gridspec as gs
 import pandas as pd
 import pickle
 
-from ModelCode.Auxiliary import printing
+from ModelCode.Auxiliary import _printing
 from ModelCode.Auxiliary import GetFilename
 from ModelCode.CompleteModelCall import LoadModelResults
-from ModelCode.PandaHandling import ReadFromPandaSingleClusterGroup
+from ModelCode.PandaHandling import _ReadFromPandaSingleClusterGroup
 from ModelCode.SettingsParameters import DefaultSettingsExcept
 from ModelCode.SettingsParameters import RiskForCatastrophe
 
 # %% ############################# ANALYSIS ###################################
 
-def CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title, 
+def _CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title, 
                       comparing = "clusters", cols = None, cols_b = None, 
                       filename = None, foldername = None, figsize = None,
                       close_plots = None, fig = None, ax = None, 
@@ -234,7 +234,7 @@ def CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title,
     
     return(None)
     
-def CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, MaxAreasPool,
+def _CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, MaxAreasPool,
                                 MaxAreasIndep, labelsPool, labelsIndep, 
                                 title = None, plot_total_area = True,  
                                 cols = None, cols_b = None, subplots = False, 
@@ -296,14 +296,14 @@ def CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, MaxAreasPool,
     fig = plt.figure(figsize = figsize)
     # plot crop allocs when clusters are seen as groups on left subplot 
     ax = fig.add_subplot(1,2,1)
-    CompareCropAllocs(CropAllocsPool, MaxAreasPool, labelsPool, \
+    _CompareCropAllocs(CropAllocsPool, MaxAreasPool, labelsPool, \
                       "Risk pooling", "Cluster: ", fig = fig, ax = ax, \
                       subplots = subplots, fs = "small", \
                       plot_total_area = plot_total_area, legends = False, plt_labels = False,
                       close_plots = False)
     # plot crop allocs when clusters are seen independently on right subplot 
     ax = fig.add_subplot(1,2,2)
-    CompareCropAllocs(CropAllocsIndep, MaxAreasIndep, labelsIndep, \
+    _CompareCropAllocs(CropAllocsIndep, MaxAreasIndep, labelsIndep, \
                       "Independent", "Cluster: ", fig = fig, ax = ax, \
                       subplots = subplots, fs = "small", \
                       plot_total_area = plot_total_area, plt_labels = False,
@@ -332,7 +332,7 @@ def CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, MaxAreasPool,
         
     return(None)
 
-def GetResultsToCompare(ResType = "k_using", panda_file = "current_panda", \
+def _GetResultsToCompare(ResType = "k_using", panda_file = "current_panda", \
                         console_output = None, **kwargs):
     """
     Function that loads results from different model runs, with one setting 
@@ -404,7 +404,7 @@ def GetResultsToCompare(ResType = "k_using", panda_file = "current_panda", \
     for it in ToIterate:
         kwargs_tmp[ResType] = it
         panda_filenames = panda_filenames.append(\
-                        ReadFromPandaSingleClusterGroup(file = panda_file, 
+                        _ReadFromPandaSingleClusterGroup(file = panda_file, 
                                           output_var = "Filename for full results",
                                           **kwargs_tmp))
      
@@ -417,9 +417,9 @@ def GetResultsToCompare(ResType = "k_using", panda_file = "current_panda", \
     Ns = []
     Ms = []
     
-    printing("  Fetching data", console_output = console_output, logs_on = False)
+    _printing("  Fetching data", console_output = console_output, logs_on = False)
     for idx, val in enumerate(ToIterate):
-        printing("     " + ResType + ": " + str(val), 
+        _printing("     " + ResType + ": " + str(val), 
                  console_output = console_output, logs_on = False)
         
         settings, args, AddInfo_CalcParameters, yield_information, \
@@ -435,7 +435,7 @@ def GetResultsToCompare(ResType = "k_using", panda_file = "current_panda", \
         
     return(CropAllocs, MaxAreas, labels, Ns, Ms)
 
-def PlotTotalAreas(total_areas, groupAim, adjacent, fnPlot = None,
+def _PlotTotalAreas(total_areas, groupAim, adjacent, fnPlot = None,
                    foldername = None, sim_start = 2017, cols = None, 
                    figsize = None, close_plots = None):
     """
@@ -582,13 +582,13 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
         foldername = foldername + "NonAdjacent"
         
     # get cluster grouping for size 1 (i.e. all independent)
-    printing("\nGroup size " + str(1), console_output = console_output, logs_on = False)
+    _printing("\nGroup size " + str(1), console_output = console_output, logs_on = False)
     with open("InputData/Clusters/ClusterGroups/GroupingSize" \
                   + str(1) + groupAim + add + ".txt", "rb") as fp:
                 BestGrouping = pickle.load(fp)    
                 
     # get results for the different cluster groups in this grouping
-    CropAllocs, MaxAreas, labels, Ns, Ms = GetResultsToCompare(ResType="k_using",\
+    CropAllocs, MaxAreas, labels, Ns, Ms = _GetResultsToCompare(ResType="k_using",\
                                             panda_file = panda_file,
                                             console_output = console_output,
                                             k_using = BestGrouping, 
@@ -605,8 +605,8 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
     kwargs["validation_size"] = None
         
     # plot the crop areas for this grouping
-    printing("  Plotting", console_output = console_output, logs_on = False)
-    CompareCropAllocs(CropAllocs = CropAllocs,
+    _printing("  Plotting", console_output = console_output, logs_on = False)
+    _CompareCropAllocs(CropAllocs = CropAllocs,
                       MaxAreas = MaxAreas,
                       labels = labels,
                       title = "Groups of size " + str(1) + " (" + groupAim.lower() + add_title + ")",
@@ -620,7 +620,7 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
         
     for size in [2,3,5,9]:
         # get cluster grouping for given group size
-        printing("\nGroup size " + str(size), console_output = console_output, logs_on = False)
+        _printing("\nGroup size " + str(size), console_output = console_output, logs_on = False)
         with open("InputData/Clusters/ClusterGroups/GroupingSize" \
                       + str(size) + groupAim + add + ".txt", "rb") as fp:
                     BestGrouping = pickle.load(fp)
@@ -632,7 +632,7 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
             
         # get results for the different cluster groups in this grouping
         CropAllocs_pooling, MaxAreas_pooling, labels_pooling, Ns, Ms = \
-                GetResultsToCompare(ResType="k_using",\
+                _GetResultsToCompare(ResType="k_using",\
                                     panda_file = panda_file,
                                     console_output = console_output,
                                     k_using = BestGrouping, 
@@ -649,8 +649,8 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
         kwargs["validation_size"] = None
         
         # plot the crop areas for this grouping
-        printing("  Plotting", console_output = console_output, logs_on = False)
-        CompareCropAllocs(CropAllocs = CropAllocs_pooling,
+        _printing("  Plotting", console_output = console_output, logs_on = False)
+        _CompareCropAllocs(CropAllocs = CropAllocs_pooling,
                           MaxAreas = MaxAreas_pooling,
                           labels = labels_pooling,
                           title = "Groups of size " + str(size) + " (" + groupAim.lower() + add_title + ")",
@@ -662,7 +662,7 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
                           close_plots = close_plots)    
         
         # plot the crop area comparison between independent and grouped for this grouping
-        CompareCropAllocRiskPooling(CropAllocs_pooling, CropAllocs, 
+        _CompareCropAllocRiskPooling(CropAllocs_pooling, CropAllocs, 
                                     MaxAreas_pooling, MaxAreas, 
                                     labels_pooling, labels, 
                                     filename = fnPlot,
@@ -675,7 +675,7 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
     settingsIterate["N"] = ""
     settingsIterate["validation_size"] = ""
     fnPlot = GetFilename(settingsIterate, groupAim = groupAim,  adjacent = adjacent)
-    PlotTotalAreas(total_areas, groupAim, adjacent, fnPlot, foldername = foldername, close_plots = close_plots)
+    _PlotTotalAreas(total_areas, groupAim, adjacent, fnPlot, foldername = foldername, close_plots = close_plots)
         
     return(None)
 

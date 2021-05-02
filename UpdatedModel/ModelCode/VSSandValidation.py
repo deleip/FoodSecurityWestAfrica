@@ -11,7 +11,7 @@ import pickle
 from ModelCode.SettingsParameters import SetParameters
 from ModelCode.ModelCore import SolveReducedcLinearProblemGurobiPy
 from ModelCode.MetaInformation import GetMetaInformation
-from ModelCode.Auxiliary import printing
+from ModelCode.Auxiliary import _printing
 
 # %% #################### VALUE OF THE STOCHASTIC SOLUTION ####################  
  
@@ -49,7 +49,7 @@ def VSS(settings, expected_incomes, args):
     
     # solve model for the expected yields
     status, crop_alloc_vss, meta_sol, prob, durations = \
-                SolveReducedcLinearProblemGurobiPy(args_vss, args["rhoF"],
+                SolveReducedLinearProblemGurobiPy(args_vss, args["rhoF"],
                       args["rhoS"], console_output = False, logs_on = False)
                 
     # get information of using VSS solution in stochastic setting
@@ -99,13 +99,13 @@ def OutOfSampleVal(crop_alloc, settings, expected_incomes, rhoF, rhoS, \
     settings_val["N"] = settings["validation_size"]
     
     # get yield samples
-    printing("     Getting parameters and yield samples", console_output = console_output, logs_on = logs_on)
+    _printing("     Getting parameters and yield samples", console_output = console_output, logs_on = logs_on)
     args, yield_information, population_information = \
                 SetParameters(settings_val, expected_incomes, \
                               console_output = False, logs_on = False)
     
     # run objective function for higher sample size
-    printing("     Objective function", console_output = console_output, logs_on = logs_on)
+    _printing("     Objective function", console_output = console_output, logs_on = logs_on)
     meta_sol_val = GetMetaInformation(crop_alloc, args, rhoF, rhoS)
     
     # create dictionary with validation information

@@ -11,12 +11,12 @@ import itertools as it
 import warnings as warn
 import gurobipy as gp
 
-from ModelCode.Auxiliary import printing
+from ModelCode.Auxiliary import _printing
 from ModelCode.MetaInformation import GetMetaInformation
 
 # %% ############ IMPLEMENTING AND SOLVING LINEAR VERSION OF MODEL ############
 
-def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
+def SolveReducedLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
                                        console_output = None, logs_on = None):
     """
     Sets up and solves the linear form of the food security problem.
@@ -57,7 +57,7 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
 
     """
         
-    def __flatten(ListOfLists):
+    def _flatten(ListOfLists):
         return(list(it.chain(*ListOfLists)))
     
     if rhoF is None:
@@ -65,7 +65,7 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
     if rhoS is None:
         rhoS = args["rhoS"]
     
-    printing("\nSolving Model", console_output = console_output, logs_on = logs_on)
+    _printing("\nSolving Model", console_output = console_output, logs_on = logs_on)
     
     start = tm.time()
     
@@ -87,13 +87,13 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
     termyear_p1 = termyear_p1.astype(int)
     
     # index tupels for variables and constraints
-    indVfood = __flatten([[(t, s) for t in range(0, termyear_p1[s])] \
+    indVfood = _flatten([[(t, s) for t in range(0, termyear_p1[s])] \
                         for s in range(0, N)])
     
-    indW = __flatten(__flatten([[[(t, k, s) for t in range(0, termyear_p1[s])] \
+    indW = _flatten(_flatten([[[(t, k, s) for t in range(0, termyear_p1[s])] \
                              for k in range(0,K)] for s in range(0, N)]))   
             
-    indCultCosts = __flatten([[(t, j, k) for (t,j,k) in \
+    indCultCosts = _flatten([[(t, j, k) for (t,j,k) in \
               it.product(range(0,termyear_p1[s]), range(0, J), range(0, K))] \
               for s in range(0, N)])
             
@@ -172,11 +172,11 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
                   
         meta_sol = GetMetaInformation(crop_alloc, args, rhoF, rhoS)
             
-    printing("     Time      Setting up model: " + \
+    _printing("     Time      Setting up model: " + \
             str(np.round(durations[0], 2)) + "s", console_output = console_output, logs_on = logs_on)
-    printing("               Solving model: " + \
+    _printing("               Solving model: " + \
             str(np.round(durations[1], 2)) + "s", console_output = console_output, logs_on = logs_on)
-    printing("               Total: " + \
+    _printing("               Total: " + \
             str(np.round(durations[2], 2)) + "s", console_output = console_output, logs_on = logs_on)       
                 
     return(status, crop_alloc, meta_sol, prob, durations)

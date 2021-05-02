@@ -8,7 +8,7 @@ Created on Fri Jan  1 14:09:14 2021
 
 # %% ############################### AUXILIARY ################################   
     
-def printing(content, console_output = None, flush = True, logs_on = None):
+def _printing(content, console_output = None, flush = True, logs_on = None):
     """
     Function the prints progress to console and/or to log file if chosen.
 
@@ -88,7 +88,7 @@ def GetFilename(settings, groupSize = "", groupAim = "", \
     SettingsAffectingRhoS : str
         Only if allNames is True.
     """
-    def __MakeList(grouping):
+    def _MakeList(grouping):
         res = []
         for gr in grouping:
             if type(gr) is int:
@@ -102,7 +102,7 @@ def GetFilename(settings, groupSize = "", groupAim = "", \
     if type(settingsTmp["k_using"]) is tuple:
         settingsTmp["k_using"] = list(settingsTmp["k_using"])
     if type(settingsTmp["k_using"]) is list:
-        settingsTmp["k_using"] = __MakeList(settingsTmp["k_using"])
+        settingsTmp["k_using"] = _MakeList(settingsTmp["k_using"])
     
     if sorted(settingsTmp["k_using"]) == list(range(1, settingsTmp["k"] + 1)):
         settingsTmp["k_using"] = ["All"]
@@ -188,7 +188,7 @@ def GetFilename(settings, groupSize = "", groupAim = "", \
     return(fn)
 
 
-def GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
+def _GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
                 num_crops, yield_projection, sim_start, pop_scenario,
                 risk, N, validation_size, T, seed, tax, perc_guaranteed,
                 ini_fund, food_import):

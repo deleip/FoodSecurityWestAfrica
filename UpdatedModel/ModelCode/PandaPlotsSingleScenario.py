@@ -17,7 +17,7 @@ from ModelCode.Auxiliary import GetFilename
 
 # %% ############### PLOTTING FUNCTIONS USING RESULTS PANDA CSV ###############
 #
-def __ExtractResPanda(sub_panda, out_type, output_var, size):
+def _ExtractResPanda(sub_panda, out_type, output_var, size):
     """
     Aggregates results given by ReadFromPanda.
 
@@ -87,7 +87,7 @@ def __ExtractResPanda(sub_panda, out_type, output_var, size):
     return(res)
     
 
-def PandaToPlot_GetResultsSingScen(file = "current_panda", 
+def _Panda_GetResultsSingScen(file = "current_panda", 
                            output_var = None,
                            out_type = "agg", # or median, or all
                            grouping_aim = "Dissimilar",
@@ -141,7 +141,7 @@ def PandaToPlot_GetResultsSingScen(file = "current_panda",
                                   k_using = BestGrouping, \
                                   **kwargs)
             
-        res = res.append(__ExtractResPanda(panda_tmp, out_type, output_var, size))
+        res = res.append(_ExtractResPanda(panda_tmp, out_type, output_var, size))
             
     return(res)
 
@@ -484,7 +484,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
 
     """
     
-    def __report(i, console_output = console_output, num_plots = 9):
+    def _report(i, console_output = console_output, num_plots = 9):
         if console_output:
             sys.stdout.write("\r     Plot " + str(i) + " of " + str(num_plots))
             
@@ -520,7 +520,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                        foldername = foldername,
                        close_plots = close_plots,
                        **kwargs)
-    __report(1)    
+    _report(1)    
         
     PlotPandaAggregate(panda_file = panda_file,
                        output_var=['Average necessary add. import excluding solvency constraint (over samples and then years)', \
@@ -532,7 +532,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                        foldername = foldername,
                        close_plots = close_plots,
                        **kwargs)
-    __report(2)    
+    _report(2)    
         
     PlotPandaAggregate(panda_file = panda_file,
                        output_var=['Average total necessary import (over samples and then years)', \
@@ -544,7 +544,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                        foldername = foldername,
                        close_plots = close_plots,
                        **kwargs)
-    __report(3)    
+    _report(3)    
         
     PlotPandaSingle(panda_file = panda_file,
                     output_var=['Penalty for food shortage', \
@@ -556,7 +556,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
-    __report(4)    
+    _report(4)    
 
     PlotPandaSingle(panda_file = panda_file,
                     output_var=['Resulting probability for food security', \
@@ -568,7 +568,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
-    __report(5)    
+    _report(5)    
 
     PlotPandaSingle(panda_file = panda_file,
                     output_var=['Average necessary add. import per capita (over samples and then years)', \
@@ -580,7 +580,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
-    __report(6)    
+    _report(6)    
         
     PlotPandaAggregate(panda_file = panda_file,
                        output_var=['Average food demand penalty (over samples and then years)', \
@@ -592,7 +592,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                        foldername = foldername,
                        close_plots = close_plots,
                        **kwargs)
-    __report(7)    
+    _report(7)    
         
     PlotPandaSingle(panda_file = panda_file,
                     output_var=['Value of stochastic solution', \
@@ -605,7 +605,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
-    __report(8)    
+    _report(8)    
         
     PlotPandaSingle(panda_file = panda_file,
                     output_var=['Resulting probability for food security for VSS',\
@@ -617,7 +617,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
-    __report(9)    
+    _report(9)    
     
     
     return(None)
@@ -696,7 +696,7 @@ def OtherPandaPlots(panda_file = "current_panda",
                      **kwargs)
     return(None)
 
-def PandaToPlot_GetResultsMultScen(file = "current_panda", 
+def Panda_GetResults(file = "current_panda", 
                                    output_var = None,
                                    out_type = "agg", # or median, or all
                                    grouping_aim = "Dissimilar",
@@ -756,9 +756,9 @@ def PandaToPlot_GetResultsMultScen(file = "current_panda",
         sys.exit("All settings over which should be iterated must be " +
                      "lists of the same length!")
      
-    # run PandaToPlot_GetResultsSingScen for each setting combination
+    # run _Panda_GetResultsSingScen for each setting combination
     if len(l) == 0:
-        res = [PandaToPlot_GetResultsSingScen(output_var = output_var, **fulldict)]
+        res = [_Panda_GetResultsSingScen(output_var = output_var, **fulldict)]
     else:
         res = []
         for idx in range(0, l[0]):
@@ -766,7 +766,7 @@ def PandaToPlot_GetResultsMultScen(file = "current_panda",
             for key in keys_list:
                 fulldict_tmp[key] = fulldict[key][idx]
             try:
-                res.append(PandaToPlot_GetResultsSingScen(output_var = output_var, **fulldict_tmp))
+                res.append(_Panda_GetResultsSingScen(output_var = output_var, **fulldict_tmp))
             except SystemExit:
                 res.append(None)
                 
@@ -817,7 +817,7 @@ def PlotPandaMedian(panda_file = "current_panda",
         the default as defined in ModelCode/GeneralSettings is used.
     **kwargs : 
         Settings specifiying for which model run results shall be returned, 
-        passed to PandaToPlot_GetResults.
+        passed to _Panda_GetResults.
 
     Returns
     -------
@@ -839,7 +839,7 @@ def PlotPandaMedian(panda_file = "current_panda",
         units = pickle.load(fp)
     
     # get results
-    res = PandaToPlot_GetResultsMultScen(panda_file, output_var, "median", grouping_aim, adjacent, **kwargs)
+    res = Panda_GetResults(panda_file, output_var, "median", grouping_aim, adjacent, **kwargs)
     
     # make sure the output variable are given as list
     if output_var is str:
@@ -958,7 +958,7 @@ def PlotPandaAll(panda_file = "current_panda",
         units = pickle.load(fp)
     
     # get results
-    res = PandaToPlot_GetResultsMultScen(panda_file, output_var, "all", grouping_aim, adjacent, **kwargs)
+    res = Panda_GetResults(panda_file, output_var, "all", grouping_aim, adjacent, **kwargs)
     
     # make sure the output variable are given as list
     if output_var is str:
@@ -1080,7 +1080,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
         units = pickle.load(fp)
     
     # get results
-    res = PandaToPlot_GetResultsMultScen(panda_file, output_var, "agg", grouping_aim, adjacent, **kwargs)
+    res = Panda_GetResults(panda_file, output_var, "agg", grouping_aim, adjacent, **kwargs)
     
     # make sure the output variable are given as list
     if output_var is str:

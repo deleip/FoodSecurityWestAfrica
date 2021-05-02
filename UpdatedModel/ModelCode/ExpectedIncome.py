@@ -9,10 +9,10 @@ import numpy as np
 import pickle
 import sys
 
-from ModelCode.Auxiliary import printing
-from ModelCode.GetPenalties import GetInitialGuess
+from ModelCode.Auxiliary import _printing
+from ModelCode.GetPenalties import _GetInitialGuess
 from ModelCode.SettingsParameters import SetParameters
-from ModelCode.GetPenalties import GetRhoWrapper
+from ModelCode.GetPenalties import _GetRhoWrapper
 
 # %% ############### FUNCTIONS RUNNING MODEL TO GET EXP INCOME ################
 
@@ -54,11 +54,11 @@ def GetExpectedIncome(settings, console_output = None, logs_on = None):
     
     # if expected income was already calculated for these settings, fetch it
     if SettingsAffectingGuaranteedIncome in dict_incomes.keys():
-        printing("\nFetching expected income", console_output = console_output, logs_on = logs_on)
+        _printing("\nFetching expected income", console_output = console_output, logs_on = logs_on)
         expected_incomes = dict_incomes[SettingsAffectingGuaranteedIncome]
     # else calculate (and save) it
     else:
-        expected_incomes = CalcExpectedIncome(settings, \
+        expected_incomes = _CalcExpectedIncome(settings, \
                         SettingsAffectingGuaranteedIncome, console_output = console_output, logs_on = logs_on)
         dict_incomes[SettingsAffectingGuaranteedIncome] = expected_incomes
         with open("PenaltiesAndIncome/ExpectedIncomes.txt", "wb") as fp:    
@@ -68,14 +68,14 @@ def GetExpectedIncome(settings, console_output = None, logs_on = None):
     if np.sum(expected_incomes < 0) > 0:
         sys.exit("Negative expected income")
         
-    printing("     Expected income per cluster in " + \
+    _printing("     Expected income per cluster in " + \
              str(settings["sim_start"] - 1) + ": " + \
              str(np.round(expected_incomes, 3)),
              console_output = console_output, logs_on = logs_on)
         
     return(expected_incomes)
        
-def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
+def _CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
                        console_output = None, logs_on = None):
     """
     Calculating the expected income in the scenario corresponding to the 
@@ -103,7 +103,7 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
 
     """
     
-    printing("\nCalculating expected income ", console_output = console_output, logs_on = logs_on)
+    _printing("\nCalculating expected income ", console_output = console_output, logs_on = logs_on)
     settings_ExpIn = settings.copy()
 
     # change some settings: we are interested in the expected income in 2016
@@ -132,7 +132,7 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     with open("PenaltiesAndIncome/resAvgImport.txt", "rb") as fp:    
         dict_import = pickle.load(fp)
         
-    rhoFini, checkedGuess = GetInitialGuess(dict_rhoFs, SettingsFirstGuess, settings["N"])
+    rhoFini, checkedGuess = _GetInitialGuess(dict_rhoFs, SettingsFirstGuess, settings["N"])
     
     # we assume that without government farmers aim for 99% probability of 
     # food security, therefore we find the right penalty for probF = 99%.
@@ -141,7 +141,7 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     args, yield_information, population_information = \
         SetParameters(settings_ExpIn, console_output = False, logs_on = False)
     
-    rhoF, meta_sol = GetRhoWrapper(args, probF, rhoFini, checkedGuess, "F",
+    rhoF, meta_sol = _GetRhoWrapper(args, probF, rhoFini, checkedGuess, "F",
                   SettingsAffectingRhoF, console_output = False, logs_on = False)
           
     dict_rhoFs[SettingsAffectingRhoF] = rhoF

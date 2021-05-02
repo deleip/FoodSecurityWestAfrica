@@ -10,8 +10,8 @@ import pickle
 import os
 import matplotlib.pyplot as plt
 
-from ModelCode.Auxiliary import printing
-from ModelCode.ModelCore import SolveReducedcLinearProblemGurobiPy
+from ModelCode.Auxiliary import _printing
+from ModelCode.ModelCore import SolveReducedLinearProblemGurobiPy
 from ModelCode.SettingsParameters import DefaultSettingsExcept
 from ModelCode.MetaInformation import GetMetaInformation
 
@@ -88,7 +88,7 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
         # if this setting was already calculated, fetch rhoF
         if SettingsAffectingRhoF in dict_rhoFs.keys():
             rhoF = dict_rhoFs[SettingsAffectingRhoF]
-            printing("Fetching rhoF: " + str(rhoF), console_output = console_output, logs_on = logs_on)
+            _printing("Fetching rhoF: " + str(rhoF), console_output = console_output, logs_on = logs_on)
             probF_onlyF = dict_probFs[SettingsAffectingRhoF]
             avg_nec_import = dict_import[SettingsAffectingRhoF]
         else:
@@ -97,12 +97,12 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
             # initial guess (if no initial guess can be provided we set it
             # to 1)
             if rhoFini is None:
-                rhoFini, checkedGuess = GetInitialGuess(dict_rhoFs, SettingsFirstGuess, settings["N"])
+                rhoFini, checkedGuess = _GetInitialGuess(dict_rhoFs, SettingsFirstGuess, settings["N"])
                 
             # calculating rhoF
-            printing("Calculating rhoF and import", console_output = console_output, logs_on = logs_on)
+            _printing("Calculating rhoF and import", console_output = console_output, logs_on = logs_on)
             rhoF, meta_solF = \
-                GetRhoWrapper(args, probF, rhoFini, checkedGuess, "F",
+                _GetRhoWrapper(args, probF, rhoFini, checkedGuess, "F",
                   SettingsAffectingRhoF, console_output = None, logs_on = None)
                 
             probF_onlyF = meta_solF["probF"] 
@@ -151,7 +151,7 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
         # if this setting was already calculated, fetch rhoS
         if SettingsAffectingRhoS in dict_rhoSs.keys():
             rhoS = dict_rhoSs[SettingsAffectingRhoS]
-            printing("\nFetching rhoS: " + str(rhoS), console_output = console_output, logs_on = logs_on)
+            _printing("\nFetching rhoS: " + str(rhoS), console_output = console_output, logs_on = logs_on)
             probS_onlyS = dict_probSs[SettingsAffectingRhoS]
             avg_nec_debt = dict_debt[SettingsAffectingRhoS]           
         else:
@@ -160,12 +160,12 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
             # initial guess (if no initial guess can be provided we set it
             # to 100)
             if rhoSini is None:
-                rhoSini, checkedGuess = GetInitialGuess(dict_rhoSs, SettingsFirstGuess, settings["N"])
+                rhoSini, checkedGuess = _GetInitialGuess(dict_rhoSs, SettingsFirstGuess, settings["N"])
                 
             # calculating rhoS
-            printing("\nCalculating rhoS", console_output = console_output, logs_on = logs_on)
+            _printing("\nCalculating rhoS", console_output = console_output, logs_on = logs_on)
             rhoS, meta_solS = \
-                GetRhoWrapper(args, probS, rhoSini, checkedGuess, "S",
+                _GetRhoWrapper(args, probS, rhoSini, checkedGuess, "S",
                   SettingsAffectingRhoS, console_output = None, logs_on = None)
                 
             probS_onlyS = meta_solS["probS"]
@@ -185,7 +185,7 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
              
     return(rhoF, rhoS, probF_onlyF, probS_onlyS, avg_nec_import, avg_nec_debt)
 
-def GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
+def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
                   file, console_output = None, logs_on = None):
     """
     Finding the correct rhoS given the probability probS, based on a bisection
@@ -234,33 +234,33 @@ def GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
         from ModelCode.GeneralSettings import shareDiffS as shareDiff
     
     # check model output for a very high penalty (as proxy for infinity)
-    maxProb, nec_help =  CheckOptimalProb(args, prob, objective, accuracy,
+    maxProb, nec_help =  _CheckOptimalProb(args, prob, objective, accuracy,
                       console_output = console_output, logs_on = logs_on)
         
     # if probF can be reached find lowest penalty that gives probF
     if maxProb >= prob:
-        printing("     Finding corresponding penalty\n", console_output, logs_on = logs_on)
-        rho, meta_sol = RhoProbability(args, prob, rhoIni, checkedGuess, \
+        _printing("     Finding corresponding penalty\n", console_output, logs_on = logs_on)
+        rho, meta_sol = _RhoProbability(args, prob, rhoIni, checkedGuess, \
                objective, file, shareDiff, accuracy, console_output, logs_on)
     # if probF cannot be reached find the lowest penalty that minimizes the
     # average import/debt that is needed to cover food demand/government payouts
     else:
         if objective == "F": 
-            printing(f"     Finding lowest penalty minimizing average total import ({nec_help:.2e} 10^12 kcal)\n", 
+            _printing(f"     Finding lowest penalty minimizing average total import ({nec_help:.2e} 10^12 kcal)\n", 
                      console_output, logs_on = logs_on)
         elif objective == "S":
-            printing(f"     Finding lowest penalty minimizing average total debt ({nec_help:.2e} 10^9 $)\n", 
+            _printing(f"     Finding lowest penalty minimizing average total debt ({nec_help:.2e} 10^9 $)\n", 
                      console_output, logs_on = logs_on)
-        rho, meta_sol = RhoMinHelp(args, prob, rhoIni,
+        rho, meta_sol = _RhoMinHelp(args, prob, rhoIni,
                 checkedGuess, objective, nec_help, shareDiff, accuracy, file, \
                 console_output = console_output, logs_on = logs_on)
             
-    printing("\n     Final rho" + objective + ": " + str(rho), console_output = console_output, logs_on = logs_on)
+    _printing("\n     Final rho" + objective + ": " + str(rho), console_output = console_output, logs_on = logs_on)
     
     return(rho, meta_sol)
 
     
-def CheckOptimalProb(args, prob, objective, accuracy,
+def _CheckOptimalProb(args, prob, objective, accuracy,
                       console_output = None, logs_on = None):
     """
     Function to find the highest probF possible under the given settings, and
@@ -303,7 +303,7 @@ def CheckOptimalProb(args, prob, objective, accuracy,
         rhoF = 0
     
     
-    def __get_necessary_help(meta_sol, objective = objective):
+    def _get_necessary_help(meta_sol, objective = objective):
         if objective == "F":
             return(meta_sol["avg_nec_import"])
         elif objective == "S":
@@ -311,25 +311,25 @@ def CheckOptimalProb(args, prob, objective, accuracy,
         
     # try for rhoF = 1e9 (as a proxy for rhoF = inf)
     status, crop_alloc, meta_sol, sto_prob, durations = \
-         SolveReducedcLinearProblemGurobiPy(args, rhoF, rhoS, console_output = False, logs_on = False)  
+         SolveReducedLinearProblemGurobiPy(args, rhoF, rhoS, console_output = False, logs_on = False)  
        
     # get resulting probabilities
     maxProb = meta_sol["prob" + objective]
-    printing("     maxProb" + objective + ": " + str(np.round(maxProb * 100, accuracy - 1)) + "%", \
+    _printing("     maxProb" + objective + ": " + str(np.round(maxProb * 100, accuracy - 1)) + "%", \
               console_output = console_output, logs_on = logs_on)
     
     # check if probability is high enough 
     if maxProb >= prob:
-        printing("     Desired pro" + objective + " (" + str(np.round(prob * 100, accuracy - 1)) \
+        _printing("     Desired pro" + objective + " (" + str(np.round(prob * 100, accuracy - 1)) \
                              + "%) can be reached\n", console_output = console_output, logs_on = logs_on)
     else:
-        printing("     Desired pro" + objective + " (" + str(np.round(prob * 100, accuracy - 1)) \
+        _printing("     Desired pro" + objective + " (" + str(np.round(prob * 100, accuracy - 1)) \
                              + "%) cannot be reached\n", console_output = console_output, logs_on = logs_on)
             
-    return(maxProb, __get_necessary_help(meta_sol))
+    return(maxProb, _get_necessary_help(meta_sol))
 
  
-def RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff, \
+def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff, \
                    accuracy, console_output = None, logs_on = None):
     """
     Finding the correct rho given the probability prob, based on a bisection
@@ -373,7 +373,7 @@ def RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff,
     meta_sol : dict
         Dictionary on model outputs for the resulting penalty.
     """
-    def __setGuesses(nextGuess, objective = objective):
+    def _setGuesses(nextGuess, objective = objective):
         if objective == "F":
             rhoF = nextGuess
             rhoS = 0
@@ -382,17 +382,17 @@ def RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff,
             rhoF = 0
         return(rhoF, rhoS)
     
-    def __get_necessary_help(meta_sol, objective = objective):
+    def _get_necessary_help(meta_sol, objective = objective):
         if objective == "F":
             return(meta_sol["avg_nec_import"])
         elif objective == "S":
             return(meta_sol["avg_nec_debt"])
    
     # accuracy information
-    printing("     accuracy that we demand for prob" + objective + ": " + \
+    _printing("     accuracy that we demand for prob" + objective + ": " + \
              str(accuracy - 2) + " decimal places", \
              console_output = console_output, logs_on = logs_on)
-    printing("     accuracy that we demand for rho" + objective + ": 1/" + \
+    _printing("     accuracy that we demand for rho" + objective + ": 1/" + \
              str(shareDiff) + " of final rho" + objective + "\n", \
              console_output = console_output, logs_on = logs_on)
     
@@ -400,7 +400,7 @@ def RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff,
     # if we get the right prob for our guess, and a lower prob for rhoCheck 
     # at the lower end of our accuracy-interval, we know that the correct 
     # rho is in that interval and can return our guess
-    rho, meta_sol = checkIniGuess(rhoIni, 
+    rho, meta_sol = _checkIniGuess(rhoIni, 
                                   args,
                                   checkedGuess,
                                   prob = prob,
@@ -417,7 +417,7 @@ def RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff,
         rhoIni = 1
     elif objective == "S":
         rhoIni = 100
-    rhoFini, rhoSini = __setGuesses(rhoIni, objective)
+    rhoFini, rhoSini = _setGuesses(rhoIni, objective)
     
     # initialize values for search algorithm and reporting
     rhoLastDown = np.inf
@@ -431,11 +431,11 @@ def RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff,
     
     # calculate initial guess
     status, crop_alloc, meta_sol, sto_prob, durations = \
-                SolveReducedcLinearProblemGurobiPy(args, rhoFini, rhoSini, console_output = False, logs_on = False)
+                SolveReducedLinearProblemGurobiPy(args, rhoFini, rhoSini, console_output = False, logs_on = False)
     crop_allocs.append(crop_alloc)
     rhos_tried.append(rhoIni)
     probabilities.append(meta_sol["prob"+objective])
-    necessary_help.append(__get_necessary_help(meta_sol))
+    necessary_help.append(_get_necessary_help(meta_sol))
     
     # update information
     if np.round(meta_sol["prob"+objective], accuracy) == prob:
@@ -447,25 +447,25 @@ def RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff,
     
     # report
     accuracy_int = lowestCorrect - rhoLastUp
-    ReportProgressFindingRho(rhoOld, meta_sol, accuracy, durations, \
+    _ReportProgressFindingRho(rhoOld, meta_sol, accuracy, durations, \
                              objective, accuracy_int = accuracy_int,
                              console_output = console_output, logs_on = logs_on)
 
     while True:   
         # find next guess
         rhoNew, rhoLastDown, rhoLastUp = \
-                    UpdatedRhoGuess(rhoLastUp, rhoLastDown, rhoOld, 
+                    _UpdatedRhoGuess(rhoLastUp, rhoLastDown, rhoOld, 
                                     meta_sol = meta_sol, prob = prob,
                                     objective = objective, accuracy = accuracy)
-        rhoFnew, rhoSnew = __setGuesses(rhoNew, objective)
+        rhoFnew, rhoSnew = _setGuesses(rhoNew, objective)
        
         # solve model for guess
         status, crop_alloc, meta_sol, sto_prob, durations = \
-                SolveReducedcLinearProblemGurobiPy(args, rhoFnew, rhoSnew, console_output = False, logs_on = False)
+                SolveReducedLinearProblemGurobiPy(args, rhoFnew, rhoSnew, console_output = False, logs_on = False)
         crop_allocs.append(crop_alloc)
         rhos_tried.append(rhoNew)
         probabilities.append(meta_sol["prob"+objective])
-        necessary_help.append(__get_necessary_help(meta_sol))
+        necessary_help.append(_get_necessary_help(meta_sol))
         
         
         # We want to find the lowest penalty for which we get the right probability.
@@ -493,7 +493,7 @@ def RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff,
             accuracy_int = rhoNew - rhoLastUp
             
         # report
-        ReportProgressFindingRho(rhoNew, meta_sol, accuracy, durations, \
+        _ReportProgressFindingRho(rhoNew, meta_sol, accuracy, durations, \
                                  objective, accuracy_int = accuracy_int, 
                                  console_output = console_output, logs_on = logs_on)
             
@@ -505,19 +505,19 @@ def RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff,
             meta_sol_lowestCorrect = meta_sol
     
     # last report
-    ReportProgressFindingRho(rhoNew, meta_sol, accuracy, durations, \
+    _ReportProgressFindingRho(rhoNew, meta_sol, accuracy, durations, \
                objective, accuracy_int = accuracy_int, console_output = console_output, 
                logs_on = logs_on)    
    
     # ploting of information
     if args["T"] > 1:
-        PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, \
+        _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, \
                          necessary_help, objective, "GivenProb", file)
              
     return(rho, meta_sol_out)
 
          
-def RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
+def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
                 nec_help, shareDiff, accuracy, file, \
                 console_output = None, logs_on = None):
     """
@@ -581,16 +581,16 @@ def RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
         
     accuracy_help = accuracy_help_perc * (nec_help_zero - nec_help)
             
-    printing("     accuracy that we demand for necessary " + help_type + ": " + \
+    _printing("     accuracy that we demand for necessary " + help_type + ": " + \
              str(round(accuracy_help_perc * 100, 1)) + \
                  "% of diff between maximal and minimal necessary " + help_type, \
              console_output = console_output, logs_on = logs_on)
-    printing("     accuracy that we demand for rho" + objective + ": 1/" + str(shareDiff) + \
+    _printing("     accuracy that we demand for rho" + objective + ": 1/" + str(shareDiff) + \
              " of final rho" + objective + "\n", \
              console_output = console_output, logs_on = logs_on)
         
     # internal functions
-    def __setGuesses(nextGuess, objective = objective):
+    def _setGuesses(nextGuess, objective = objective):
         if objective == "F":
             rhoF = nextGuess
             rhoS = 0
@@ -599,18 +599,18 @@ def RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
             rhoF = 0
         return(rhoF, rhoS)
     
-    def __get_necessary_help(meta_sol, objective = objective):
+    def _get_necessary_help(meta_sol, objective = objective):
         if objective == "F":
             return(meta_sol["avg_nec_import"])
         elif objective == "S":
             return(meta_sol["avg_nec_debt"])
     
-    def __rightHelp(meta_sol, nec_help = nec_help):
-        testPassed = (np.abs(__get_necessary_help(meta_sol) - nec_help) < accuracy_help)
+    def _rightHelp(meta_sol, nec_help = nec_help):
+        testPassed = (np.abs(_get_necessary_help(meta_sol) - nec_help) < accuracy_help)
         return(testPassed)
     
     # check if rho from run with smaller N works here as well:
-    rho, meta_sol = checkIniGuess(rhoIni, 
+    rho, meta_sol = _checkIniGuess(rhoIni, 
                                   args,
                                   checkedGuess,
                                   nec_help = nec_help,
@@ -629,7 +629,7 @@ def RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
         rhoIni = 1
     elif objective == "S":
         rhoIni = 100
-    rhoFini, rhoSini = __setGuesses(rhoIni, objective)
+    rhoFini, rhoSini = _setGuesses(rhoIni, objective)
     
     # initialize values for search algorithm and reporting
     rhoLastDown = np.inf
@@ -643,14 +643,14 @@ def RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
     
     # calculate initial guess
     status, crop_alloc, meta_sol, sto_prob, durations = \
-                SolveReducedcLinearProblemGurobiPy(args, rhoFini, rhoSini, console_output = False, logs_on = False)
+                SolveReducedLinearProblemGurobiPy(args, rhoFini, rhoSini, console_output = False, logs_on = False)
     crop_allocs.append(crop_alloc)
     rhos_tried.append(rhoIni)
     probabilities.append(meta_sol["prob"+objective])
-    necessary_help.append(__get_necessary_help(meta_sol))
+    necessary_help.append(_get_necessary_help(meta_sol))
     
     # update information
-    testPassed = __rightHelp(meta_sol)
+    testPassed = _rightHelp(meta_sol)
     if testPassed:
         lowestCorrect = rhoIni
         meta_sol_lowestCorrect = meta_sol
@@ -660,29 +660,29 @@ def RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
     
     # report
     accuracy_int = lowestCorrect - rhoLastUp
-    ReportProgressFindingRho(rhoOld, meta_sol, accuracy, durations, \
+    _ReportProgressFindingRho(rhoOld, meta_sol, accuracy, durations, \
                             objective, method = "nec_help", testPassed = testPassed, 
                             accuracy_int = accuracy_int, 
                             console_output = console_output, logs_on = logs_on)
 
     while True:   
         # find next guess
-        rhoNew, rhoLastDown, rhoLastUp = UpdatedRhoGuess(rhoLastUp, 
+        rhoNew, rhoLastDown, rhoLastUp = _UpdatedRhoGuess(rhoLastUp, 
                      rhoLastDown, rhoOld, meta_sol = meta_sol,
                      objective = objective, nec_help = nec_help,
                      accuracy_help = accuracy_help)
-        rhoFnew, rhoSnew = __setGuesses(rhoNew, objective)
+        rhoFnew, rhoSnew = _setGuesses(rhoNew, objective)
         
         # solve model for guess
         status, crop_alloc, meta_sol, sto_prob, durations = \
-                SolveReducedcLinearProblemGurobiPy(args, rhoFnew, rhoSnew,
+                SolveReducedLinearProblemGurobiPy(args, rhoFnew, rhoSnew,
                                      console_output = False, logs_on = False)
         crop_allocs.append(crop_alloc)
         rhos_tried.append(rhoNew)
         probabilities.append(meta_sol["prob"+objective])
-        necessary_help.append(__get_necessary_help(meta_sol))
+        necessary_help.append(_get_necessary_help(meta_sol))
         
-        testPassed = __rightHelp(meta_sol)
+        testPassed = _rightHelp(meta_sol)
         
        # Check if termination criteria are fulfilled
         if testPassed:
@@ -702,7 +702,7 @@ def RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
                 accuracy_int = rhoLastDown - rhoNew
             
         # report
-        ReportProgressFindingRho(rhoNew, meta_sol, accuracy, durations, \
+        _ReportProgressFindingRho(rhoNew, meta_sol, accuracy, durations, \
                              objective, method = "nec_help", testPassed = testPassed, 
                              accuracy_int = accuracy_int, console_output = console_output, logs_on = logs_on)
             
@@ -713,13 +713,13 @@ def RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
             meta_sol_lowestCorrect = meta_sol
     
     # last report
-    ReportProgressFindingRho(rhoNew, meta_sol, accuracy, durations, \
+    _ReportProgressFindingRho(rhoNew, meta_sol, accuracy, durations, \
                          objective, method = "nec_help", testPassed = testPassed, 
                          accuracy_int = accuracy_int, console_output = console_output, logs_on = logs_on)
         
     # ploting of information
     if args["T"] > 1:
-        PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, \
+        _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, \
                          necessary_help, objective, "MinHelp", file, nec_help,
                          nec_help_zero, accuracy_help)
         
@@ -728,7 +728,7 @@ def RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
 
 # %% ######################### AUXILIARY FUNCTIONS ############################
 
-def PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, necessary_help, \
+def _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, necessary_help, \
                      objective, method, file, min_nec_help = None, nec_help_zero = None,
                      accuracy_help = None):
     """
@@ -900,7 +900,7 @@ def PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, necessar
     
     return(None)
 
-def GetInitialGuess(dictGuesses, name, N):
+def _GetInitialGuess(dictGuesses, name, N):
     """
     Checks if same settings have already been run for a lower sample size. If
     so, the penalties of that run can be use as an initial guess to calculate
@@ -961,7 +961,7 @@ def GetInitialGuess(dictGuesses, name, N):
         
     return(rhoBest, checked)
 
-def UpdatedRhoGuess(rhoLastUp, 
+def _UpdatedRhoGuess(rhoLastUp, 
                     rhoLastDown, 
                     rhoOld, 
                     meta_sol = None,
@@ -1037,13 +1037,13 @@ def UpdatedRhoGuess(rhoLastUp,
                 rhoNew = (rhoOld + rhoLastUp) / 2    
         
     elif nec_help is not None:
-        def __get_necessary_help(meta_sol, objective = objective):
+        def _get_necessary_help(meta_sol, objective = objective):
             if objective == "F":
                 return(meta_sol["avg_nec_import"])
             elif objective == "S":
                 return(meta_sol["avg_nec_debt"])
         # find next guess
-        diff = np.abs(__get_necessary_help(meta_sol) - nec_help)
+        diff = np.abs(_get_necessary_help(meta_sol) - nec_help)
         if diff > accuracy_help:
             rhoLastUp = rhoOld
             if rhoLastDown == np.inf:
@@ -1059,7 +1059,7 @@ def UpdatedRhoGuess(rhoLastUp,
     
     return(rhoNew, rhoLastDown, rhoLastUp)
 
-def checkIniGuess(rhoIni, 
+def _checkIniGuess(rhoIni, 
                   args,
                   checkedGuess,
                   prob = None,
@@ -1144,49 +1144,49 @@ def checkIniGuess(rhoIni,
         elif nec_help is not None:
             method = "nec_help"
             
-        def __get_necessary_help(meta_sol, objective = objective):
+        def _get_necessary_help(meta_sol, objective = objective):
             if objective == "F":
                 return(meta_sol["avg_nec_import"])
             elif objective == "S":
                 return(meta_sol["avg_nec_debt"])
         
-        def __test(crop_alloc, meta_sol, method = method, nec_help = nec_help, prob = prob, objective = objective):
+        def _test(crop_alloc, meta_sol, method = method, nec_help = nec_help, prob = prob, objective = objective):
             if method == "prob":
                 tmp = "prob" + objective
                 testPassed = (np.round(meta_sol[tmp], accuracy) == prob)
             elif method == "nec_help":
-                testPassed = (np.abs(__get_necessary_help(meta_sol) - nec_help) < accuracy_help)
+                testPassed = (np.abs(_get_necessary_help(meta_sol) - nec_help) < accuracy_help)
             return(testPassed)
   
         # check if rhoF from run with smaller N works here as well:
-        printing("     Checking guess from run with other N", console_output = console_output, logs_on = logs_on)
+        _printing("     Checking guess from run with other N", console_output = console_output, logs_on = logs_on)
         status, crop_alloc, meta_sol, sto_prob, durations = \
-                SolveReducedcLinearProblemGurobiPy(args, rhoFguess, rhoSguess, console_output = False, logs_on = False) 
-        testPassed = __test(crop_alloc, meta_sol)
-        ReportProgressFindingRho(rhoIni, meta_sol, accuracy, durations, \
+                SolveReducedLinearProblemGurobiPy(args, rhoFguess, rhoSguess, console_output = False, logs_on = False) 
+        testPassed = _test(crop_alloc, meta_sol)
+        _ReportProgressFindingRho(rhoIni, meta_sol, accuracy, durations, \
                                  objective, method, testPassed, prefix = "Guess: ", console_output = console_output, \
                                  logs_on = logs_on)
         if checkedGuess:
-            printing("     We have a rhoF from a different N that was already double-checked!", console_output = console_output, logs_on = logs_on)
+            _printing("     We have a rhoF from a different N that was already double-checked!", console_output = console_output, logs_on = logs_on)
             return(rhoIni, meta_sol)
         elif testPassed:    
             status, crop_alloc_check, meta_sol_check, sto_prob, durations = \
-                    SolveReducedcLinearProblemGurobiPy(args, rhoFcheck, rhoScheck,
+                    SolveReducedLinearProblemGurobiPy(args, rhoFcheck, rhoScheck,
                                                        console_output = False, logs_on = False) 
-            testPassed = __test(crop_alloc_check, meta_sol_check)
-            ReportProgressFindingRho(rhoCheck, meta_sol_check, accuracy, durations, \
+            testPassed = _test(crop_alloc_check, meta_sol_check)
+            _ReportProgressFindingRho(rhoCheck, meta_sol_check, accuracy, durations, \
                                 objective, method, testPassed, prefix = "Check: ", console_output = console_output, \
                                  logs_on = logs_on)
             if not testPassed:
-                printing("     Cool, that worked!", console_output = console_output, logs_on = logs_on)
+                _printing("     Cool, that worked!", console_output = console_output, logs_on = logs_on)
                 return(rhoIni, meta_sol)
-        printing("     Oops, that guess didn't work - starting from scratch\n", \
+        _printing("     Oops, that guess didn't work - starting from scratch\n", \
                  console_output = console_output, logs_on = logs_on)
             
     return(None, None)
 
     
-def ReportProgressFindingRho(rho,
+def _ReportProgressFindingRho(rho,
                              meta_sol, 
                              accuracy,
                              durations, 
@@ -1255,7 +1255,7 @@ def ReportProgressFindingRho(rho,
         help_type = "debt"
         unit_help = "10^9$"
     
-    def __get_necessary_help(meta_sol, objective = objective):
+    def _get_necessary_help(meta_sol, objective = objective):
         if objective == "F":
             return(meta_sol["avg_nec_import"])
         elif objective == "S":
@@ -1272,12 +1272,12 @@ def ReportProgressFindingRho(rho,
         if testPassed:
             help_text = ", min. " + help_type
         else:
-            help_text = f", {__get_necessary_help(meta_sol):.2e} " + unit_help 
+            help_text = f", {_get_necessary_help(meta_sol):.2e} " + unit_help 
     else:
         help_text = ""
         
     # print information (if console_output = True)
-    printing("     " + prefix + "rho" + objective + ": " + str(rho) + unit + \
+    _printing("     " + prefix + "rho" + objective + ": " + str(rho) + unit + \
           ", prob" + objective + ": " + str(np.round(currentProb * 100, \
                                                     accuracy -1)) + \
           "%" + help_text + ", time: " + str(np.round(durations[2], 2)) + "s" + accuracy_text, \

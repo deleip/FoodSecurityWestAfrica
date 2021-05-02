@@ -11,9 +11,9 @@ import sys
 from ModelCode.CompleteModelCall import LoadModelResults
 from ModelCode.PandaGeneration import OpenPanda
 from ModelCode.PandaGeneration import CreateEmptyPanda
-from ModelCode.PandaGeneration import write_to_pandas
-from ModelCode.PandaGeneration import SetUpPandaDicts
-from ModelCode.Auxiliary import GetDefaults
+from ModelCode.PandaGeneration import _WriteToPandas
+from ModelCode.PandaGeneration import _SetUpPandaDicts
+from ModelCode.Auxiliary import _GetDefaults
 
 # %% ############## FUNCTIONS DEALING WITH THE RESULTS PANDA CSV ##############
 
@@ -48,7 +48,7 @@ def UpdatePandaWithAddInfo(OldFile = "current_panda", console_output = None):
     os.remove("ModelOutput/Pandas/ColumnUnits.txt")
     os.remove("ModelOutput/Pandas/ColumnNames.txt")
     os.remove("ModelOutput/Pandas/ColumnTypes.txt")
-    SetUpPandaDicts()
+    _SetUpPandaDicts()
     
     # load the panda that should be updated
     oldPanda = OpenPanda(file = OldFile)
@@ -71,7 +71,7 @@ def UpdatePandaWithAddInfo(OldFile = "current_panda", console_output = None):
             LoadModelResults(filename)
             
         # applying updated write_to_pandas
-        write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
+        _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
                         population_information, crop_alloc, \
                         meta_sol, meta_sol_vss, VSS_value, validation_values, \
                         filename, console_output = False, logs_on = False, file = OldFile + "_updating")
@@ -84,7 +84,7 @@ def UpdatePandaWithAddInfo(OldFile = "current_panda", console_output = None):
 
     return(None)
 
-def ReadFromPandaSingleClusterGroup(file = "current_panda", 
+def _ReadFromPandaSingleClusterGroup(file = "current_panda", 
                                     output_var = None,
                                     probF = "default",
                                     probS = "default", 
@@ -190,7 +190,7 @@ def ReadFromPandaSingleClusterGroup(file = "current_panda",
     PenMet, probF, probS, rhoF, rhoS, k, k_using, \
     num_crops, yield_projection, sim_start, pop_scenario, \
     risk, N, validation_size, T, seed, tax, perc_guaranteed, \
-    ini_fund, food_import = GetDefaults(None, probF, probS, rhoF, rhoS, k, k_using,
+    ini_fund, food_import = _GetDefaults(None, probF, probS, rhoF, rhoS, k, k_using,
                 num_crops, yield_projection, sim_start, pop_scenario,
                 risk, N, validation_size, T, seed, tax, perc_guaranteed,
                 ini_fund, food_import)
@@ -262,14 +262,14 @@ def ReadFromPandaSingleClusterGroup(file = "current_panda",
         sub_panda = sub_panda[output_var_fct]
                        
     # turn used clusters back from strings to lists
-    def __ConvertListsInts(arg):
+    def _ConvertListsInts(arg):
         arg = arg.strip("][").split(", ")
         res = []
         for j in range(0, len(arg)):
             res.append(int(arg[j]))
         return(res)
 
-    sub_panda["Used clusters"] = sub_panda["Used clusters"].apply(__ConvertListsInts)
+    sub_panda["Used clusters"] = sub_panda["Used clusters"].apply(_ConvertListsInts)
         
     return(sub_panda)
     
@@ -292,7 +292,7 @@ def ReadFromPanda(file = "current_panda",
         which results shall be returned. The default is [3].
     **kwargs : 
         Settings specifiying for which model run results shall be returned, 
-        passed to ReadFromPandaSingleClusterGroup.
+        passed to _ReadFromPandaSingleClusterGroup.
 
     Returns
     -------
@@ -321,7 +321,7 @@ def ReadFromPanda(file = "current_panda",
     # set up panda cluster group per cluster grop
     sub_panda = pd.DataFrame()
     for k_using_tmp in k_using:
-        sub_panda = sub_panda.append(ReadFromPandaSingleClusterGroup(file = file, \
+        sub_panda = sub_panda.append(_ReadFromPandaSingleClusterGroup(file = file, \
                                                         output_var = output_var, \
                                                         k_using = k_using_tmp, \
                                                         **kwargs))
