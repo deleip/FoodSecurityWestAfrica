@@ -24,9 +24,9 @@ def VSS(settings, expected_incomes, args):
     ----------
     settings : dict
         Dictionary of settings as given by DefaultSettingsExcept().
-    AddInfo_CalcParameters : dict
-        Additional information from calculatings expected income and penalties
-        which are not needed as model input.
+    expected_incomes : np.array of size (len(k_using),)
+        The expected income of farmers in a scenario where the government is
+        not involved.
     args : dict
         Dictionary of arguments needed as model input (as given by 
         SetParameters()).
@@ -44,11 +44,13 @@ def VSS(settings, expected_incomes, args):
     # get arguments to calculate deterministic solution (in particular the 
     # expected yields instead of yield samples)
     args_vss, yield_information, population_information = \
-        SetParameters(settings, expected_incomes, VSS = True, console_output = False, logs_on = False)
+        SetParameters(settings, expected_incomes, VSS = True, 
+                      console_output = False, logs_on = False)
     
     # solve model for the expected yields
     status, crop_alloc_vss, meta_sol, prob, durations = \
-                SolveReducedcLinearProblemGurobiPy(args_vss, args["rhoF"], args["rhoS"], console_output = False, logs_on = False)
+                SolveReducedcLinearProblemGurobiPy(args_vss, args["rhoF"],
+                      args["rhoS"], console_output = False, logs_on = False)
                 
     # get information of using VSS solution in stochastic setting
     meta_sol_vss = GetMetaInformation(crop_alloc_vss, args, args["rhoF"], args["rhoS"])
@@ -58,7 +60,7 @@ def VSS(settings, expected_incomes, args):
 # %% ################### OUT OF SAMLE VALIDATION OF RESULT ####################  
 
 def OutOfSampleVal(crop_alloc, settings, expected_incomes, rhoF, rhoS, \
-                   meta_sol, probS = None, console_output = None):
+                   meta_sol, console_output = None, logs_on = None):
     """
     For validation, the objective function is re-evaluate, using the optimal
     crop allocation but a higher sample size.    
@@ -69,21 +71,21 @@ def OutOfSampleVal(crop_alloc, settings, expected_incomes, rhoF, rhoS, \
         Optimal crop areas for all years, crops, clusters.
     settings : dict
         the model settings that were used     
-    AddInfo_CalcParameters : dict
-        Additional information from calculatings expected income and penalties
-        which are not needed as model input.
+    expected_incomes : np.array of size (len(k_using),)
+        The expected income of farmers in a scenario where the government is
+        not involved.
     rhoF : float
         The penalty for shortcomings of the food demand.
     rhoS : float
         The penalty for insolvency.   
     meta_sol : dict 
         additional information about the model output 
-    probS : float or None
-        demanded probability of keeping the solvency constraint if 
-        PenMet == "prob", None else.
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
         outputs. The default is defined in ModelCode/GeneralSettings.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log file.
+        The default is defined in ModelCode/GeneralSettings.
 
     Yields
     ------
@@ -95,14 +97,15 @@ def OutOfSampleVal(crop_alloc, settings, expected_incomes, rhoF, rhoS, \
     # higher sample size
     settings_val = settings.copy()
     settings_val["N"] = settings["validation_size"]
+    
     # get yield samples
-    printing("     Getting parameters and yield samples", console_output = console_output)
+    printing("     Getting parameters and yield samples", console_output = console_output, logs_on = logs_on)
     args, yield_information, population_information = \
                 SetParameters(settings_val, expected_incomes, \
                               console_output = False, logs_on = False)
     
     # run objective function for higher sample size
-    printing("     Objective function", console_output = console_output)
+    printing("     Objective function", console_output = console_output, logs_on = logs_on)
     meta_sol_val = GetMetaInformation(crop_alloc, args, rhoF, rhoS)
     
     # create dictionary with validation information

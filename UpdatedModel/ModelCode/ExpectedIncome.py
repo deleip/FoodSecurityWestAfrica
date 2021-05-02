@@ -16,7 +16,7 @@ from ModelCode.GetPenalties import GetRhoWrapper
 
 # %% ############### FUNCTIONS RUNNING MODEL TO GET EXP INCOME ################
 
-def GetExpectedIncome(settings, console_output = None):
+def GetExpectedIncome(settings, console_output = None, logs_on = None):
     """
     Either loading expected income if it was already calculated for these 
     settings, or calling the function to calculate the expected income. 
@@ -28,6 +28,9 @@ def GetExpectedIncome(settings, console_output = None):
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
         outputs. The default is defined in ModelCode/GeneralSettings.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log file.
+        The default is defined in ModelCode/GeneralSettings.
 
     Returns
     -------
@@ -51,12 +54,12 @@ def GetExpectedIncome(settings, console_output = None):
     
     # if expected income was already calculated for these settings, fetch it
     if SettingsAffectingGuaranteedIncome in dict_incomes.keys():
-        printing("\nFetching expected income", console_output = console_output)
+        printing("\nFetching expected income", console_output = console_output, logs_on = logs_on)
         expected_incomes = dict_incomes[SettingsAffectingGuaranteedIncome]
     # else calculate (and save) it
     else:
         expected_incomes = CalcExpectedIncome(settings, \
-                        SettingsAffectingGuaranteedIncome, console_output = console_output)
+                        SettingsAffectingGuaranteedIncome, console_output = console_output, logs_on = logs_on)
         dict_incomes[SettingsAffectingGuaranteedIncome] = expected_incomes
         with open("PenaltiesAndIncome/ExpectedIncomes.txt", "wb") as fp:    
              pickle.dump(dict_incomes, fp)
@@ -67,12 +70,13 @@ def GetExpectedIncome(settings, console_output = None):
         
     printing("     Expected income per cluster in " + \
              str(settings["sim_start"] - 1) + ": " + \
-             str(np.round(expected_incomes, 3)), console_output = console_output)
+             str(np.round(expected_incomes, 3)),
+             console_output = console_output, logs_on = logs_on)
         
     return(expected_incomes)
        
 def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
-                       console_output = None):
+                       console_output = None, logs_on = None):
     """
     Calculating the expected income in the scenario corresponding to the 
     settings but without government.
@@ -87,6 +91,9 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
         outputs. The default is defined in ModelCode/GeneralSettings.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log file.
+        The default is defined in ModelCode/GeneralSettings.
 
     Returns
     -------
@@ -96,7 +103,7 @@ def CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
 
     """
     
-    printing("\nCalculating expected income ", console_output = console_output)
+    printing("\nCalculating expected income ", console_output = console_output, logs_on = logs_on)
     settings_ExpIn = settings.copy()
 
     # change some settings: we are interested in the expected income in 2016

@@ -14,7 +14,8 @@ import matplotlib.colors as col
 
 # %% ######################### GROUPING CLUSTERS ############################## 
 
-def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True, title = None, figsize = None):
+def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True, 
+                     title = None, figsize = None):
     """
     Group the given clusters to groups of given size, according to the 
     medoid-to-medoid distances, either with the aim to group the most similar
@@ -52,9 +53,11 @@ def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True, title = 
     if figsize is None:
         from ModelCode.GeneralSettings import figsize
         
+    # distances between all grid cells
     with open("InputData/Other/PearsonDistSPEI03.txt", "rb") as fp:    
         distance = pickle.load(fp)  
 
+    # load medoids of clusters for given number of clusters
     with open("InputData/Clusters/Clustering/kMediods" + str(k) + \
                  "_PearsonDistSPEI_ProfitableArea.txt", "rb") as fp:  
         pickle.load(fp) # clusters
@@ -62,6 +65,7 @@ def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True, title = 
         medoids = pickle.load(fp)
     DistMedoids = __MedoidMedoidDist(medoids, distance)
     
+    # get adjacency matrix for given number of clusters
     with open("InputData/Clusters/AdjacencyMatrices/k" + str(k) + "AdjacencyMatrix.txt", "rb") as fp:
         AdjacencyMatrix = pickle.load(fp)
     
@@ -71,18 +75,23 @@ def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True, title = 
     BestGrouping = None
     valid = 0
     
+    # for each possible grouping ...
     for grouping in __AllGroupings(clusters, size):
+        # ... check whether all groups are connected (if demanded) ...
         if adjacent and not __CheckAdjacency(clusters, grouping, AdjacencyMatrix):
             continue
+        # ... and if valid check if the grouping is better than the current best
         valid += 1
         TmpCosts = __CostsGrouping(grouping, DistMedoids)
         BestGrouping, BestCosts = \
            __UpdateGrouping(BestCosts, TmpCosts, BestGrouping, grouping, aim)
     
+    # shift cluster numbers so we have clusters 1, ..., k 
     ShiftedGrouping = []
     for gr in BestGrouping:
         ShiftedGrouping.append(tuple([i + 1 for i in list(gr)]))
                
+    # visualize resulting cluster groups
     if title is not None:
         VisualizeClusterGroups(k, size, aim, adjacent, ShiftedGrouping, title, figsize, \
                           fontsizet = 20, fontsizea = 16)
@@ -99,6 +108,22 @@ def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True, title = 
     return(ShiftedGrouping, BestCosts, valid)
       
 def __AllGroupings(lst, num):
+    """
+    Create all possible groupings for the given clusters and custer size.
+
+    Parameters
+    ----------
+    lst : list
+         list(range(0, number of clusters))
+    num : int,
+        The size of the cluster groups.
+        
+    Yields
+    ------
+    list
+        all possible grouping combinations.
+
+    """
     if len(lst) < num:
         yield []
         return
@@ -123,6 +148,24 @@ def __AllGroupings(lst, num):
                 yield [i] + rest        
                 
 def __CheckAdjacency(clusters, grouping, AdjacencyMatrix):
+    """
+    Checks if a given cluster grouping is made up of connected groups
+
+    Parameters
+    ----------
+    clusters : list
+        list(range(0, number of clusters))
+    grouping : list
+        given grouping.
+    AdjacencyMatrix : np.array
+        Adjacency matrix for the given clusters.
+
+    Returns
+    -------
+    res : boolean
+        Whether cluster grouping is made up of connected groups
+
+    """
     for gr in grouping:
         if len(grouping) == 1:
             continue
@@ -137,6 +180,23 @@ def __CheckAdjacency(clusters, grouping, AdjacencyMatrix):
     return(True)
 
 def __CostsGrouping(grouping, dist):
+    """
+    Calculates the cost (sum of medoid to medoid distances within cluster groups)
+    of given grouping
+
+    Parameters
+    ----------
+    grouping : list
+        given cluster grouping.
+    dist : np.array
+        medoid to medoid distances.
+
+    Returns
+    -------
+    costs : float
+        sum of medoid to medoid distances within cluster groups.
+
+    """
     costs = 0
     for gr in grouping:
         if len(gr) == 1:
@@ -146,6 +206,31 @@ def __CostsGrouping(grouping, dist):
     return(costs)
 
 def __UpdateGrouping(BestCosts, TmpCosts, BestGrouping, grouping, aim):
+    """
+    Updates the so far best grouping if the new grouping is better.
+
+    Parameters
+    ----------
+    BestCosts : float
+        Costs of the best grouping checked so far.
+    TmpCosts : float
+        Costs of the newest grouping that was checked.
+    BestGrouping : list
+        The grouping with the best costs so far.
+    grouping : list
+         Newest grouping that was checked.
+    aim : str
+        Either "Dissimilar" or "Similar". Defines if the "best" costs means
+        the highest or the lowest costs
+
+    Returns
+    -------
+    BestGrouping : list
+        Updated version of BestGrouping
+    BestCosts : float
+        Updated version of BestCosts
+
+    """
     if BestCosts is None:
         return(grouping, TmpCosts)
     if aim == "Similar":
@@ -158,6 +243,22 @@ def __UpdateGrouping(BestCosts, TmpCosts, BestGrouping, grouping, aim):
         return(BestGrouping, BestCosts)
             
 def __MedoidMedoidDist(medoids, dist):
+    """
+    Creates matrix of medoid to medoid distances based on distances between
+    all grid cells
+
+    Parameters
+    ----------
+    medoids : list
+        list of "coordinates" of the medoids.
+    dist : list
+        distance between each pair of grid cells. (list of list of np.arrays)
+
+    Returns
+    -------
+    None.
+
+    """
     k = len(medoids)
     res = np.empty([k,k])
     res.fill(0)

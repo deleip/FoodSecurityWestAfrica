@@ -42,12 +42,14 @@ def __ExtractResPanda(sub_panda, out_type, output_var, size):
         the aggregated results
 
     """
-
+    
+    # make sure output variables are given as list
     if type(output_var) is str:
         output_var = [output_var]
         
     output_var_fct = output_var.copy()
     
+    # sum up results of different clusters
     if out_type == "agg":
         output_var_fct.insert(0, "Group size")
         res = pd.DataFrame(columns = output_var_fct, index = [size])
@@ -57,6 +59,7 @@ def __ExtractResPanda(sub_panda, out_type, output_var, size):
         res.rename(columns = {"Group size - Aggregated over all groups": \
                               "Group size"}, inplace = True)
     
+    # ... or find min, max, and median
     elif out_type == "median":
         colnames = ["Group size"]
         for var in output_var_fct:
@@ -70,6 +73,7 @@ def __ExtractResPanda(sub_panda, out_type, output_var, size):
             res.iloc[0, idx*3 + 2] = sub_panda[var].median()
             res.iloc[0, idx*3 + 3] = sub_panda[var].max()
     
+    # ... or keep all cluster
     elif out_type == "all":
         output_var_fct.insert(0, "Group size")
         res = pd.DataFrame(columns = output_var_fct, index = [size])
@@ -90,15 +94,15 @@ def PandaToPlot_GetResultsSingScen(file = "current_panda",
                            adjacent = False,
                            **kwargs):
     """
-    For a given grouping type, this subsets the results and aggregates them
-    for all grouping sizes.
+    For given grouping type and model settings, this subsets the results and 
+    aggregates them for all grouping sizes.
 
     Parameters
     ----------
     file : str, optional
         Filename of the panda csv to use. The default is "current_panda".
     output_var : list of str or str
-        The variables that are reported.
+        The variables that are reported. The defaul is None.
     out_type : str
         Specifies how the output variables should be aggregate over the different
         cluster groups. "agg" for summation, "median" for returning minimum,
@@ -126,6 +130,7 @@ def PandaToPlot_GetResultsSingScen(file = "current_panda",
        
     res = pd.DataFrame()
     
+    # get results for each cluster grouping size
     for size in [1,2,3,5,9]:
         with open("InputData/Clusters/ClusterGroups/GroupingSize" \
                       + str(size) + grouping_aim + add + ".txt", "rb") as fp:
@@ -160,7 +165,7 @@ def PlotPandaSingle(panda_file = "current_panda",
     panda_file : str, optional
         Filename of the panda csv to use. The default is "current_panda".
     output_var : list of str or str
-        The variables that are reported.
+        The variables that are reported. The default is None.
     grouping_aim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
         The default is "Dissimilar".
@@ -224,8 +229,8 @@ def PlotPenaltyVsProb(panda_file = "current_panda",
                       **kwargs):
     """
     Creates a plot of penalties vs. resulting probabilities using model runs 
-    for all cluster groups for a specific grouping type and specific model 
-    settings.
+    for all cluster groups of all group sizes for a specific grouping type and 
+    specific model settings.
 
     Parameters
     ----------
@@ -241,6 +246,9 @@ def PlotPenaltyVsProb(panda_file = "current_panda",
     close_plots : boolean or None
         Whether plots should be closed after plotting (and saving). If None, 
         the default as defined in ModelCode/GeneralSettings is used.
+    fn_suffix : str, optional
+        Suffix to add to filename (normally defining the settings for which 
+        model results are visualized). Default is None.
     **kwargs : 
         Settings specifiying for which mode
 
@@ -250,6 +258,7 @@ def PlotPenaltyVsProb(panda_file = "current_panda",
 
     """
     
+    # settings
     if figsize is None:
         from ModelCode.GeneralSettings import figsize
         
@@ -272,6 +281,7 @@ def PlotPenaltyVsProb(panda_file = "current_panda",
     cols = ["royalblue", "darkred", "grey", "gold", "limegreen"]
     markers = ["o", "X", "^", "D", "s"]
 
+    # plot penalties vs. probabilities for all cluster groups for all groupsizes
     fig = plt.figure(figsize = figsize)
     ax1 = fig.add_subplot(1, 2, 1)
     ax2 = fig.add_subplot(1, 2, 2)
@@ -296,6 +306,7 @@ def PlotPenaltyVsProb(panda_file = "current_panda",
                     color = cols[idx], marker = markers[idx], 
                     label = str(size))
         
+    # add axis, labels, etc.
     ax1.tick_params(labelsize = 14)
     ax2.tick_params(labelsize = 14)    
     ax1.set_xlabel(r"Penalty for food shortage $\rho_\mathrm{F}$ [$\$/10^3\,$kcal]", fontsize = 18)
@@ -305,9 +316,11 @@ def PlotPenaltyVsProb(panda_file = "current_panda",
     ax2.legend(title = "Groupsizes", fontsize = 16, title_fontsize = 18)
     plt.suptitle("Penalties and resulting probabilities (Aim: " + grouping_aim + \
                  ", Adjacent: " + str(adjacent) + ")", fontsize = 26)
-            
+         
+    # save plot
     fig.savefig("Figures/" + foldername + "PandaPlots/Other/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
 
+    # close plot
     if close_plots:
         plt.close()  
 
@@ -322,9 +335,9 @@ def PlotProbDetVsSto(panda_file = "current_panda",
                      fn_suffix = None,
                      **kwargs):
     """
-    Creates a plot of penalties vs. resulting probabilities using model runs 
-    for all cluster groups for a specific grouping type and specific model 
-    settings.
+    Creates a plot of probabilities resulting from stochastic solution vs. 
+    probabilities resulting from deterministic solution for all cluster groups
+    of all group sizes for a specific grouping type and specific model settings.
 
     Parameters
     ----------
@@ -340,6 +353,9 @@ def PlotProbDetVsSto(panda_file = "current_panda",
     close_plots : boolean or None
         Whether plots should be closed after plotting (and saving). If None, 
         the default as defined in ModelCode/GeneralSettings is used.
+    fn_suffix : str, optional
+        Suffix to add to filename (normally defining the settings for which 
+        model results are visualized). Default is None.
     **kwargs : 
         Settings specifiying for which mode
 
@@ -349,6 +365,7 @@ def PlotProbDetVsSto(panda_file = "current_panda",
 
     """
     
+    # settings
     if figsize is None:
         from ModelCode.GeneralSettings import figsize
         
@@ -371,6 +388,7 @@ def PlotProbDetVsSto(panda_file = "current_panda",
     cols = ["royalblue", "darkred", "grey", "gold", "limegreen"]
     markers = ["o", "X", "^", "D", "s"]
 
+    # plot sto. probabilities vs det. probabilities
     fig = plt.figure(figsize = figsize)
     ax1 = fig.add_subplot(1, 2, 1)
     ax2 = fig.add_subplot(1, 2, 2)
@@ -394,7 +412,8 @@ def PlotProbDetVsSto(panda_file = "current_panda",
                     panda_tmp[['Resulting probability for solvency']],
                     color = cols[idx], marker = markers[idx], 
                     label = str(size))
-        
+    
+    # add axis, labels, etc.
     ax1.tick_params(labelsize = 14)
     ax2.tick_params(labelsize = 14)    
     ax1.set_xlim([-0.02, 1.02])    
@@ -408,9 +427,11 @@ def PlotProbDetVsSto(panda_file = "current_panda",
     ax2.legend(title = "Groupsizes", fontsize = 16, title_fontsize = 18)
     plt.suptitle("Resulting probabilities for deterministic and stochastic solution (Aim: " + grouping_aim + \
                  ", Adjacent: " + str(adjacent) + ")", fontsize = 26)
-            
+          
+    # save plot
     fig.savefig("Figures/" + foldername + "PandaPlots/Other/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
 
+    # close plot
     if close_plots:
         plt.close()  
 
@@ -435,6 +456,13 @@ def PandaPlotsCooperation(panda_file = "current_panda",
     ----------
     panda_file : str, optional
         Filename of the panda csv to use. The default is "current_panda".
+    scenarionames : list of str, optional
+        Added as legend to describe the different scenarios, and leads to plots
+        being saved in /ComparingScenarios. If None, the folder according
+        grouping_aim and adjacent is used. Default is None.
+    fn_suffix : str, optional
+        Suffix to add to filename (normally defining the settings for which 
+        model results are visualized). Default is None.
     grouping_aim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
         The default is "Dissimilar".
@@ -456,13 +484,14 @@ def PandaPlotsCooperation(panda_file = "current_panda",
 
     """
     
-    if console_output is None:
-        from ModelCode.GeneralSettings import console_output
-    
     def __report(i, console_output = console_output, num_plots = 9):
         if console_output:
             sys.stdout.write("\r     Plot " + str(i) + " of " + str(num_plots))
-      
+            
+    # settings
+    if console_output is None:
+        from ModelCode.GeneralSettings import console_output
+    
     if scenarionames is None:
         foldername = grouping_aim
         if adjacent:
@@ -480,6 +509,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
         fn_suffix = "_" + GetFilename(settingsIterate, groupSize = "", groupAim = grouping_aim, \
                           adjacent = adjacent)
         
+    # plotting:
     PlotPandaAggregate(panda_file = panda_file,
                        output_var=['Average yearly total cultivated area', \
                                    'Average total cultivation costs'],
@@ -552,7 +582,6 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     **kwargs)
     __report(6)    
         
-    
     PlotPandaAggregate(panda_file = panda_file,
                        output_var=['Average food demand penalty (over samples and then years)', \
                                    'Average solvency penalty (over samples)'],
@@ -600,7 +629,39 @@ def OtherPandaPlots(panda_file = "current_panda",
                     console_output = None,
                     fn_suffix = None,
                     **kwargs):
+    """
+    Creates some additional plots (that don't fit into the structure of 
+    PandaPlotsCooperation): PlotPenaltyVsProb and PlotProbDetVsSto
+
+    Parameters
+    ----------
+    panda_file : str, optional
+        Filename of the panda csv to use. The default is "current_panda".
+    grouping_aim : str, optional
+        The aim in grouping clusters, either "Similar" or "Dissimilar".
+        The default is "Dissimilar".
+    adjacent : boolean, optional
+        Whether clusters in a cluster group need to be adjacent. The default is False.
+    close_plots : boolean or None
+        Whether plots should be closed after plotting (and saving). If None, 
+        the default as defined in ModelCode/GeneralSettings is used.
+    console_output : boolean, optional
+        Specifying whether the progress should be documented thorugh console 
+        outputs. If None, the default as defined in ModelCode/GeneralSettings 
+        is used.        
+    fn_suffix : str, optional
+        Suffix to add to filename (normally defining the settings for which 
+        model results are visualized). Default is None.
+    **kwargs : 
+        Settings specifiying for which model runs we want the plots 
+
+    Returns
+    -------
+    None.
+
+    """
     
+    # settings
     if console_output is None:
         from ModelCode.GeneralSettings import console_output
       
@@ -618,6 +679,7 @@ def OtherPandaPlots(panda_file = "current_panda",
         fn_suffix = "_" + GetFilename(settingsIterate, groupSize = "", groupAim = grouping_aim, \
                           adjacent = adjacent)
             
+    # plot penalties vs. probabilities
     PlotPenaltyVsProb(panda_file = panda_file, 
                   grouping_aim = grouping_aim,
                   adjacent = adjacent,
@@ -625,6 +687,7 @@ def OtherPandaPlots(panda_file = "current_panda",
                   fn_suffix = fn_suffix, 
                   **kwargs)
     
+    # plot sto. probabilities vs. det. probabilities
     PlotProbDetVsSto(panda_file = panda_file, 
                      grouping_aim = grouping_aim,
                      adjacent = adjacent,
@@ -639,24 +702,61 @@ def PandaToPlot_GetResultsMultScen(file = "current_panda",
                                    grouping_aim = "Dissimilar",
                                    adjacent = False,
                                    **kwargs):
+    """
+    This subsets and aggregates results for all cluster groups for all group
+    sizes of specific grouping type, for multiple scenarios, i.e. model settings. 
+    The setting over which to iterate must be given as a list. If iteration
+    should go over multiple settings, they all must be defined as list of the
+    same length (i.e. if two tax rates are to be combined with two risk levels,
+    the four resulting combinations must be given by using lists of length
+    four for tax rate and risk).
+
+    Parameters
+    ----------
+    file : str, optional
+        Filename of the panda csv to use. The default is "current_panda".
+    output_var : list of str or str
+        The variables that are reported.
+    out_type : str
+        Specifies how the output variables should be aggregate over the different
+        cluster groups. "agg" for summation, "median" for returning minimum,
+        maximum and median over the cluster groups, "all" if result for all
+        cluster groups should be kept.
+    grouping_aim : str, optional
+        The aim in grouping clusters, either "Similar" or "Dissimilar".
+        The default is "Dissimilar".
+    adjacent : boolean, optional
+        Whether clusters in a cluster group need to be adjacent. The default is False.
+    **kwargs :
+        Settings specifiying for which model runs we want the plots
+
+    Returns
+    -------
+    None.
+
+    """
     
+    # adding settings to dict
     fulldict = kwargs.copy()
     fulldict["file"] = file
     fulldict["out_type"] = out_type
     fulldict["grouping_aim"] = grouping_aim
     fulldict["adjacent"] = adjacent
 
+    # checking which of the settings are lists
     l = []
     keys_list = []
     for key in fulldict.keys():
         if type(fulldict[key]) is list:
             l.append(len(fulldict[key]))
             keys_list.append(key)
-            
+     
+    # checking if the settings which should be iterated over have same length
     if (len(l) > 0) and (not all(ls == l[0] for ls in l)):
         sys.exit("All settings over which should be iterated must be " +
                      "lists of the same length!")
      
+    # run PandaToPlot_GetResultsSingScen for each setting combination
     if len(l) == 0:
         res = [PandaToPlot_GetResultsSingScen(output_var = output_var, **fulldict)]
     else:
@@ -694,6 +794,8 @@ def PlotPandaMedian(panda_file = "current_panda",
         Filename of the panda csv to use. The default is "current_panda".
     output_var : list of str or str
         The variables that are reported.
+    scenarionames : list of str, optional
+        Added as legend to describe the different scenarios.
     grouping_aim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
         The default is "Dissimilar".
@@ -722,6 +824,8 @@ def PlotPandaMedian(panda_file = "current_panda",
     None.
 
     """
+    
+    # settings
     if cols is None:
             cols = ["royalblue", "darkred", "grey", "gold"]
     
@@ -734,11 +838,14 @@ def PlotPandaMedian(panda_file = "current_panda",
     with open("ModelOutput/Pandas/ColumnUnits.txt", "rb") as fp:
         units = pickle.load(fp)
     
+    # get results
     res = PandaToPlot_GetResultsMultScen(panda_file, output_var, "median", grouping_aim, adjacent, **kwargs)
     
+    # make sure the output variable are given as list
     if output_var is str:
         output_var = [output_var]
     
+    # set up suplots
     if subplots:
         fig = plt.figure(figsize = figsize)
         fig.subplots_adjust(bottom=0.2, top=0.9, left=0.1, right=0.9,
@@ -746,7 +853,7 @@ def PlotPandaMedian(panda_file = "current_panda",
         num_rows = int(np.floor(np.sqrt(len(output_var))))
         num_cols = int(np.ceil(len(output_var)/num_rows))
     
-    
+    # plot each output variable
     for idx, var in enumerate(output_var):
         if subplots:
             fig.add_subplot(num_rows, num_cols, idx + 1)
@@ -775,9 +882,11 @@ def PlotPandaMedian(panda_file = "current_panda",
         if (not subplots) and (plt_file is not None):
             fig.savefig("Figures/" + foldername + "/PandaPlots/Median/" + plt_file + str(idx) + ".jpg", bbox_inches = "tight", pad_inches = 1)
         
+    # save plot
     if subplots and (plt_file is not None):
         fig.savefig("Figures/" + foldername + "/PandaPlots/Median/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
         
+    # close plot
     if close_plots:
         plt.close()
         
@@ -835,6 +944,7 @@ def PlotPandaAll(panda_file = "current_panda",
 
     """
     
+    # settings
     if cols is None:
             cols = ["royalblue", "darkred", "grey", "gold"]
             
@@ -847,11 +957,14 @@ def PlotPandaAll(panda_file = "current_panda",
     with open("ModelOutput/Pandas/ColumnUnits.txt", "rb") as fp:
         units = pickle.load(fp)
     
+    # get results
     res = PandaToPlot_GetResultsMultScen(panda_file, output_var, "all", grouping_aim, adjacent, **kwargs)
     
+    # make sure the output variable are given as list
     if output_var is str:
         output_var = [output_var]
     
+    # set up subplots
     if subplots:
         fig = plt.figure(figsize = figsize)
         fig.subplots_adjust(bottom=0.2, top=0.9, left=0.1, right=0.9,
@@ -859,6 +972,7 @@ def PlotPandaAll(panda_file = "current_panda",
         num_rows = int(np.floor(np.sqrt(len(output_var))))
         num_cols = int(np.ceil(len(output_var)/num_rows))
     
+    # plot each output variable
     for idx, var in enumerate(output_var):
         if subplots:
             fig.add_subplot(num_rows, num_cols, idx + 1)
@@ -887,9 +1001,11 @@ def PlotPandaAll(panda_file = "current_panda",
         if scenarionames is not None:
             plt.legend(scatters, scenarionames, fontsize = 18, title = "Scenarios", title_fontsize = 20)
         
+    # save plot
     if plt_file is not None:
         fig.savefig("Figures/" + foldername + "/PandaPlots/All/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
       
+    # close plot
     if close_plots:
         plt.close()
         
@@ -947,6 +1063,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
 
     """
     
+    # settings
     if cols is None:
             cols = ["royalblue", "darkred", "grey", "gold"]
     
@@ -962,11 +1079,14 @@ def PlotPandaAggregate(panda_file = "current_panda",
     with open("ModelOutput/Pandas/ColumnUnits.txt", "rb") as fp:
         units = pickle.load(fp)
     
+    # get results
     res = PandaToPlot_GetResultsMultScen(panda_file, output_var, "agg", grouping_aim, adjacent, **kwargs)
     
+    # make sure the output variable are given as list
     if output_var is str:
         output_var = [output_var]
     
+    # set up subplots
     if subplots:
         fig = plt.figure(figsize = figsize)
         fig.subplots_adjust(bottom=0.2, top=0.9, left=0.1, right=0.9,
@@ -974,6 +1094,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
         num_rows = int(np.floor(np.sqrt(len(output_var))))
         num_cols = int(np.ceil(np.sqrt(len(output_var))))
     
+    # plot each of the oubput variables
     for idx, var in enumerate(output_var):
         if subplots:
             fig.add_subplot(num_rows, num_cols, idx + 1)
@@ -1003,9 +1124,11 @@ def PlotPandaAggregate(panda_file = "current_panda",
         if scenarionames is not None:
             plt.legend(scatters, scenarionames, fontsize = 18, title = "Scenarios", title_fontsize = 20)
         
+    # save plot
     if plt_file is not None:
         fig.savefig("Figures/" + foldername + "/PandaPlots/Aggregated/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
     
+    # close plot
     if close_plots:
         plt.close()
     

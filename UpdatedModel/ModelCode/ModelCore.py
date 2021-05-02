@@ -60,7 +60,6 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
     def __flatten(ListOfLists):
         return(list(it.chain(*ListOfLists)))
     
-    
     if rhoF is None:
         rhoF = args["rhoF"]
     if rhoS is None:
@@ -70,15 +69,15 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
     
     start = tm.time()
     
-    # no output to console
+    # no output to console from solver
     env = gp.Env(empty = True)    
     env.setParam('OutputFlag', 0)
     env.start()
     
-    # problem
+    # intitialize stochastic optimization problem
     prob = gp.Model("SustainableFoodSecurity", env = env)
     
-    # dimension stuff
+    # get dimensions
     T = args["T"]
     K = len(args["k_using"])
     J = args["num_crops"]
@@ -87,7 +86,7 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
     termyear_p1[termyear_p1 == 0] = T
     termyear_p1 = termyear_p1.astype(int)
     
-    # index tupes for variables and constraints
+    # index tupels for variables and constraints
     indVfood = __flatten([[(t, s) for t in range(0, termyear_p1[s])] \
                         for s in range(0, N)])
     
@@ -106,7 +105,6 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
     Vfood = prob.addVars(indVfood, name = "Vfood")
     Vsol = prob.addVars(range(0, N), name = "Vsol")
     Wgov = prob.addVars(indW, name = "Wgov")
-
 
     # objective function
     obj = gp.quicksum([1/N * x[t,j,k] * args["costs"][j,k] \
@@ -148,16 +146,15 @@ def SolveReducedcLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
 
     # solving
     middle = tm.time()
-
     prob.optimize()
-    
     end = tm.time()
+    status = prob.status
+    
+    # calculate durations
     durationBuild = middle - start
     durationSolve = end - middle
     durationTotal = end - start
     durations = [durationBuild, durationSolve, durationTotal]
-    
-    status = prob.status
     
     # get results
     crop_alloc = np.zeros((T, J, K))

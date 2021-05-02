@@ -23,11 +23,11 @@ def ObjectiveFunction(x, num_clusters, num_crops, N, \
     x : np.array of size (T, num_crops, len(k_using),)
         Gives allocation of area to each crop in each cluster.
     num_clusters : int
-        The number of crops that are used.
+        The number of cluters that are used.
     num_crops : int
         The number of crops that are used.
     N : int
-        Number of yield samples to be used to approximate the expected value
+        Number of yield samples used to approximate the expected value
         in the original objective function.
     cat_clusters : np.array of size (N, T, len(k_using))
         Indicating clusters with yields labeled as catastrophic with 1, 
@@ -36,7 +36,7 @@ def ObjectiveFunction(x, num_clusters, num_crops, N, \
         Indicating the year in which the simulation is terminated (i.e. the 
         first year with a catastrophic cluster) for each sample.
     ylds : np.array of size (N, T, num_crops, len(k_using)) 
-        Yield samples in 10^6t/10^6ha according to the presence of 
+        Yield samples in t/ha according to the presence of 
         catastrophes.
     costs : np array of size (num_crops,) 
         Cultivation costs for each crop in 10^9$/10^6ha.
@@ -62,7 +62,7 @@ def ObjectiveFunction(x, num_clusters, num_crops, N, \
         The penalty for shortcomings of the food demand.
     rhoS : float
         The penalty for insolvency.
-
+        
     Returns
     -------
     exp_tot_costs :  float
@@ -96,7 +96,6 @@ def ObjectiveFunction(x, num_clusters, num_crops, N, \
     """
 
     # preparing x for all realizations
-    # x = np.reshape(x,[T, num_crops, num_clusters]) already in this format
     X = np.repeat(x[np.newaxis, :, :, :], N, axis=0)
     for c in range(0, N):
         t_c = int(terminal_years[c])                   # catastrophic year
@@ -130,7 +129,8 @@ def ObjectiveFunction(x, num_clusters, num_crops, N, \
     payouts = guaranteed_income - P  # as we set negative profit to zero,
                                      # government doesn't cover those
                                      # it only covers up to guaranteed income.
-                                     # -> this is not true any more!
+                                     # !! -> this is not true any more !!
+                                     # (due o linearization)
     np.seterr(invalid='ignore')
     payouts[(~np.isnan(payouts) * (cat_clusters == 0)) + (payouts < 0)] = 0
     np.seterr(invalid='warn')
@@ -165,7 +165,7 @@ def ObjectiveFunction(x, num_clusters, num_crops, N, \
 
 def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
     """
-    To get metainformation for final crop allocation after running model.
+    To get metainformation on a given crop allocation.
 
     Parameters
     ----------
@@ -194,7 +194,7 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
           for each sample.
         - avg_fp_penalties: Average penalty payed because of food shortages in 
           each year.
-        - sol_penalties: Penalty payed because of insolvency in each sample.
+        - sol_penalty: Penalty payed because of insolvency in each sample.
         - shortcomings: Shortcoming of the food demand in 10^12kcal for each year in each 
           sample.
         - exp_shortcomings: Average shortcoming of the food demand in 
@@ -212,14 +212,11 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
         - probF: Probability for meeting the food femand.
         - probS: Probability for solvency of the government fund
           after payouts.
-        - add_needed_import: If probF is not None - additional import that is 
-          needed to meet the food demand in probF cases.
-        - necessary_debt: If probS is not None - debt that is necessary to cover
-          the payouts in probS of the cases.
-
+        - avg_nec_import: Average import needed to cover full food demand
+        - necessary_debt: Average debt needed to cover full government payouts
     """
     
-    # running the objective function with option meta = True to get 
+    # running the objective function with option to get 
     # intermediate results of the calculation
     exp_tot_costs, fix_costs, shortcomings, exp_incomes, profits, \
     exp_shortcomings,  fd_penalty, avg_fd_penalty, sol_penalty, final_fund, \
@@ -246,16 +243,19 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
     # probability of solvency in case of catastrophe
     prob_staying_solvent = np.sum(final_fund >= 0) /  args["N"]
     
+    # probability for food security
     tmp = np.copy(shortcomings)
     np.seterr(invalid='ignore')
     tmp[tmp > 0] = 1
     np.seterr(invalid='warn')
     prob_food_security = 1 - np.nanmean(tmp)
     
+    # number of years in which farmers have losses
     np.seterr(invalid='ignore')
     num_years_with_losses = np.sum(profits<0, axis = (0,1))
     np.seterr(invalid='warn')
     
+    # debt (based on final fund)
     debt = -np.copy(final_fund)
     np.seterr(invalid='ignore')
     debt[debt < 0] = 0

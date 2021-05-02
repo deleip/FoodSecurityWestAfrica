@@ -49,10 +49,12 @@ def DefaultSettingsExcept(PenMet = "default",
         directly. The default is defined in ModelCode/DefaultModelSettings.py.
     probF : float, optional
         demanded probability of keeping the food demand constraint (only 
-        relevant if PenMet == "prob"). The default is defined in ModelCode/DefaultModelSettings.py.
+        relevant if PenMet == "prob"). The default is defined in
+        ModelCode/DefaultModelSettings.py.
     probS : float, optional
         demanded probability of keeping the solvency constraint (only 
-        relevant if PenMet == "prob"). The default is defined in ModelCode/DefaultModelSettings.py.
+        relevant if PenMet == "prob"). The default is defined in 
+        ModelCode/DefaultModelSettings.py.
     rhoF : float or None, optional 
         If PenMet == "penalties", this is the value that will be used for rhoF.
         if PenMet == "prob" and rhoF is None, a initial guess for rhoF will 
@@ -117,8 +119,11 @@ def DefaultSettingsExcept(PenMet = "default",
         The percentage that determines how high the guaranteed income will be 
         depending on the expected income of farmers in a scenario excluding
         the government. The default is defined in ModelCode/DefaultModelSettings.py.
-    ini_fund : float
+    ini_fund : float, optional
         Initial fund size. The default is defined in ModelCode/DefaultModelSettings.py.
+    food_import : float, optional
+        Amount of food that is imported (and therefore substracted from the
+        food demand). The default is defined in ModelCode/DefaultModelSettings.py.
         
         
     Returns
@@ -127,6 +132,7 @@ def DefaultSettingsExcept(PenMet = "default",
         A dictionary that includes all of the above settings.
     """
     
+    # getting defaults for the not-specified settings
     PenMet, probF, probS, rhoF, rhoS, k, k_using, \
     num_crops, yield_projection, sim_start, pop_scenario, \
     risk, N, validation_size, T, seed, tax, perc_guaranteed, \
@@ -135,6 +141,7 @@ def DefaultSettingsExcept(PenMet = "default",
                 risk, N, validation_size, T, seed, tax, perc_guaranteed,
                 ini_fund, food_import)
 
+    # making sure the current clusters are given as a list
     if type(k_using) is int:
         k_using = [k_using]
         
@@ -145,7 +152,6 @@ def DefaultSettingsExcept(PenMet = "default",
         k_using = list(range(1, k + 1))
         
     k_using_tmp = k_using.copy()
-    
     
     # This will always be True except when the function is called from 
     # GetResultsToCompare() for multiple subsets of clusters 
@@ -183,16 +189,17 @@ def DefaultSettingsExcept(PenMet = "default",
                  "ini_fund": ini_fund,
                  "import": food_import}   
      
-
-    # return dictionary of all settings
     return(settings)
 
-def SetParameters(settings, expected_incomes = None,\
-                  wo_yields = False, VSS = False, \
-                  console_output = None, logs_on = None):
+def SetParameters(settings, 
+                  expected_incomes = None,
+                  wo_yields = False,
+                  VSS = False, 
+                  console_output = None, 
+                  logs_on = None):
     """
     
-    Based on the settings, this sets most parameters that are needed as
+    Based on the settings, this sets most of the parameters that are needed as
     input to the model.    
     
     Parameters
@@ -223,7 +230,7 @@ def SetParameters(settings, expected_incomes = None,\
     args : dict
         Dictionary of arguments needed as model input. 
         
-        - k: number of clusters in which the area is to be devided.
+        - k: number of clusters in which the area is devided.
         - k_using: specifies which of the clusters are to be considered in 
           the model. 
         - num_crops: the number of crops that are used
@@ -260,10 +267,6 @@ def SetParameters(settings, expected_incomes = None,\
           food demand constraint.
         - probS : float or None, giving demanded probability of keeping the 
           solvency constraint.
-        - rhoF : float giving the input penalty for food shortages (if probF = None), 
-          or the penalty calculated based on probF.
-        - rhoS : float giving the input penalty for onsolvency (if probS = None), 
-          or the penalty calculated based on probS.
     yield_information : dict
         Dictionary giving additional information on the yields
         
@@ -272,7 +275,7 @@ def SetParameters(settings, expected_incomes = None,\
         - yld_means: average yields 
         - residual_stds: standard deviations of the residuals of the yield 
           trends
-        - prob_cat_year: probability for a catastrophic years given the 
+        - prob_cat_year: probability for a catastrophic year given the 
           covered risk level
         - share_no_cat: share of samples that don't have a catastrophe within 
           the considered timeframe
@@ -287,6 +290,9 @@ def SetParameters(settings, expected_incomes = None,\
         Dictionary giving additional information on the population size in the
         model.
         
+        - population : np.array of size (T,) giving estimates of population 
+          in considered clusters from simulation start to end for given population 
+          scenario (from UN PopDiv)
         - total_pop_scen : np.array of size (T,) giving estimates of population 
           in West Africa from simulation start to end for given population 
           scenario (from UN PopDiv)
@@ -297,7 +303,7 @@ def SetParameters(settings, expected_incomes = None,\
     
     crops = ["Rice", "Maize"]
     
-# 0. extract settings from dictionary
+    # 0. extract settings from dictionary
     k = settings["k"]
     k_using = settings["k_using"]
     num_crops = settings["num_crops"]
@@ -316,13 +322,13 @@ def SetParameters(settings, expected_incomes = None,\
     if expected_incomes is None:
         expected_incomes = np.zeros(len(k_using))
     
-# 1. get cluster information (clusters given by k-Medoids on SPEI data) 
+    # 1. get cluster information (clusters given by k-Medoids on SPEI data) 
     with open("InputData/Clusters/Clustering/kMediods" + \
                         str(k) + "_PearsonDistSPEI_ProfitableArea.txt", "rb") as fp:  
         clusters = pickle.load(fp)
         costs = pickle.load(fp)
     
-# 2. calculate total area and area proportions of the different clusters
+    # 2. calculate total area and area proportions of the different clusters
     with open("InputData/Population/land_area.txt", "rb") as fp:    
         land_area = pickle.load(fp)
     cluster_areas = np.zeros(len(k_using))
@@ -330,7 +336,7 @@ def SetParameters(settings, expected_incomes = None,\
         cluster_areas[i] = np.nansum(land_area[clusters == cl])
     cluster_areas = cluster_areas * 100 # convert sq km to ha
                                         
-# 3. Share of population in the area we use (in 2015):
+    # 3. Share of population in the area we use (in 2015):
     with open("InputData/Population/GPW_WA.txt", "rb") as fp:    
         gridded_pop = pickle.load(fp)[3,:,:]
     with open("InputData/Population/" + \
@@ -354,7 +360,7 @@ def SetParameters(settings, expected_incomes = None,\
     total_pop_ratio_2015 = total_pop_GPW/total_pop_UN_2015
     considered_pop_scen = total_pop_scen * total_pop_ratio_2015 # use 2015 ratio to scale down population scneario to considered area
     
-# 4. Country shares of area (for price calculation)
+    # 4. Country shares of area (for price calculation)
     with open("InputData/Prices/CountryCodesGridded.txt", "rb") as fp:    
         country_codes_gridded = pickle.load(fp)
     country_codes = pd.read_csv("InputData/Prices/CountryCodes.csv")
@@ -392,7 +398,7 @@ def SetParameters(settings, expected_incomes = None,\
     # removing countries with no share as they don't show up in prices df below
     country_codes = country_codes.drop(axis = 0, labels = [4, 5, 9]) 
 
-# 5. Per person/day demand       
+    # 5. Per person/day demand       
     # we use data from a paper on food waste 
     # (https://doi.org/10.1371/journal.pone.0228369) 
     # it includes country specific vlues for daily energy requirement per 
@@ -410,7 +416,7 @@ def SetParameters(settings, expected_incomes = None,\
     ppdemand["Shares"] = ppdemand["Shares"] / np.sum(ppdemand["Shares"])        
     ppdemand = np.sum(ppdemand["Demand"] * ppdemand["Shares"])
     
-# 6. cultivation costs of crops
+    # 6. cultivation costs of crops
     # RICE:
     # Liberia: "The cost of production of swampland Nerica rice (farming 
     # and processing of the paddy) is $308 per metric tons [...]. 
@@ -458,7 +464,7 @@ def SetParameters(settings, expected_incomes = None,\
     # in 10^9$/10^6ha
     costs = 1e-3 * costs 
         
-# 7. Energy value of crops
+    # 7. Energy value of crops
     # https://www.ars.usda.gov/northeast-area/beltsville-md-bhnrc/
     # beltsville-human-nutrition-research-center/methods-and-application-
     # of-food-composition-laboratory/mafcl-site-pages/sr11-sr28/
@@ -470,7 +476,7 @@ def SetParameters(settings, expected_incomes = None,\
     # in 10^12kcal/10^6t
     crop_cal = 1e-6 * crop_cal
     
-# 8. Food demand
+    # 8. Food demand
     # based on the demand per person and day (ppdemand) and assuming no change
     # of per capita daily consumption we use UN population scenarios for West 
     # Africa and scale them down to the area we use, using the ratio from 2015 
@@ -480,7 +486,7 @@ def SetParameters(settings, expected_incomes = None,\
     # in 10^12 kcal
     demand = 1e-12 * demand
 
-# 9. guaranteed income as share of expected income w/o government
+    # 9. guaranteed income as share of expected income w/o government
     # if expected income is not given...
     guaranteed_income = np.repeat(expected_incomes[np.newaxis, :], T, axis=0)    
     guaranteed_income = perc_guaranteed * guaranteed_income                     
@@ -490,7 +496,7 @@ def SetParameters(settings, expected_incomes = None,\
         total_pop_ratios = total_pop_scen / total_pop_year_before
         guaranteed_income = (guaranteed_income.swapaxes(0,1) * total_pop_ratios).swapaxes(0,1)
           
-# 10. prices for selling crops, per crop and cluster
+    # 10. prices for selling crops, per crop and cluster
     with open("InputData//Prices/CountryAvgFarmGatePrices.txt", "rb") as fp:    
         country_avg_prices = pickle.load(fp)
     # Gambia is not included in our area
@@ -506,10 +512,10 @@ def SetParameters(settings, expected_incomes = None,\
     # in 10^9$/10^6t
     prices = 1e-3 * prices 
     
-# 11. thresholds for yields being profitable
+    # 11. thresholds for yields being profitable
     y_profit = costs/prices
         
-# 12. Agricultural Areas: 
+    # 12. Agricultural Areas: 
     # Landscapes of West Africa - A Window on a Changing World: 
     # "Between 1975 and 2013, the area covered by crops doubled in West 
     # Africa, reaching a total of 1,100,000 sq km, or 22.4 percent, of the 
@@ -526,7 +532,7 @@ def SetParameters(settings, expected_incomes = None,\
     # in 10^6ha
     max_areas = 1e-6 * max_areas
 
-# 13. generating yield samples
+    # 13. generating yield samples
     # using historic yield data from GDHY  
     with open("InputData/YieldTrends/DetrYieldAvg_k" + \
                               str(k) + "_ProfitableArea.txt", "rb") as fp:   
@@ -588,7 +594,7 @@ def SetParameters(settings, expected_incomes = None,\
              str([crops[i] for i in more_food]) + "\n", \
              console_output = console_output, logs_on = logs_on)
     
-# 14. group output into different dictionaries
+    # 14. group output into different dictionaries
     # arguments that are given to the objective function by the solver
     args = {"k": k,
             "k_using": k_using,
@@ -641,7 +647,7 @@ def RiskForCatastrophe(risk, num_clusters):
         yields in the lower 5% quantile of the yield distributions will be 
         considered as catastrophic.
     num_clusters : int
-        The number of crops that are used.
+        The number of clusters that are included.
 
     Returns
     -------
@@ -671,7 +677,7 @@ def YieldRealisations(yld_slopes, yld_constants, resid_std, sim_start, N, \
     resid_std : np.array of size (num_crops, len(k_using))
         Standard deviations of the residuals of the yield trends.
     sim_start : int
-        The first year of the simulation..
+        The first year of the simulation.
     N : int
         Number of yield samples to be used to approximate the expected value
         in the original objective function.
@@ -726,10 +732,9 @@ def YieldRealisations(yld_slopes, yld_constants, resid_std, sim_start, N, \
                              num_clusters, num_crops, yield_projection, \
                              VSS, wo_yields)
         
-        
+    # set negative yields to zero
     if not wo_yields:
-        # comparing with np.nans leads to annoying warnings, so we turn them off        
-        np.seterr(invalid='ignore')
+        np.seterr(invalid='ignore') # comparing with np.nans leads to annoying warnings, so we turn them off  
         ylds[ylds<0] = 0
         np.seterr(invalid='warn')
     
@@ -748,12 +753,11 @@ def CatastrophicYears(risk, N, T, num_clusters, VSS):
         considered as catastrophic.
     N : int
         Number of yield samples to be used to approximate the expected value
-        in the original objective function. The default is 3500.
+        in the original objective function.
     T : int
-        Number of years to cover in the simulation. The default is 25.
+        Number of years to cover in the simulation.
     num_clusters : int
-        Number of clusters in which the area is to be devided. 
-        The default is 1.
+        Number of clusters clusters that are considered
     VSS : boolean
         If True, all clusters will be indicated as non-catastrophic, and 
         average yields will be returned instead of yield samples, as needed 
@@ -814,7 +818,7 @@ def ProjectYields(yld_slopes, yld_constants, resid_std, sim_start, \
     resid_std : np.array of size (num_crops, len(k_using))
         Standard deviations of the residuals of the yield trends.
     sim_start : int
-        The first year of the simulation..
+        The first year of the simulation.
     N : int
         Number of yield samples to be used to approximate the expected value
         in the original objective function.

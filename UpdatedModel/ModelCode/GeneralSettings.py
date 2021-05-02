@@ -1,4 +1,5 @@
-# Last modified April 28, 2021, at 14:49
+# General Settings 
+# Last modified May 02, 2021, at 11:47
 # (reset to original values)
 
 # accuracy demanded from the probabilities as decimal places (given as float,
@@ -13,7 +14,7 @@ shareDiffS = 10
 
 # if penalty is found according to import/debt, what accuracy should be used 
 # (share of diff between max and min import/debt)
-accuracy_help = 0.01
+accuracy_help = 0.005
 
 # should model progress be logged?
 logs_on = True

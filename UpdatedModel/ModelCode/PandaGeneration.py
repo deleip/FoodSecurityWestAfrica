@@ -17,9 +17,10 @@ from ModelCode.Auxiliary import printing
 def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                     population_information, crop_alloc, \
                     meta_sol, meta_sol_vss, VSS_value, validation_values, \
-                    fn_fullresults, console_output, file):
+                    fn_fullresults, console_output = None, logs_on = None,
+                    file = "current_panda"):
     """
-    Adds information on the model run to the current pandas csv.
+    Adds information on the model run to the given pandas csv.
     
     Parameters
     ----------
@@ -35,13 +36,13 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
     population_information : dict
         Information on the population in the considered area.
     crop_alloc :  np.array
-        gives the optimal crop areas for all years, crops, clusters
+        optimal crop areas for all years, crops, clusters
     meta_sol : dict 
         additional information about the model output ('exp_tot_costs', 
         'fix_costs', 'yearly_fixed_costs', 'fd_penalty', 'avg_fd_penalty', 
         'sol_penalty', 'shortcomings', 'exp_shortcomings', 'expected_incomes', 
         'profits', 'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
-        'probS', 'necessary_import', 'necessary_debt')
+        'probS', 'avg_nec_import', 'avg_nec_debt')
     meta_sol_vss : dict
         additional information on the deterministic solution 
     VSS_value : float
@@ -49,16 +50,19 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
         deterministic solution for crop allocation and stochastic solution
         for crop allocation       
     validation_values : dict
-        total costs and penalties for the model result and a higher sample 
-        size for validation ("sample_size", "total_costs", "total_costs_val", 
-        "fd_penalty", "fd_penalty_val", "sol_penalty", "sol_penalty_val", 
-        "total_penalties", "total_penalties_val", "deviation_penalties")
+        total costs and penalty costs for the resulted crop areas but a higher 
+        sample size of crop yields for validation ("sample_size", 
+        "total_costs", "total_costs_val", "fd_penalty", "fd_penalty_val", 
+        "sol_penalty", "sol_penalty_val", "total_penalties", 
+        "total_penalties_val", "deviation_penalties")
     fn_fullresults : str
         Filename used to save the full model results.
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
-        outputs. If None, the default as defined in ModelCode/GeneralSettings 
-        is used.
+        outputs. The default is defined in ModelCode/GeneralSettings.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log file.
+        The default is defined in ModelCode/GeneralSettings.
     file : str
         filename of panda csv to which the information is to be added.
     Returns
@@ -67,6 +71,7 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
 
     """
     
+    # some pre-calculations
     pop_per_cluster = np.outer(population_information["total_pop_scen"], population_information["pop_cluster_ratio2015"])
     pop_of_area = population_information["population"]
     food_shortage_capita = meta_sol["shortcomings"]/pop_of_area
@@ -74,15 +79,16 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
     wh_neg_fund = np.where(meta_sol["final_fund"] < 0)[0]
     ff_debt = -meta_sol["final_fund"][wh_neg_fund]
     ter_years = args["terminal_years"][wh_neg_fund].astype(int)
-    total_guar_inc = np.sum(args["guaranteed_income"], axis = 1)
+    # total_guar_inc = np.sum(args["guaranteed_income"], axis = 1)
     
     ff_debt_all = -meta_sol["final_fund"]
     ff_debt_all[ff_debt_all < 0] = 0
     ter_years_all = args["terminal_years"].astype(int)
     
-    shortcomings_capita = meta_sol["shortcomings"]/(pop_of_area/1e9)
+    # shortcomings_capita = meta_sol["shortcomings"]/(pop_of_area/1e9)
     
-    printing("\nAdding results to pandas", console_output = console_output)
+    # setting up dictionary of parameters to add to the panda object as new row
+    printing("\nAdding results to pandas", console_output = console_output, logs_on = logs_on)
     if settings["PenMet"] == "prob":
         dict_for_pandas = {"Input probability food security": settings["probF"],
                            "Input probability solvency": settings["probS"],
@@ -151,13 +157,16 @@ def write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
             dict_for_pandas["Average necessary add. import per capita (over samples and then years)"] = 0
         # if np.isnan(dict_for_pandas["Average food shortcomings per capita (over all years and samples with shortcomings)"]):
         #     dict_for_pandas["Average food shortcomings per capita (over all years and samples with shortcomings)"] = 0
-            
+         
+        # load panda object
         if not os.path.exists("ModelOutput/Pandas/" + file + ".csv"):
             CreateEmptyPanda(file)
         
+        # add new row
         current_panda = pd.read_csv("ModelOutput/Pandas/" + file + ".csv")
         current_panda = current_panda.append(dict_for_pandas, ignore_index = True)
         
+        # try to sve updated panda object as csv
         saved = False
         while saved == False:
             try:
@@ -203,14 +212,13 @@ def CreateEmptyPanda(file = "current_panda"):
     Parameters
     ----------
     file : str, optional
-        Name for file where to save the new panda csv.
+        Name of file to save the new panda csv to.
         The default is "current_panda".
 
     Returns
     -------
     None.
     """
-
     
     with open("ModelOutput/Pandas/ColumnNames.txt", "rb") as fp:
         colnames = pickle.load(fp)
@@ -222,7 +230,7 @@ def CreateEmptyPanda(file = "current_panda"):
 
 def OpenPanda(file = "current_panda"):
     """
-    Load the panda csv into python.
+    Load the csv into a panda object.
 
     Parameters
     ----------
@@ -292,10 +300,11 @@ def OverViewCurrentPandaVariables():
     
 def SetUpPandaDicts():
     """
-    Sets up the dicts that are needed to deal with the panda csvs.
+    Sets up and saves the dicts that are needed to deal with the panda csvs.
     Dictonaries are defined here and saved so they can be loaded from other
-    functions. If additional variables are included in the write_to_pandas
-    function, they need to be added to all three dictionaries here as well!!
+    functions. 
+    !! If additional variables are included in the write_to_pandas function,
+    they need to be added to all three dictionaries here as well!!
 
     Returns
     ------

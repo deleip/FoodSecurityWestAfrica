@@ -22,7 +22,8 @@ def UpdatePandaWithAddInfo(OldFile = "current_panda", console_output = None):
     If additional variables were included in write_to_pandas and the 
     dictionaries in SetUpPandaDicts were extended accordingly, this function
     rewrites the panda object (including the new variables) by loading the full
-    model results (using "Filename for full results") row for row
+    model results (using "Filename for full results") and applying the new
+    write_to_pandas row for row.
 
     Parameters
     ----------
@@ -40,13 +41,14 @@ def UpdatePandaWithAddInfo(OldFile = "current_panda", console_output = None):
 
     """
     
+    if console_output is None:
+        from ModelCode.GeneralSettings import console_output
+        
+    # updating the panda dicts
     os.remove("ModelOutput/Pandas/ColumnUnits.txt")
     os.remove("ModelOutput/Pandas/ColumnNames.txt")
     os.remove("ModelOutput/Pandas/ColumnTypes.txt")
     SetUpPandaDicts()
-    
-    if console_output is None:
-        from ModelCode.GeneralSettings import console_output
     
     # load the panda that should be updated
     oldPanda = OpenPanda(file = OldFile)
@@ -55,21 +57,24 @@ def UpdatePandaWithAddInfo(OldFile = "current_panda", console_output = None):
     # current_panda
     CreateEmptyPanda(OldFile + "_updating")
     
+    # going through the object row for row
     for i in range(0, len(oldPanda)):
         if console_output:
             sys.stdout.write("\r     Updating row " + str(i + 1) + " of " + str(len(oldPanda)))
             
         filename = oldPanda.at[i,'Filename for full results']
         
+        # loading full results
         settings, args, AddInfo_CalcParameters, yield_information, \
         population_information, status, durations, crop_alloc, meta_sol, \
         crop_alloc_vs, meta_sol_vss, VSS_value, validation_values = \
             LoadModelResults(filename)
             
+        # applying updated write_to_pandas
         write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                         population_information, crop_alloc, \
                         meta_sol, meta_sol_vss, VSS_value, validation_values, \
-                        filename, console_output = False, file = OldFile + "_updating")
+                        filename, console_output = False, logs_on = False, file = OldFile + "_updating")
 
     # remove old panda file
     os.remove("ModelOutput/Pandas/" + OldFile + ".csv")
@@ -125,10 +130,13 @@ def ReadFromPandaSingleClusterGroup(file = "current_panda",
         ModelCode/DefaultModelSettings.py.
     k : int, optional
         Number of clusters in which the area is devided. 
-        The default is defined in ModelCode/DefaultModelSettings.py..
+        The default is defined in ModelCode/DefaultModelSettings.py.
     k_using : list of int i\in{1,...,k}, optional
         Specifies the clusters considered in the model. 
         The default is defined in ModelCode/DefaultModelSettings.py.
+    num_crops : int, optional
+        Number of crops used in the model.
+        The default is defined in ModelCode/DefaultModelSettings.py..
     yield_projection : "fixed" or "trend", optional
         Specifies the yield projection used in the model. 
         The default is defined in ModelCode/DefaultModelSettings.py.
@@ -150,6 +158,9 @@ def ReadFromPandaSingleClusterGroup(file = "current_panda",
         the government. The default is defined in ModelCode/DefaultModelSettings.py.
     ini_fund : float
         Initial fund size. The default is defined in ModelCode/DefaultModelSettings.py.   
+    food_import : float, optional
+        Amount of food that is imported (and therefore substracted from the
+        food demand). The default is defined in ModelCode/DefaultModelSettings.py.
     N : int, optional
         Number of yield samples used to approximate the expected value
         in the original objective function. The default is defined in
@@ -172,6 +183,10 @@ def ReadFromPandaSingleClusterGroup(file = "current_panda",
 
     """
         
+    if output_var is None:
+        sys.exit("Please provide an output variable.")
+        
+    # fill up missing settings with defaults
     PenMet, probF, probS, rhoF, rhoS, k, k_using, \
     num_crops, yield_projection, sim_start, pop_scenario, \
     risk, N, validation_size, T, seed, tax, perc_guaranteed, \
@@ -180,8 +195,6 @@ def ReadFromPandaSingleClusterGroup(file = "current_panda",
                 risk, N, validation_size, T, seed, tax, perc_guaranteed,
                 ini_fund, food_import)
     
-    if output_var is None:
-        sys.exit("Please provide an output variable.")
     
     # open data frame
     panda = OpenPanda(file = file)
@@ -194,7 +207,6 @@ def ReadFromPandaSingleClusterGroup(file = "current_panda",
         panda = panda[:][list((panda.loc[:, "Penalty for food shortage"] == rhoF) & \
                      (panda.loc[:, "Penalty for insolvency"] == rhoS))]
         
-    
     # cannot compare with list over full column -> as string
     panda["Used clusters"] = panda["Used clusters"].apply(str)
 
@@ -230,9 +242,9 @@ def ReadFromPandaSingleClusterGroup(file = "current_panda",
     # ... subset sample size here if given ...
     if N is not None:
         sub_panda = sub_panda[output_var_fct][sub_panda["Sample size"] == N]
-        # nor results for right sample size?
+        # no results for right sample size?
         if sub_panda.empty:
-            sys.exit("Requested data is not available.")
+            sys.exit("Requested data is not available for this sample size.")
         return(sub_panda)
         
     # ... else use the results for highest sample size for these settings
@@ -249,7 +261,6 @@ def ReadFromPandaSingleClusterGroup(file = "current_panda",
     else:
         sub_panda = sub_panda[output_var_fct]
                        
-    
     # turn used clusters back from strings to lists
     def __ConvertListsInts(arg):
         arg = arg.strip("][").split(", ")

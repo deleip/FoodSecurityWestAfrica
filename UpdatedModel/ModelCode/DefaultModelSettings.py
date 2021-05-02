@@ -1,9 +1,8 @@
 # Default Model Settings 
-# Last modified April 22, 2021, at 09:07
-
+# Last modified May 02, 2021, at 11:44
 # (reset to original values)
 
-# "pro" if desired probabilities are given and penalties are to be 
+# "prob" if desired probabilities are given and penalties are to be 
 # calculated accordingly. "penalties" if input penalties are to be used 
 # directly 
 PenMet = "prob" 

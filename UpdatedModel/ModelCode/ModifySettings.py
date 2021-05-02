@@ -11,7 +11,7 @@ from datetime import datetime
 
 def ReturnGeneralSettings():
     """
-    Prints the current values of the general settings defined in 
+    Reports the current values of the general settings defined in 
     ModelCode/GeneralSettings to the console.
 
     Returns
@@ -55,16 +55,14 @@ def ReturnGeneralSettings():
     
     return(None)
 
-def ModifyGeneralSettings(accuracyF = None, \
-                          accuracyS = None, \
-                          shareDiffF = None, \
-                          shareDiffS = None, \
-                          accuracy_debt = None, \
-                          accuracy_import = None, \
-                          accuracy_help = None, \
-                          logs_on = None, \
-                          console_output = None, \
-                          figsize = None, \
+def ModifyGeneralSettings(accuracyF = None, 
+                          accuracyS = None,
+                          shareDiffF = None,
+                          shareDiffS = None, 
+                          accuracy_help = None,
+                          logs_on = None,
+                          console_output = None,
+                          figsize = None,
                           close_plots = None):
     """
     Updates the values for the given general settings by rewriting the
@@ -87,14 +85,12 @@ def ModifyGeneralSettings(accuracyF = None, \
         Accuracy of the solvency penalty given thorugh size of the 
         accuracy interval: the size needs to be smaller than final rho/shareDiff. 
         The default is None.
-    accuracy_debt : float, optional
-        Accuracy of debts used in the algorithm to find the right rhoS in
-        cases where probS cannot be reached (given as the share of the 
-        difference between debt_bottom and debt_top). The default is None.
-    accuracy_import : float, optional
-        Accuracy of imports used in the algorithm to find the right rhoF in
-        cases where probF cannot be reached (given as number of decimal places).
-        The default is None.
+    accuracy_help : float, optional
+        If method "MinHelp" is used to find the correct penalty, this defines the 
+        accuracy demanded from the resulting necessary help in terms distance
+        to the minimal necessary help, given this should be the accuracy demanded from the 
+        final average necessary help (given as share of the difference between 
+        final necessary help and the minimum nevessary help). The default is None.
     logs_on : boolean, optional
         Should model progress be logged?. The default is None.
     console_output : boolean, optional
@@ -123,6 +119,7 @@ def ModifyGeneralSettings(accuracyF = None, \
     report = "Changed settings for "
     
     settings = open("ModelCode/GeneralSettings.py", "w")
+    settings.write("# General Settings \n")
     settings.write("# Last modified " + str(datetime.now().strftime("%B %d, %Y, at %H:%M")) + "\n\n")
     settings.write("# accuracy demanded from the probabilities as decimal places (given as float,\n")
     settings.write("# not as percentage)\n")
@@ -209,6 +206,7 @@ def ResetGeneralSettings():
     """
     
     settings = open("ModelCode/GeneralSettings.py", "w")
+    settings.write("# General Settings \n")
     settings.write("# Last modified " + str(datetime.now().strftime("%B %d, %Y, at %H:%M")) + "\n")
     settings.write("# (reset to original values)\n\n")
     settings.write("# accuracy demanded from the probabilities as decimal places (given as float,\n")
@@ -221,7 +219,7 @@ def ResetGeneralSettings():
     settings.write("shareDiffS = 10\n\n")
     settings.write("# if penalty is found according to import/debt, what accuracy should be used \n")
     settings.write("# (share of diff between max and min import/debt)\n")
-    settings.write("accuracy_help = 0.01\n\n")
+    settings.write("accuracy_help = 0.005\n\n")
     settings.write("# should model progress be logged?\n")
     settings.write("logs_on = True\n")
     settings.write("# should model progress be reported in console?" + "\n")
@@ -240,8 +238,8 @@ def ResetGeneralSettings():
 
 def ReturnDefaultModelSettings():
     """
-    Prints the current values of the general settings defined in 
-    ModelCode/GeneralSettings to the console.
+    Reports the current values of the general settings defined in 
+    ModelCode/DefaultModelSettings to the console.
 
     Returns
     -------
@@ -317,13 +315,69 @@ def ModifyDefaultModelSettings(PenMet = None, \
                           ini_fund = None,
                           food_import = None):
     """
-    Updates the values for the given general settings by rewriting the
-    ModelCode/GeneralSettings.py file, keeping the last value that was given
+    Updates the values for the given default model settings by rewriting the
+    ModelCode/DefaultModelSettings.py file, keeping the last value that was given
     for unspecified settings (i.e. None).
 
     Parameters
     ----------
-
+    PenMet : str, optional
+        "prob" if desired probabilities are given and penalties are to be 
+        calculated accordingly. "penalties" if input penalties are to be used
+        directly. The default is None.
+    probF : float, optional
+        demanded probability of keeping the food demand constraint.
+        The default is defined in
+        ModelCode/DefaultModelSettings.py.
+    probS : float, optional
+        demanded probability of keeping the solvency constraint).
+    The default is defined in 
+        ModelCode/DefaultModelSettings.py.
+    rhoF : float, optional 
+        The initial value for rhoF. The default is None.
+    rhoS : float or None, optional 
+        The initial value for rhoS. The default is None.
+    k : int, optional
+        Number of clusters in which the area is to be devided. 
+        The default is None.
+    k_using : "all" or a list of int i\in{1,...,k}, optional
+        Specifies which of the clusters are to be considered in the model. 
+        The default is None.
+    num_crops : int, optional
+        The number of crops that are used. The default is None.
+    yield_projection : "fixed" or "trend", optional
+        Specifies which yield scenario should be used. 
+        The default is None.
+    sim_start : int, optional
+        The first year of the simulation. The default is None.
+    pop_scenario : str, optional
+        Specifies which population scenario should be used. 
+        The default is None.
+    risk : int, optional
+        The risk level that is covered by the government. 
+        The default is None.
+    N : int, optional
+        Number of yield samples to be used to approximate the expected value
+        in the original objective function. The default is None.
+    validation_size : int, optional
+        Sample size used for validation.
+        The default is None.
+    T : int, optional
+        Number of years to cover in the simulation. The default is None.
+    seed : int, optional
+        Seed to allow for reproduction of the results. The default is None.
+    tax : float, optional
+        Tax rate to be paied on farmers profits. The default is None
+    perc_guaranteed : float, optional
+        The percentage that determines how high the guaranteed income will be 
+        depending on the expected income of farmers in a scenario excluding
+        the government. The default is None.
+    ini_fund : float, optional
+        Initial fund size. The default is None.
+    food_import : float, optional
+        Amount of food that is imported (and therefore substracted from the
+        food demand). The default is None.
+        
     Returns
     -------
     None.
@@ -534,7 +588,7 @@ def ModifyDefaultModelSettings(PenMet = None, \
 
 def ResetDefaultModelSettings():
     """
-    Rewrites the ModelCode/GeneralSettings.py with the original values.
+    Rewrites the ModelCode/DefaultModelSettings.py with the original values.
 
     Returns
     -------
@@ -543,10 +597,10 @@ def ResetDefaultModelSettings():
     
     settings = open("ModelCode/DefaultModelSettings.py", "w")
     settings.write("# Default Model Settings \n")
-    settings.write("# Last modified " + str(datetime.now().strftime("%B %d, %Y, at %H:%M")) + "\n\n")
+    settings.write("# Last modified " + str(datetime.now().strftime("%B %d, %Y, at %H:%M")) + "\n")
     settings.write("# (reset to original values)\n\n")
     
-    settings.write("# \"pro\" if desired probabilities are given and penalties are to be \n")
+    settings.write("# \"prob\" if desired probabilities are given and penalties are to be \n")
     settings.write("# calculated accordingly. \"penalties\" if input penalties are to be used \n")
     settings.write("# directly \n")
     settings.write("PenMet = \"prob\" \n\n")

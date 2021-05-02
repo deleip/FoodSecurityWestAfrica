@@ -259,7 +259,7 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     
     # get parameters for the given settings
     ex_income_start  = tm.time()
-    exp_incomes = GetExpectedIncome(settings, console_output = console_output)
+    exp_incomes = GetExpectedIncome(settings, console_output = console_output, logs_on = logs_on)
     AddInfo_CalcParameters = {"expected_incomes": exp_incomes}
     ex_income_end  = tm.time()
     all_durations["GetExpectedIncome"] = ex_income_end - ex_income_start
@@ -319,7 +319,7 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
     if settings["validation_size"] is not None:
         printing("\nOut of sample validation", console_output = console_output, logs_on = logs_on)
         validation_values = OutOfSampleVal(crop_alloc, settings, exp_incomes, args["rhoF"], \
-                              args["rhoS"], meta_sol, args["probS"], console_output)
+                              args["rhoS"], meta_sol, console_output, logs_on = logs_on)
     validation_end  = tm.time()
     all_durations["Validation"] = validation_end - validation_start
 
@@ -329,7 +329,7 @@ def OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
         write_to_pandas(settings, args, AddInfo_CalcParameters, yield_information, \
                         population_information, crop_alloc, \
                         meta_sol, meta_sol_vss, VSS_value, validation_values, \
-                        fn, console_output, panda_file)     
+                        fn, console_output, logs_on, panda_file)     
             
     # timing
     all_end  = tm.time()   
