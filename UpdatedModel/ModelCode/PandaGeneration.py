@@ -12,7 +12,7 @@ from termcolor import colored
 
 from ModelCode.Auxiliary import _printing
 
-# %% ############## FUNCTIONS DEALING WITH THE RESULTS PANDA CSV ##############
+# %% ########## FUNCTIONS TO CREATE AND FILL THE RESULTS PANDA OBJECT ###########
 
 def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
                     population_information, crop_alloc, \

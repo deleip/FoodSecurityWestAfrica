@@ -9,6 +9,8 @@ Created on Fri Jan  1 14:12:12 2021
 from termcolor import colored
 from datetime import datetime
 
+# %% ########### FUNCTIONS TO REPORT OR MODIFY GENERAL SETTINGS ############
+
 def ReturnGeneralSettings():
     """
     Reports the current values of the general settings defined in 
@@ -234,7 +236,7 @@ def ResetGeneralSettings():
     
     return(None)
 
-####
+# %% ####### FUNCTIONS TO REPORT OR MODIFY DEFAULT MDEOL SETTINGS #######
 
 def ReturnDefaultModelSettings():
     """

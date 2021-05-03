@@ -15,7 +15,7 @@ from ModelCode.ModelCore import SolveReducedLinearProblemGurobiPy
 from ModelCode.SettingsParameters import DefaultSettingsExcept
 from ModelCode.MetaInformation import GetMetaInformation
 
-# %% ########################## WRAPPING FUNCTION #############################
+# %% ########################## WRAPPING FUNCTIONS ############################
 
 def GetPenalties(settings, args, console_output = None,  logs_on = None):
     """
@@ -260,74 +260,7 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
     return(rho, meta_sol)
 
     
-def _CheckOptimalProb(args, prob, objective, accuracy,
-                      console_output = None, logs_on = None):
-    """
-    Function to find the highest probF possible under the given settings, and
-    calculating the amount of import needed to increase this probabtility to 
-    the probF desired.
-
-    Parameters
-    ----------
-    args : dict
-        Dictionary of arguments needed as model input.  
-    prob : float
-        The desired probability for food security/solvency.
-    objective : "F" or "S"
-        Specifying whether we are looking for rhoF or rhoS
-    accuracy : int, optional
-        Desired decimal places of accuracy of the obtained probability. 
-        The default is defined in ModelCode/GeneralSettings.
-    console_output : boolean, optional
-        Specifying whether the progress should be documented thorugh console 
-        outputs. The default is defined in ModelCode/GeneralSettings.
-    logs_on : boolean, optional
-        Specifying whether the progress should be documented in a log file.
-        The default is defined in ModelCode/GeneralSettings.
-
-    Returns
-    -------
-    maxProb : float
-        Probability for food security/solvency resulting from running the model
-        with a very high penalty rhoF/rhoS and setting the other penalty to zero.
-    nec_help : float
-        Average import/debt that is needed to cover the food demand/government 
-        payouts
-    """
-    
-    if objective == "F":
-        rhoF = 1e12
-        rhoS = 0
-    elif objective == "S":
-        rhoS = 1e12
-        rhoF = 0
-    
-    
-    def _get_necessary_help(meta_sol, objective = objective):
-        if objective == "F":
-            return(meta_sol["avg_nec_import"])
-        elif objective == "S":
-            return(meta_sol["avg_nec_debt"])
-        
-    # try for rhoF = 1e9 (as a proxy for rhoF = inf)
-    status, crop_alloc, meta_sol, sto_prob, durations = \
-         SolveReducedLinearProblemGurobiPy(args, rhoF, rhoS, console_output = False, logs_on = False)  
-       
-    # get resulting probabilities
-    maxProb = meta_sol["prob" + objective]
-    _printing("     maxProb" + objective + ": " + str(np.round(maxProb * 100, accuracy - 1)) + "%", \
-              console_output = console_output, logs_on = logs_on)
-    
-    # check if probability is high enough 
-    if maxProb >= prob:
-        _printing("     Desired pro" + objective + " (" + str(np.round(prob * 100, accuracy - 1)) \
-                             + "%) can be reached\n", console_output = console_output, logs_on = logs_on)
-    else:
-        _printing("     Desired pro" + objective + " (" + str(np.round(prob * 100, accuracy - 1)) \
-                             + "%) cannot be reached\n", console_output = console_output, logs_on = logs_on)
-            
-    return(maxProb, _get_necessary_help(meta_sol))
-
+# %% ##################### TWO PENALTY CALCULATION ALGORITHMS ######################
  
 def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff, \
                    accuracy, console_output = None, logs_on = None):
@@ -727,6 +660,74 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
 
 
 # %% ######################### AUXILIARY FUNCTIONS ############################
+
+def _CheckOptimalProb(args, prob, objective, accuracy,
+                      console_output = None, logs_on = None):
+    """
+    Function to find the highest probF possible under the given settings, and
+    calculating the amount of import needed to increase this probabtility to 
+    the probF desired.
+
+    Parameters
+    ----------
+    args : dict
+        Dictionary of arguments needed as model input.  
+    prob : float
+        The desired probability for food security/solvency.
+    objective : "F" or "S"
+        Specifying whether we are looking for rhoF or rhoS
+    accuracy : int, optional
+        Desired decimal places of accuracy of the obtained probability. 
+        The default is defined in ModelCode/GeneralSettings.
+    console_output : boolean, optional
+        Specifying whether the progress should be documented thorugh console 
+        outputs. The default is defined in ModelCode/GeneralSettings.
+    logs_on : boolean, optional
+        Specifying whether the progress should be documented in a log file.
+        The default is defined in ModelCode/GeneralSettings.
+
+    Returns
+    -------
+    maxProb : float
+        Probability for food security/solvency resulting from running the model
+        with a very high penalty rhoF/rhoS and setting the other penalty to zero.
+    nec_help : float
+        Average import/debt that is needed to cover the food demand/government 
+        payouts
+    """
+    
+    if objective == "F":
+        rhoF = 1e12
+        rhoS = 0
+    elif objective == "S":
+        rhoS = 1e12
+        rhoF = 0
+    
+    
+    def _get_necessary_help(meta_sol, objective = objective):
+        if objective == "F":
+            return(meta_sol["avg_nec_import"])
+        elif objective == "S":
+            return(meta_sol["avg_nec_debt"])
+        
+    # try for rhoF = 1e9 (as a proxy for rhoF = inf)
+    status, crop_alloc, meta_sol, sto_prob, durations = \
+         SolveReducedLinearProblemGurobiPy(args, rhoF, rhoS, console_output = False, logs_on = False)  
+       
+    # get resulting probabilities
+    maxProb = meta_sol["prob" + objective]
+    _printing("     maxProb" + objective + ": " + str(np.round(maxProb * 100, accuracy - 1)) + "%", \
+              console_output = console_output, logs_on = logs_on)
+    
+    # check if probability is high enough 
+    if maxProb >= prob:
+        _printing("     Desired pro" + objective + " (" + str(np.round(prob * 100, accuracy - 1)) \
+                             + "%) can be reached\n", console_output = console_output, logs_on = logs_on)
+    else:
+        _printing("     Desired pro" + objective + " (" + str(np.round(prob * 100, accuracy - 1)) \
+                             + "%) cannot be reached\n", console_output = console_output, logs_on = logs_on)
+            
+    return(maxProb, _get_necessary_help(meta_sol))
 
 def _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, necessary_help, \
                      objective, method, file, min_nec_help = None, nec_help_zero = None,

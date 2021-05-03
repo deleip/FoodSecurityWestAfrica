@@ -18,7 +18,7 @@ from ModelCode.PandaHandling import _ReadFromPandaSingleClusterGroup
 from ModelCode.SettingsParameters import DefaultSettingsExcept
 from ModelCode.SettingsParameters import RiskForCatastrophe
 
-# %% ############################# ANALYSIS ###################################
+# %% ##################### PLOT FUNCTIONS FOR CROP AREAS ###########################
 
 def _CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title, 
                       comparing = "clusters", cols = None, cols_b = None, 

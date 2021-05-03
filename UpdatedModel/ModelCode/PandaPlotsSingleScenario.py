@@ -16,7 +16,7 @@ from ModelCode.SettingsParameters import DefaultSettingsExcept
 from ModelCode.Auxiliary import GetFilename
 
 # %% ############### PLOTTING FUNCTIONS USING RESULTS PANDA CSV ###############
-#
+
 def _ExtractResPanda(sub_panda, out_type, output_var, size):
     """
     Aggregates results given by ReadFromPanda.

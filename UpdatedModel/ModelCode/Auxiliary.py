@@ -6,7 +6,7 @@ Created on Fri Jan  1 14:09:14 2021
 @author: Debbora Leip
 """
 
-# %% ############################### AUXILIARY ################################   
+# %% ######################## AUXILIARY FUNCTIONS ################################
     
 def _printing(content, console_output = None, flush = True, logs_on = None):
     """

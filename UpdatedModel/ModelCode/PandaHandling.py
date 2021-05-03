@@ -15,7 +15,7 @@ from ModelCode.PandaGeneration import _WriteToPandas
 from ModelCode.PandaGeneration import _SetUpPandaDicts
 from ModelCode.Auxiliary import _GetDefaults
 
-# %% ############## FUNCTIONS DEALING WITH THE RESULTS PANDA CSV ##############
+# %% ####### FUNCTIONS UPDATING AND ACCESSING THE RESULTS PANDA OBJECT #########
 
 def UpdatePandaWithAddInfo(OldFile = "current_panda", console_output = None):
     """
