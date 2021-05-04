@@ -9,7 +9,7 @@ import numpy as np
 import pickle
 
 from ModelCode.SettingsParameters import SetParameters
-from ModelCode.ModelCore import SolveReducedcLinearProblemGurobiPy
+from ModelCode.ModelCore import SolveReducedLinearProblemGurobiPy
 from ModelCode.MetaInformation import GetMetaInformation
 from ModelCode.Auxiliary import _printing
 

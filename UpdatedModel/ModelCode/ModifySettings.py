@@ -32,7 +32,7 @@ def ReturnGeneralSettings():
     from ModelCode.GeneralSettings import figsize
     from ModelCode.GeneralSettings import close_plots
     
-    print("General Settings are", flush = True)
+    print("General settings are", flush = True)
     print("\u033F "*20)
     print("  - accuracyF: accuracy that is demanded from the food security " + \
           "probability as decimal places. " + \
@@ -221,7 +221,7 @@ def ResetGeneralSettings():
     settings.write("shareDiffS = 10\n\n")
     settings.write("# if penalty is found according to import/debt, what accuracy should be used \n")
     settings.write("# (share of diff between max and min import/debt)\n")
-    settings.write("accuracy_help = 0.005\n\n")
+    settings.write("accuracy_help = 0.01\n\n")
     settings.write("# should model progress be logged?\n")
     settings.write("logs_on = True\n")
     settings.write("# should model progress be reported in console?" + "\n")
@@ -271,7 +271,7 @@ def ReturnDefaultModelSettings():
     from ModelCode.DefaultModelSettings import food_import
 
     
-    print("Defaul Model Settings are", flush = True)
+    print("Defaul model settings are", flush = True)
     print("\u033F "*25)
     print("  - PenMet: " + PenMet, flush = True)
     print("  - probF: " + str(probF), flush = True)

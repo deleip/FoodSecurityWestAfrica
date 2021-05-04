@@ -23,7 +23,7 @@ from ModelCode.GroupingClusters import VisualizeClusterGroups
 
 from ModelCode.MetaInformation import GetMetaInformation
 
-from ModelCode.ModelCore import SolveReducedcLinearProblemGurobiPy
+from ModelCode.ModelCore import SolveReducedLinearProblemGurobiPy
 
 from ModelCode.ModifySettings import ReturnGeneralSettings
 from ModelCode.ModifySettings import ModifyGeneralSettings

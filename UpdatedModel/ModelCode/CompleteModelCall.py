@@ -24,7 +24,7 @@ from ModelCode.MetaInformation import GetMetaInformation
 from ModelCode.SettingsParameters import SetParameters
 from ModelCode.ExpectedIncome import GetExpectedIncome
 from ModelCode.GetPenalties import GetPenalties
-from ModelCode.ModelCore import SolveReducedcLinearProblemGurobiPy
+from ModelCode.ModelCore import SolveReducedLinearProblemGurobiPy
 from ModelCode.VSSandValidation import VSS
 from ModelCode.VSSandValidation import OutOfSampleVal
 
