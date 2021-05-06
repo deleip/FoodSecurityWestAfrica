@@ -234,15 +234,24 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
         from ModelCode.GeneralSettings import shareDiffS as shareDiff
     
     # check model output for a very high penalty (as proxy for infinity)
-    maxProb, nec_help =  _CheckOptimalProb(args, prob, objective, accuracy,
+    maxProb, nec_help, minProb =  _CheckOptimalProb(args, prob, objective, accuracy,
                       console_output = console_output, logs_on = logs_on)
         
     # if probF can be reached find lowest penalty that gives probF
     if maxProb >= prob:
         _printing("     Finding corresponding penalty\n", console_output, logs_on = logs_on)
         rho, meta_sol = _RhoProbability(args, prob, rhoIni, checkedGuess, \
-               objective, file, shareDiff, accuracy, console_output, logs_on)
-    # if probF cannot be reached find the lowest penalty that minimizes the
+               objective, file, shareDiff, accuracy, nec_help, "GivenProb", 
+               console_output, logs_on)
+    # if probF cannot be reached but the maximum probability (or what is 
+    # assumed to be the maximum probability) is hgiher than for rho -> 0,
+    # find the lowest penalty that gives the highest probability
+    elif maxProb > minProb:
+        _printing("     Finding penalty that leads to max. probability\n", console_output, logs_on = logs_on)
+        rho, meta_sol = _RhoProbability(args, maxProb, rhoIni, checkedGuess, \
+               objective, file, shareDiff, accuracy, nec_help, "MaxPRob", 
+               console_output, logs_on)
+    # if the max. probability is zero, find the lowest penalty that minimizes the
     # average import/debt that is needed to cover food demand/government payouts
     else:
         if objective == "F": 
@@ -263,7 +272,7 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
 # %% ##################### TWO PENALTY CALCULATION ALGORITHMS ######################
  
 def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff, \
-                   accuracy, console_output = None, logs_on = None):
+                   accuracy, nec_help, method, console_output = None, logs_on = None):
     """
     Finding the correct rho given the probability prob, based on a bisection
     search algorithm.
@@ -292,6 +301,13 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff
         the current best guess for the correct penalty, then we use rho).
     accuracy : int
         Desired decimal places of accuracy of the obtained probability. 
+    nec_help: float
+        The minimum average necessary import/debt (as calculated for the case 
+        with a very high penalty).   
+    method : str
+        Whether the algorithm is called for them externally demanded probability
+        ("GivenProb"), or for the maximum possible probability ("MaxProb") in 
+        cases where the externally given probabiltiy cannot be reached
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
         outputs. The default is defined in ModelCode/GeneralSettings.
@@ -371,7 +387,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff
     necessary_help.append(_get_necessary_help(meta_sol))
     
     # update information
-    if np.round(meta_sol["prob"+objective], accuracy) == prob:
+    if np.round(meta_sol["prob"+objective], accuracy) == np.round(prob, accuracy):
         lowestCorrect = rhoIni
         meta_sol_lowestCorrect = meta_sol
                 
@@ -407,13 +423,13 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff
         # that gives a smaller probability (which is the rhoLastUp). If that is 
         # smaller than a certain share of the lowest correct penalty we have
         # reached the necessary accuracy.
-        if np.round(meta_sol["prob"+objective], accuracy) == prob:
+        if np.round(meta_sol["prob"+objective], accuracy) == np.round(prob, accuracy):
             accuracy_int = rhoNew - rhoLastUp
             if accuracy_int < rhoNew/shareDiff:
                 rho = rhoNew
                 meta_sol_out = meta_sol
                 break
-        elif np.round(meta_sol["prob"+objective], accuracy) < prob:
+        elif np.round(meta_sol["prob"+objective], accuracy) < np.round(prob, accuracy):
             if lowestCorrect != np.inf:
                 accuracy_int = lowestCorrect - rhoNew
                 if accuracy_int < lowestCorrect/shareDiff:
@@ -422,7 +438,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff
                     break
             else:
                 accuracy_int = rhoLastDown - rhoNew
-        elif np.round(meta_sol["prob"+objective], accuracy) > prob:
+        elif np.round(meta_sol["prob"+objective], accuracy) > np.round(prob, accuracy):
             accuracy_int = rhoNew - rhoLastUp
             
         # report
@@ -432,7 +448,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff
             
         # remember guess
         rhoOld = rhoNew
-        if np.round(meta_sol["prob"+objective], accuracy) == prob \
+        if np.round(meta_sol["prob"+objective], accuracy) == np.round(prob, accuracy) \
             and lowestCorrect > rhoNew:
             lowestCorrect = rhoNew
             meta_sol_lowestCorrect = meta_sol
@@ -444,8 +460,20 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff
    
     # ploting of information
     if args["T"] > 1:
+        #information on necessary import/debt for plotting
+        from ModelCode.GeneralSettings import accuracy_help as accuracy_help_perc
+        meta_zero = GetMetaInformation(np.zeros((args["T"], args["num_crops"], len(args["k_using"]))), args, 0, 0)
+        if objective == "F":
+            nec_help_zero = meta_zero["avg_nec_import"]
+            prob_zero = meta_zero["probF"]
+        elif objective == "S":
+            nec_help_zero = meta_zero["avg_nec_debt"]
+            prob_zero = meta_zero["probS"]
+        accuracy_help = accuracy_help_perc * (nec_help_zero - nec_help)
+        
         _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, \
-                         necessary_help, objective, "GivenProb", file)
+                         necessary_help, objective, method, file, nec_help,
+                         nec_help_zero, accuracy_help, prob_zero)
              
     return(rho, meta_sol_out)
 
@@ -508,9 +536,11 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
     if objective == "F":
         help_type = "import"
         nec_help_zero = meta_zero["avg_nec_import"]
+        prob_zero = meta_zero["probF"]
     elif objective == "S":
         help_type = "debt"
         nec_help_zero = meta_zero["avg_nec_debt"]
+        prob_zero = meta_zero["probS"]
         
     accuracy_help = accuracy_help_perc * (nec_help_zero - nec_help)
             
@@ -654,7 +684,7 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
     if args["T"] > 1:
         _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, \
                          necessary_help, objective, "MinHelp", file, nec_help,
-                         nec_help_zero, accuracy_help)
+                         nec_help_zero, accuracy_help, prob_zero)
         
     return(rho, meta_sol_out)
 
@@ -694,6 +724,10 @@ def _CheckOptimalProb(args, prob, objective, accuracy,
     nec_help : float
         Average import/debt that is needed to cover the food demand/government 
         payouts
+    minProb : float
+        Probability for food security/solvency resulting from running the model
+        for rhoF = rhoS = 0 (by getting meta information for crop alloc = 0).
+        
     """
     
     if objective == "F":
@@ -703,20 +737,24 @@ def _CheckOptimalProb(args, prob, objective, accuracy,
         rhoS = 1e12
         rhoF = 0
     
-    
     def _get_necessary_help(meta_sol, objective = objective):
         if objective == "F":
             return(meta_sol["avg_nec_import"])
         elif objective == "S":
             return(meta_sol["avg_nec_debt"])
         
-    # try for rhoF = 1e9 (as a proxy for rhoF = inf)
-    status, crop_alloc, meta_sol, sto_prob, durations = \
+    # try for rhoF = 1e12 (as a proxy for rhoF -> inf)
+    status1, crop_alloc1, meta_sol1, sto_prob1, durations1 = \
          SolveReducedLinearProblemGurobiPy(args, rhoF, rhoS, console_output = False, logs_on = False)  
-       
+     
+    # try for rhoF = 0
+    meta_zero = GetMetaInformation(np.zeros((args["T"], args["num_crops"], len(args["k_using"]))), args, 0, 0)
+
     # get resulting probabilities
-    maxProb = meta_sol["prob" + objective]
-    _printing("     maxProb" + objective + ": " + str(np.round(maxProb * 100, accuracy - 1)) + "%", \
+    maxProb = meta_sol1["prob" + objective]
+    minProb = meta_zero["prob" + objective]
+    _printing("     maxProb" + objective + ": " + str(np.round(maxProb * 100, accuracy - 1)) + "%, " + \
+              "minProb" + objective + ": " + str(np.round(minProb * 100, accuracy - 1)) + "%", \
               console_output = console_output, logs_on = logs_on)
     
     # check if probability is high enough 
@@ -727,11 +765,11 @@ def _CheckOptimalProb(args, prob, objective, accuracy,
         _printing("     Desired pro" + objective + " (" + str(np.round(prob * 100, accuracy - 1)) \
                              + "%) cannot be reached\n", console_output = console_output, logs_on = logs_on)
             
-    return(maxProb, _get_necessary_help(meta_sol))
+    return(maxProb, _get_necessary_help(meta_sol1), minProb)
 
 def _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, necessary_help, \
-                     objective, method, file, min_nec_help = None, nec_help_zero = None,
-                     accuracy_help = None):
+                     objective, method, file, min_nec_help, nec_help_zero,
+                     accuracy_help, minProb):
     """
     The functions document the process of finding the right penalty (i.e. the
     necessary import/debt in each step, the probability in each step, ...). 
@@ -753,23 +791,23 @@ def _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, necessa
         List of resulting necessary import/debt for each penalty that was tried.
     objective : "F" or "S"
         Specifying whether we are looking for rhoF or rhoS
-    method : "GivenProb" or "MinHelp"
+    method : "GivenProb", "MaxProb", or "MinHelp"
         Which method was used to find the right penalty (depending on whether 
         the given probability could be reached or not).
     file : str
         String combining all settings affecting rho, used to save plots.
-    min_nec_help : float, optional
-        If method "MinHelp" this should be the minimal possible average necessary 
-        help (as calculated for the case with a very high penalty), else None.
-        The default is None.
-    nec_help_zero : float, optional
-        If method "MinHelp" this should be the average necessary help needed 
-        if the penalty is set to zero, else None. The default is None.
-    accuracy_help : float, optional
-        If method "MinHelp" this should be the accuracy demanded from the 
-        final average necessary help (given as maximum absolute value of the
-        difference between final necessary help and the minimum nevessary help),
-        else None. The default is None.
+    min_nec_help : float
+        The minimal possible average necessary help (as calculated for the case 
+        with a very high penalty). 
+    nec_help_zero : float
+        The average necessary help needed if the penalty is set to zero.
+    accuracy_help : float
+        The accuracy demanded from the final average necessary help, given as 
+        maximum absolute value of the difference between final necessary help 
+        and the minimum nevessary help (only used as constraint if method is
+        "MinHelp").
+    minProb : float
+        The resulting probability for rho = 0
 
     Returns
     -------
@@ -855,10 +893,11 @@ def _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, necessa
     plt.close() 
     
     # add case with rho = 0 to lists 
-    rhos_tried = [0] + rhos_tried
-    probabilities = [0] + probabilities
-    necessary_help = [nec_help_zero] + necessary_help
-    idx_rho = idx_rho + 1
+    if nec_help_zero is not None:
+        rhos_tried = [0] + rhos_tried
+        probabilities = [minProb] + probabilities
+        necessary_help = [nec_help_zero] + necessary_help
+        idx_rho = idx_rho + 1
     
     # plot penalties vs probabilities
     fig = plt.figure(figsize = figsize)
@@ -875,10 +914,11 @@ def _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, necessa
     # plot penalties vs necessary help
     fig = plt.figure(figsize = figsize)
     plt.scatter(rhos_tried, necessary_help, color = "royalblue")
-    plt.fill_between([min(rhos_tried), max(rhos_tried)], 
-                     [min_nec_help - accuracy_help, min_nec_help - accuracy_help], 
-                     [min_nec_help + accuracy_help, min_nec_help + accuracy_help],
-                     color = "green", alpha = 0.2)
+    if nec_help_zero is not None:
+        plt.fill_between([min(rhos_tried), max(rhos_tried)], 
+                         [min_nec_help - accuracy_help, min_nec_help - accuracy_help], 
+                         [min_nec_help + accuracy_help, min_nec_help + accuracy_help],
+                         color = "green", alpha = 0.2)
     plt.scatter(rhos_tried[np.argmin(necessary_help)], min(necessary_help), color = "green")
     plt.scatter(rhos_tried[idx_rho], necessary_help[idx_rho], color = "red")
     plt.plot([min(rhos_tried), max(rhos_tried)], [min_nec_help, min_nec_help], color = "green")
@@ -1024,7 +1064,7 @@ def _UpdatedRhoGuess(rhoLastUp,
         elif objective == "S":
             currentProb = meta_sol["probS"]
         # find next guess
-        if np.round(currentProb, accuracy) < prob:
+        if np.round(currentProb, accuracy) < np.round(prob, accuracy):
             rhoLastUp = rhoOld
             if rhoLastDown == np.inf:
                 rhoNew = rhoOld * 4
@@ -1154,7 +1194,7 @@ def _checkIniGuess(rhoIni,
         def _test(crop_alloc, meta_sol, method = method, nec_help = nec_help, prob = prob, objective = objective):
             if method == "prob":
                 tmp = "prob" + objective
-                testPassed = (np.round(meta_sol[tmp], accuracy) == prob)
+                testPassed = (np.round(meta_sol[tmp], accuracy) == np.round(prob, accuracy))
             elif method == "nec_help":
                 testPassed = (np.abs(_get_necessary_help(meta_sol) - nec_help) < accuracy_help)
             return(testPassed)
