@@ -227,30 +227,31 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
     
     # import accuracy settings
     if objective == "F":
-        from ModelCode.GeneralSettings import accuracyF as accuracy
+        from ModelCode.GeneralSettings import accuracyF_targetProb as accuracy_prob
+        from ModelCode.GeneralSettings import accuracyF_maxProb as accuracy_maxProb
         from ModelCode.GeneralSettings import shareDiffF as shareDiff
     elif objective == "S":
-        from ModelCode.GeneralSettings import accuracyS as accuracy
+        from ModelCode.GeneralSettings import accuracyS_targetProb as accuracy_prob
+        from ModelCode.GeneralSettings import accuracyS_maxProb as accuracy_maxProb
         from ModelCode.GeneralSettings import shareDiffS as shareDiff
     
     # check model output for a very high penalty (as proxy for infinity)
-    maxProb, nec_help, minProb =  _CheckOptimalProb(args, prob, objective, accuracy,
+    maxProb, nec_help, minProb =  _CheckOptimalProb(args, prob, objective, accuracy_prob,
                       console_output = console_output, logs_on = logs_on)
         
     # if probF can be reached find lowest penalty that gives probF
     if maxProb >= prob:
         _printing("     Finding corresponding penalty\n", console_output, logs_on = logs_on)
         rho, meta_sol = _RhoProbability(args, prob, rhoIni, checkedGuess, \
-               objective, file, shareDiff, accuracy, nec_help, "GivenProb", 
+               objective, file, shareDiff, accuracy_prob, nec_help, "GivenProb", 
                console_output, logs_on)
     # if probF cannot be reached but the maximum probability (or what is 
     # assumed to be the maximum probability) is hgiher than for rho -> 0,
     # find the lowest penalty that gives the highest probability
-    # as convergence to maxProb might be slow, we use a lower accuracy
     elif maxProb > minProb:
         _printing("     Finding penalty that leads to max. probability\n", console_output, logs_on = logs_on)
         rho, meta_sol = _RhoProbability(args, maxProb, rhoIni, checkedGuess, \
-               objective, file, shareDiff, accuracy - 1, nec_help, "MaxPRob", 
+               objective, file, shareDiff, accuracy_maxProb, nec_help, "MaxPRob", 
                console_output, logs_on)
     # if the max. probability is zero, find the lowest penalty that minimizes the
     # average import/debt that is needed to cover food demand/government payouts
@@ -262,7 +263,7 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
             _printing(f"     Finding lowest penalty minimizing average total debt ({nec_help:.2e} 10^9 $)\n", 
                      console_output, logs_on = logs_on)
         rho, meta_sol = _RhoMinHelp(args, prob, rhoIni,
-                checkedGuess, objective, nec_help, shareDiff, accuracy, file, \
+                checkedGuess, objective, nec_help, shareDiff, accuracy_prob, file, \
                 console_output = console_output, logs_on = logs_on)
             
     _printing("\n     Final rho" + objective + ": " + str(rho), console_output = console_output, logs_on = logs_on)
@@ -338,9 +339,14 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff
         elif objective == "S":
             return(meta_sol["avg_nec_debt"])
    
+    def _testProbAccuracy(meta_sol, objective = objective, accuracy = accuracy, prob = prob):
+        tol = accuracy * prob
+        testPassed = (abs(meta_sol["prob"+objective] - prob) < tol)
+        return(testPassed)
+   
     # accuracy information
     _printing("     accuracy that we demand for prob" + objective + ": " + \
-             str(accuracy - 2) + " decimal places", \
+             str(round(accuracy*100,1)) + "% of target probability", \
              console_output = console_output, logs_on = logs_on)
     _printing("     accuracy that we demand for rho" + objective + ": 1/" + \
              str(shareDiff) + " of final rho" + objective + "\n", \
@@ -388,7 +394,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff
     necessary_help.append(_get_necessary_help(meta_sol))
     
     # update information
-    if np.round(meta_sol["prob"+objective], accuracy) == np.round(prob, accuracy):
+    if _testProbAccuracy(meta_sol):
         lowestCorrect = rhoIni
         meta_sol_lowestCorrect = meta_sol
                 
@@ -424,13 +430,13 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff
         # that gives a smaller probability (which is the rhoLastUp). If that is 
         # smaller than a certain share of the lowest correct penalty we have
         # reached the necessary accuracy.
-        if np.round(meta_sol["prob"+objective], accuracy) == np.round(prob, accuracy):
+        if _testProbAccuracy(meta_sol):
             accuracy_int = rhoNew - rhoLastUp
             if accuracy_int < rhoNew/shareDiff:
                 rho = rhoNew
                 meta_sol_out = meta_sol
                 break
-        elif np.round(meta_sol["prob"+objective], accuracy) < np.round(prob, accuracy):
+        elif meta_sol["prob"+objective] < prob:
             if lowestCorrect != np.inf:
                 accuracy_int = lowestCorrect - rhoNew
                 if accuracy_int < lowestCorrect/shareDiff:
@@ -439,7 +445,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff
                     break
             else:
                 accuracy_int = rhoLastDown - rhoNew
-        elif np.round(meta_sol["prob"+objective], accuracy) > np.round(prob, accuracy):
+        elif meta_sol["prob"+objective] > prob:
             accuracy_int = rhoNew - rhoLastUp
             
         # report
@@ -449,8 +455,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff
             
         # remember guess
         rhoOld = rhoNew
-        if np.round(meta_sol["prob"+objective], accuracy) == np.round(prob, accuracy) \
-            and lowestCorrect > rhoNew:
+        if _testProbAccuracy(meta_sol) and lowestCorrect > rhoNew:
             lowestCorrect = rhoNew
             meta_sol_lowestCorrect = meta_sol
     
@@ -754,16 +759,16 @@ def _CheckOptimalProb(args, prob, objective, accuracy,
     # get resulting probabilities
     maxProb = meta_sol1["prob" + objective]
     minProb = meta_zero["prob" + objective]
-    _printing("     maxProb" + objective + ": " + str(np.round(maxProb * 100, accuracy - 1)) + "%, " + \
-              "minProb" + objective + ": " + str(np.round(minProb * 100, accuracy - 1)) + "%", \
+    _printing("     maxProb" + objective + ": " + str(np.round(maxProb * 100, 2)) + "%, " + \
+              "minProb" + objective + ": " + str(np.round(minProb * 100, 2)) + "%", \
               console_output = console_output, logs_on = logs_on)
     
     # check if probability is high enough 
     if maxProb >= prob:
-        _printing("     Desired pro" + objective + " (" + str(np.round(prob * 100, accuracy - 1)) \
+        _printing("     Desired pro" + objective + " (" + str(np.round(prob * 100, 2)) \
                              + "%) can be reached\n", console_output = console_output, logs_on = logs_on)
     else:
-        _printing("     Desired pro" + objective + " (" + str(np.round(prob * 100, accuracy - 1)) \
+        _printing("     Desired pro" + objective + " (" + str(np.round(prob * 100, 2)) \
                              + "%) cannot be reached\n", console_output = console_output, logs_on = logs_on)
             
     return(maxProb, _get_necessary_help(meta_sol1), minProb)
@@ -1065,7 +1070,7 @@ def _UpdatedRhoGuess(rhoLastUp,
         elif objective == "S":
             currentProb = meta_sol["probS"]
         # find next guess
-        if np.round(currentProb, accuracy) < np.round(prob, accuracy):
+        if prob - currentProb > prob * accuracy:
             rhoLastUp = rhoOld
             if rhoLastDown == np.inf:
                 rhoNew = rhoOld * 4
@@ -1194,8 +1199,8 @@ def _checkIniGuess(rhoIni,
         
         def _test(crop_alloc, meta_sol, method = method, nec_help = nec_help, prob = prob, objective = objective):
             if method == "prob":
-                tmp = "prob" + objective
-                testPassed = (np.round(meta_sol[tmp], accuracy) == np.round(prob, accuracy))
+                tol = prob * accuracy
+                testPassed = (abs(meta_sol["prob"+objective] - prob) < tol)
             elif method == "nec_help":
                 testPassed = (np.abs(_get_necessary_help(meta_sol) - nec_help) < accuracy_help)
             return(testPassed)
@@ -1320,8 +1325,7 @@ def _ReportProgressFindingRho(rho,
         
     # print information (if console_output = True)
     _printing("     " + prefix + "rho" + objective + ": " + str(rho) + unit + \
-          ", prob" + objective + ": " + str(np.round(currentProb * 100, \
-                                                    accuracy -1)) + \
+          ", prob" + objective + ": " + str(np.round(currentProb * 100, 2)) + \
           "%" + help_text + ", time: " + str(np.round(durations[2], 2)) + "s" + accuracy_text, \
               console_output = console_output, logs_on = logs_on)
         

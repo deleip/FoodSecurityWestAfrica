@@ -1,11 +1,16 @@
 # General Settings 
-# Last modified May 04, 2021, at 11:20
+# Last modified May 07, 2021, at 23:42
 # (reset to original values)
 
-# accuracy demanded from the probabilities as decimal places (given as float,
-# not as percentage)
-accuracyF = 3
-accuracyS = 3
+# accuracy demanded from the target probabilities (given as share of
+# target probability)
+accuracyF_targetProb = 0.005
+accuracyS_targetProb = 0.005
+
+# accuracy demanded from the maximum probabilities (given as share of
+# maximum probability)
+accuracyF_maxProb = 0.01
+accuracyS_maxProb = 0.01
 
 # accuracy of the penalties given thorugh size of the accuracy interval:
 # the size needs to be smaller than final rho / shareDiff
