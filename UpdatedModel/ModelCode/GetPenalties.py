@@ -246,10 +246,11 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
     # if probF cannot be reached but the maximum probability (or what is 
     # assumed to be the maximum probability) is hgiher than for rho -> 0,
     # find the lowest penalty that gives the highest probability
+    # as convergence to maxProb might be slow, we use a lower accuracy
     elif maxProb > minProb:
         _printing("     Finding penalty that leads to max. probability\n", console_output, logs_on = logs_on)
         rho, meta_sol = _RhoProbability(args, maxProb, rhoIni, checkedGuess, \
-               objective, file, shareDiff, accuracy, nec_help, "MaxPRob", 
+               objective, file, shareDiff, accuracy - 1, nec_help, "MaxPRob", 
                console_output, logs_on)
     # if the max. probability is zero, find the lowest penalty that minimizes the
     # average import/debt that is needed to cover food demand/government payouts
