@@ -236,7 +236,7 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
         from ModelCode.GeneralSettings import shareDiffS as shareDiff
     
     # check model output for a very high penalty (as proxy for infinity)
-    maxProb, nec_help, minProb =  _CheckOptimalProb(args, prob, objective, accuracy_prob,
+    maxProb, nec_help, minProb =  _CheckOptimalProb(args, prob, objective,
                       console_output = console_output, logs_on = logs_on)
         
     # if probF can be reached find lowest penalty that gives probF
@@ -301,8 +301,8 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff
         The share of the final rho that the accuracy interval can have as 
         size (i.e. if size(accuracy interval) < 1/shareDiff * rho, for rho
         the current best guess for the correct penalty, then we use rho).
-    accuracy : int
-        Desired decimal places of accuracy of the obtained probability. 
+    accuracy : float
+        Accuracy of final probability as share of target probability. 
     nec_help: float
         The minimum average necessary import/debt (as calculated for the case 
         with a very high penalty).   
@@ -403,7 +403,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff
     
     # report
     accuracy_int = lowestCorrect - rhoLastUp
-    _ReportProgressFindingRho(rhoOld, meta_sol, accuracy, durations, \
+    _ReportProgressFindingRho(rhoOld, meta_sol, durations, \
                              objective, accuracy_int = accuracy_int,
                              console_output = console_output, logs_on = logs_on)
 
@@ -449,7 +449,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff
             accuracy_int = rhoNew - rhoLastUp
             
         # report
-        _ReportProgressFindingRho(rhoNew, meta_sol, accuracy, durations, \
+        _ReportProgressFindingRho(rhoNew, meta_sol, durations, \
                                  objective, accuracy_int = accuracy_int, 
                                  console_output = console_output, logs_on = logs_on)
             
@@ -460,7 +460,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff
             meta_sol_lowestCorrect = meta_sol
     
     # last report
-    _ReportProgressFindingRho(rhoNew, meta_sol, accuracy, durations, \
+    _ReportProgressFindingRho(rhoNew, meta_sol, durations, \
                objective, accuracy_int = accuracy_int, console_output = console_output, 
                logs_on = logs_on)    
    
@@ -485,7 +485,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, shareDiff
 
          
 def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
-                nec_help, shareDiff, accuracy, file, \
+                nec_help, shareDiff, file, \
                 console_output = None, logs_on = None):
     """
     In cases where the given probability cannot be reached, we instead look
@@ -514,8 +514,6 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
         The share of the final rho that the accuracy interval can have as 
         size (i.e. if size(accuracy interval) < 1/shareDiff * rho, for rho
         the current best guess for the correct penalty, then we use rho).
-    accuracy : int
-        Desired decimal places of accuracy of the obtained probability. 
     file : str
         String combining all settings affecting rho, used to save plots 
         generated during the calculation of the penalties. 
@@ -585,7 +583,7 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
                                   nec_help = nec_help,
                                   objective = objective,
                                   shareDiff = shareDiff,
-                                  accuracy = accuracy,
+                                  accuracy = None,
                                   accuracy_help = accuracy_help,
                                   console_output = console_output,
                                   logs_on = logs_on)
@@ -629,7 +627,7 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
     
     # report
     accuracy_int = lowestCorrect - rhoLastUp
-    _ReportProgressFindingRho(rhoOld, meta_sol, accuracy, durations, \
+    _ReportProgressFindingRho(rhoOld, meta_sol, durations, \
                             objective, method = "nec_help", testPassed = testPassed, 
                             accuracy_int = accuracy_int, 
                             console_output = console_output, logs_on = logs_on)
@@ -671,7 +669,7 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
                 accuracy_int = rhoLastDown - rhoNew
             
         # report
-        _ReportProgressFindingRho(rhoNew, meta_sol, accuracy, durations, \
+        _ReportProgressFindingRho(rhoNew, meta_sol, durations, \
                              objective, method = "nec_help", testPassed = testPassed, 
                              accuracy_int = accuracy_int, console_output = console_output, logs_on = logs_on)
             
@@ -682,7 +680,7 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
             meta_sol_lowestCorrect = meta_sol
     
     # last report
-    _ReportProgressFindingRho(rhoNew, meta_sol, accuracy, durations, \
+    _ReportProgressFindingRho(rhoNew, meta_sol, durations, \
                          objective, method = "nec_help", testPassed = testPassed, 
                          accuracy_int = accuracy_int, console_output = console_output, logs_on = logs_on)
         
@@ -697,7 +695,7 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
 
 # %% ######################### AUXILIARY FUNCTIONS ############################
 
-def _CheckOptimalProb(args, prob, objective, accuracy,
+def _CheckOptimalProb(args, prob, objective,
                       console_output = None, logs_on = None):
     """
     Function to find the highest probF possible under the given settings, and
@@ -712,9 +710,6 @@ def _CheckOptimalProb(args, prob, objective, accuracy,
         The desired probability for food security/solvency.
     objective : "F" or "S"
         Specifying whether we are looking for rhoF or rhoS
-    accuracy : int, optional
-        Desired decimal places of accuracy of the obtained probability. 
-        The default is defined in ModelCode/GeneralSettings.
     console_output : boolean, optional
         Specifying whether the progress should be documented thorugh console 
         outputs. The default is defined in ModelCode/GeneralSettings.
@@ -1039,8 +1034,8 @@ def _UpdatedRhoGuess(rhoLastUp,
     objective : string "F" or "S"
         Specifies whether the function is called to find the next guess for 
         rhoS or for rhoF.
-    accuracy : int, optional
-        Desired decimal places of accuracy of the obtained probability. Not 
+    accuracy : float
+        Accuracy of final probability as share of target probability. Not 
         needed if the MinHelp search algorithm is used. Default is None.
     nec_help : float, optional
         Average necessary import/debt of the last penalty. Not needed if the
@@ -1146,8 +1141,8 @@ def _checkIniGuess(rhoIni,
         The share of the final rho that the accuracy interval can have as 
         size (i.e. if size(accuracy interval) < 1/shareDiff * rho, for rho
         the current best guess for the correct penalty, then we use rho).
-    accuracy : int, optional
-        Desired decimal places of accuracy of the obtained probability. Not 
+    accuracy : float
+        Accuracy of final probability as share of target probability. Not 
         needed if the MinHelp search algorithm is used. Default is None.
     accuracy_help : float, optional
         The accuracy demanded from the final average necessary help (given as
@@ -1210,7 +1205,7 @@ def _checkIniGuess(rhoIni,
         status, crop_alloc, meta_sol, sto_prob, durations = \
                 SolveReducedLinearProblemGurobiPy(args, rhoFguess, rhoSguess, console_output = False, logs_on = False) 
         testPassed = _test(crop_alloc, meta_sol)
-        _ReportProgressFindingRho(rhoIni, meta_sol, accuracy, durations, \
+        _ReportProgressFindingRho(rhoIni, meta_sol, durations, \
                                  objective, method, testPassed, prefix = "Guess: ", console_output = console_output, \
                                  logs_on = logs_on)
         if checkedGuess:
@@ -1221,7 +1216,7 @@ def _checkIniGuess(rhoIni,
                     SolveReducedLinearProblemGurobiPy(args, rhoFcheck, rhoScheck,
                                                        console_output = False, logs_on = False) 
             testPassed = _test(crop_alloc_check, meta_sol_check)
-            _ReportProgressFindingRho(rhoCheck, meta_sol_check, accuracy, durations, \
+            _ReportProgressFindingRho(rhoCheck, meta_sol_check, durations, \
                                 objective, method, testPassed, prefix = "Check: ", console_output = console_output, \
                                  logs_on = logs_on)
             if not testPassed:
@@ -1235,7 +1230,6 @@ def _checkIniGuess(rhoIni,
     
 def _ReportProgressFindingRho(rho,
                              meta_sol, 
-                             accuracy,
                              durations, 
                              objective,
                              method = "prob",
@@ -1255,8 +1249,6 @@ def _ReportProgressFindingRho(rho,
     meta_sol : dict
         Meta information of the model output for the last penalty that was 
         tried.
-    accuracy : int
-        Desired decimal places of accuracy of the obtained probability. 
     durations : list
         Time that was needed for setting up the model, for solving the model,
         and total time used (in sec.)
