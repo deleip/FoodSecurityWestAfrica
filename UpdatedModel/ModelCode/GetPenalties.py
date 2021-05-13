@@ -263,7 +263,7 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
             _printing(f"     Finding lowest penalty minimizing average total debt ({nec_help:.2e} 10^9 $)\n", 
                      console_output, logs_on = logs_on)
         rho, meta_sol = _RhoMinHelp(args, prob, rhoIni,
-                checkedGuess, objective, nec_help, shareDiff, accuracy_prob, file, \
+                checkedGuess, objective, nec_help, shareDiff, file, \
                 console_output = console_output, logs_on = logs_on)
             
     _printing("\n     Final rho" + objective + ": " + str(rho), console_output = console_output, logs_on = logs_on)
@@ -744,11 +744,11 @@ def _CheckOptimalProb(args, prob, objective,
         elif objective == "S":
             return(meta_sol["avg_nec_debt"])
         
-    # try for rhoF = 1e12 (as a proxy for rhoF -> inf)
+    # try for rho = 1e12 (as a proxy for rho -> inf)
     status1, crop_alloc1, meta_sol1, sto_prob1, durations1 = \
          SolveReducedLinearProblemGurobiPy(args, rhoF, rhoS, console_output = False, logs_on = False)  
      
-    # try for rhoF = 0
+    # try for rho = 0
     meta_zero = GetMetaInformation(np.zeros((args["T"], args["num_crops"], len(args["k_using"]))), args, 0, 0)
 
     # get resulting probabilities
@@ -902,18 +902,19 @@ def _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, necessa
     
     # plot penalties vs probabilities
     fig = plt.figure(figsize = figsize)
+    ax = fig.add_subplot(1,2,1)
     plt.scatter(rhos_tried, probabilities, color = "royalblue")
     plt.scatter(rhos_tried[np.argmax(probabilities)], max(probabilities), color = "green")
     plt.scatter(rhos_tried[idx_rho], probabilities[idx_rho], color = "red")
     plt.xlabel("rho" + objective, fontsize = 16)
     plt.ylabel("prob" + objective, fontsize = 16)
-    plt.title("Probability of meeting objective for different penalties", fontsize = 24, pad = 10)
-    fig.savefig(folder_path + "/Prob_" + file + ".jpg", \
-                bbox_inches = "tight", pad_inches = 1)
-    plt.close() 
+    plt.title("Probability of meeting objective", fontsize = 24, pad = 10)
+    # fig.savefig(folder_path + "/Prob_" + file + ".jpg", \
+    #             bbox_inches = "tight", pad_inches = 1)
+    # plt.close() 
         
     # plot penalties vs necessary help
-    fig = plt.figure(figsize = figsize)
+    ax = fig.add_subplot(1,2,2)
     plt.scatter(rhos_tried, necessary_help, color = "royalblue")
     if nec_help_zero is not None:
         plt.fill_between([min(rhos_tried), max(rhos_tried)], 
@@ -926,7 +927,7 @@ def _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, necessa
     plt.xlabel("rho" + objective, fontsize = 16)
     plt.ylabel("necessary " + helptype, fontsize = 16)
     plt.title("Necessary " + helptype + " to reach objective", fontsize = 24, pad = 10)
-    fig.savefig(folder_path + "/Nec" + helptype.capitalize() + 
+    fig.savefig(folder_path + "/ProbAndNec" + helptype.capitalize() + 
                 "_" + file + ".jpg", bbox_inches = "tight", pad_inches = 1)
     plt.close() 
 
