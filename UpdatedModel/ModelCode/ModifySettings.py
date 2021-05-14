@@ -22,12 +22,12 @@ def ReturnGeneralSettings():
 
     """
     
-    from ModelCode.GeneralSettings import accuracyF_targetProb
-    from ModelCode.GeneralSettings import accuracyS_targetProb
+    from ModelCode.GeneralSettings import accuracyF_demandedProb
+    from ModelCode.GeneralSettings import accuracyS_demandedProb
     from ModelCode.GeneralSettings import accuracyF_maxProb
     from ModelCode.GeneralSettings import accuracyS_maxProb
-    from ModelCode.GeneralSettings import shareDiffF
-    from ModelCode.GeneralSettings import shareDiffS
+    from ModelCode.GeneralSettings import accuracyF_rho
+    from ModelCode.GeneralSettings import accuracyS_rho
     from ModelCode.GeneralSettings import accuracy_help
     from ModelCode.GeneralSettings import logs_on
     from ModelCode.GeneralSettings import console_output
@@ -36,22 +36,22 @@ def ReturnGeneralSettings():
     
     print("General settings are", flush = True)
     print("\u033F "*20)
-    print("  - accuracyF_targetProb: accuracy that is demanded from the food security " + \
+    print("  - accuracyF_demandedProb: accuracy that is demanded from the food security " + \
           "probability as share of target probability. " + \
-          "Current value: " + colored(str(accuracyF_targetProb), "cyan"), flush = True)
-    print("  - accuracyS_targetProb: accuracy that is demanded from the solvency " + \
+          "Current value: " + colored(str(accuracyF_demandedProb), "cyan"), flush = True)
+    print("  - accuracyS_demandedProb: accuracy that is demanded from the solvency " + \
           "probability as share of target probability. " + \
-          "Current value: " + colored(str(accuracyS_targetProb), "cyan"), flush = True)
+          "Current value: " + colored(str(accuracyS_demandedProb), "cyan"), flush = True)
     print("  - accuracyF_maxProb: accuracy that is demanded from the food security " + \
           "probability as share of maximum probability. " + \
           "Current value: " + colored(str(accuracyF_maxProb), "cyan"), flush = True)
     print("  - accuracyS_maxProb: accuracy that is demanded from the solvency " + \
           "probability as share of maximum probability. " + \
           "Current value: " + colored(str(accuracyS_maxProb), "cyan"), flush = True)
-    print("  - shareDiffF: accuracy of the food security penalty relative to the final rhoF. " + \
-          "Current value: " + colored(str(shareDiffF), "cyan"), flush = True)
-    print("  - shareDiffS: accuracy of the solvency penalty relative to the final rhoS. " + \
-          "Current value: " + colored(str(shareDiffS), "cyan"), flush = True)
+    print("  - accuracyF_rho: accuracy of the food security penalty relative to the final rhoF. " + \
+          "Current value: " + colored(str(accuracyF_rho), "cyan"), flush = True)
+    print("  - accuracyS_rho: accuracy of the solvency penalty relative to the final rhoS. " + \
+          "Current value: " + colored(str(accuracyS_rho), "cyan"), flush = True)
     print("  - accuracy_help: accuracy of import/debt in cases where probF/S cannot be reached. " + \
           "Current value: " + colored(str(accuracy_help), "cyan"), flush = True)
     print("  - logs_on: should model progress be logged? " + \
@@ -65,12 +65,12 @@ def ReturnGeneralSettings():
     
     return(None)
 
-def ModifyGeneralSettings(accuracyF_targetProb = None, 
-                          accuracyS_targetProb = None,
+def ModifyGeneralSettings(accuracyF_demandedProb = None, 
+                          accuracyS_demandedProb = None,
                           accuracyF_maxProb = None, 
                           accuracyS_maxProb = None,
-                          shareDiffF = None,
-                          shareDiffS = None, 
+                          accuracyF_rho = None,
+                          accuracyS_rho = None, 
                           accuracy_help = None,
                           logs_on = None,
                           console_output = None,
@@ -83,11 +83,11 @@ def ModifyGeneralSettings(accuracyF_targetProb = None,
 
     Parameters
     ----------
-    accuracyF_targetProb : float, optional
-        Accuracy demanded from the food demand probability as share of target
+    accuracyF_demandedProb : float, optional
+        Accuracy demanded from the food demand probability as share of demanded
         probability (for probability method). The default is None.
-    accuracyS_targetProb : float, optional
-        Accuracy demanded from the solvency probability as share of target
+    accuracyS_demandedProb : float, optional
+        Accuracy demanded from the solvency probability as share of demanded
         probability (for probability method). The default is None.
     accuracyF_maxProb : float, optional
         Accuracy demanded from the food demand probability as share of maximum
@@ -95,13 +95,13 @@ def ModifyGeneralSettings(accuracyF_targetProb = None,
     accuracyS_maxProb : float, optional
         Accuracy demanded from the solvency probability as share of maximum
         probability (for maxProb method). The default is None.
-    shareDiffF : float, optional
-        Accuracy of the food security penalty given thorugh size of the 
-        accuracy interval: the size needs to be smaller than final rho/shareDiff. 
+    accuracyF_rho : float, optional
+        Accuracy of the food security penalty given thorugh size of the accuracy
+        interval: the size needs to be smaller than final rhoF * accuracyF_rho. 
         The default is None.
-    shareDiffS : float, optional
-        Accuracy of the solvency penalty given thorugh size of the 
-        accuracy interval: the size needs to be smaller than final rho/shareDiff. 
+    accuracyS_rho : float, optional
+        Accuracy of the solvency penalty given thorugh size of the accuracy
+        interval: the size needs to be smaller than final rhoS * accuracyS_rho. 
         The default is None.
     accuracy_help : float, optional
         If method "MinHelp" is used to find the correct penalty, this defines the 
@@ -124,12 +124,12 @@ def ModifyGeneralSettings(accuracyF_targetProb = None,
 
     """
     
-    from ModelCode.GeneralSettings import accuracyF_targetProb as accuracyF_targetProbFbefore
-    from ModelCode.GeneralSettings import accuracyS_targetProb as accuracyS_targetProbFbefore
+    from ModelCode.GeneralSettings import accuracyF_targetProb as accuracyF_demandedProbFbefore
+    from ModelCode.GeneralSettings import accuracyS_targetProb as accuracyS_demandedProbFbefore
     from ModelCode.GeneralSettings import accuracyF_maxProb as accuracyF_maxProbFbefore
     from ModelCode.GeneralSettings import accuracyS_maxProb as accuracyS_maxProbFbefore
-    from ModelCode.GeneralSettings import shareDiffF as shareDiffFbefore
-    from ModelCode.GeneralSettings import shareDiffS as shareDiffSbefore
+    from ModelCode.GeneralSettings import accuracyF_rho as accuracyF_rhobefore
+    from ModelCode.GeneralSettings import accuracyS_rho as accuracyS_rhobefore
     from ModelCode.GeneralSettings import accuracy_help as accuracy_helpbefore
     from ModelCode.GeneralSettings import logs_on as logs_onFbefore
     from ModelCode.GeneralSettings import console_output as console_outputbefore
@@ -143,18 +143,18 @@ def ModifyGeneralSettings(accuracyF_targetProb = None,
     settings.write("# Last modified " + str(datetime.now().strftime("%B %d, %Y, at %H:%M")) + "\n\n")
     settings.write("# accuracy demanded from the target probabilities (given as share of\n")
     settings.write("# target probability)\n")
-    if accuracyF_targetProb is None:
-        settings.write("accuracyF_targetProb = " + str(accuracyF_targetProbFbefore) + "\n")
+    if accuracyF_demandedProb is None:
+        settings.write("accuracyF_demandedProb = " + str(accuracyF_demandedProbFbefore) + "\n")
     else:
-        settings.write("accuracyF_targetProb = " + str(accuracyF_targetProb) + "\n")
-        if accuracyF_targetProb != accuracyF_targetProbFbefore:
-            report += "accuracyF_targetProb, "
-    if accuracyS_targetProb is None:
-        settings.write("accuracyS_targetProb = " + str(accuracyS_targetProbFbefore) + "\n\n")
+        settings.write("accuracyF_demandedProb = " + str(accuracyF_demandedProb) + "\n")
+        if accuracyF_demandedProb != accuracyF_demandedProbFbefore:
+            report += "accuracyF_demandedProb, "
+    if accuracyS_demandedProb is None:
+        settings.write("accuracyS_demandedProb = " + str(accuracyS_demandedProbFbefore) + "\n\n")
     else:
-        settings.write("accuracyS_targetProb = " + str(accuracyS_targetProb) + "\n\n")
-        if accuracyS_targetProb != accuracyS_targetProbFbefore:
-            report += "accuracyS_targetProb, "
+        settings.write("accuracyS_demandedProb = " + str(accuracyS_demandedProb) + "\n\n")
+        if accuracyS_demandedProb != accuracyS_demandedProbFbefore:
+            report += "accuracyS_demandedProb, "
     settings.write("# accuracy demanded from the maximum probabilities (given as share of\n")
     settings.write("# maximum probability))\n")
     if accuracyF_maxProb is None:
@@ -170,19 +170,19 @@ def ModifyGeneralSettings(accuracyF_targetProb = None,
         if accuracyS_maxProb != accuracyS_maxProbFbefore:
             report += "accuracyS_maxProb, "
     settings.write("# accuracy of the penalties given thorugh size of the accuracy interval:\n")
-    settings.write("# the size needs to be smaller than final rho / shareDiff\n")
-    if shareDiffF is None:
-        settings.write("shareDiffF = " + str(shareDiffFbefore) + "\n")
+    settings.write("# the size needs to be smaller than final rho * shareDiff\n")
+    if accuracyF_rho is None:
+        settings.write("accuracyF_rho = " + str(accuracyF_rhobefore) + "\n")
     else:
-        settings.write("shareDiffF = " + str(shareDiffF) + "\n")
-        if shareDiffF != shareDiffFbefore:
-            report += "shareDiffF, "
-    if shareDiffS is None:
-        settings.write("shareDiffS = " + str(shareDiffSbefore) + "\n\n")
+        settings.write("accuracyF_rho = " + str(accuracyF_rho) + "\n")
+        if accuracyF_rho != accuracyF_rhobefore:
+            report += "accuracyF_rho, "
+    if accuracyS_rho is None:
+        settings.write("accuracyS_rho = " + str(accuracyS_rhobefore) + "\n\n")
     else:
-        settings.write("shareDiffS = " + str(shareDiffS) + "\n\n")
-        if shareDiffS != shareDiffS:
-            report += "shareDiffS, "
+        settings.write("accuracyS_rho = " + str(accuracyS_rho) + "\n\n")
+        if accuracyS_rho != accuracyS_rhobefore:
+            report += "accuracyS_rho, "
     settings.write("# if penalty is found according to import/debt, what accuracy should be used \n")
     settings.write("# (share of diff between max and min import/debt)\n")
     if accuracy_help is None:
@@ -245,16 +245,16 @@ def ResetGeneralSettings():
     settings.write("# (reset to original values)\n\n")
     settings.write("# accuracy demanded from the target probabilities (given as share of\n")
     settings.write("# target probability)\n")
-    settings.write("accuracyF_targetProb = 0.005\n")
-    settings.write("accuracyS_targetProb = 0.005\n\n")
+    settings.write("accuracyF_demandedProb = 0.002\n")
+    settings.write("accuracyS_demandedProb = 0.002\n\n")
     settings.write("# accuracy demanded from the maximum probabilities (given as share of\n")
     settings.write("# maximum probability)\n")
-    settings.write("accuracyF_maxProb = 0.01\n")
-    settings.write("accuracyS_maxProb = 0.01\n\n")
+    settings.write("accuracyF_maxProb = 0.005\n")
+    settings.write("accuracyS_maxProb = 0.005\n\n")
     settings.write("# accuracy of the penalties given thorugh size of the accuracy interval:\n")
-    settings.write("# the size needs to be smaller than final rho / shareDiff\n")
-    settings.write("shareDiffF = 10\n")
-    settings.write("shareDiffS = 10\n\n")
+    settings.write("# the size needs to be smaller than final rho * accuracy_rho\n")
+    settings.write("accuracyF_rho = 0.05\n")
+    settings.write("accuracyS_rho = 0.05\n\n")
     settings.write("# if penalty is found according to import/debt, what accuracy should be used \n")
     settings.write("# (share of diff between max and min import/debt)\n")
     settings.write("accuracy_help = 0.01\n\n")
