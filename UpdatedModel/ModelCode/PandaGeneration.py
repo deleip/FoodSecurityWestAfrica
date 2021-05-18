@@ -71,44 +71,49 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
 
     """
     
+    _printing("\nAdding results to pandas", console_output = console_output, logs_on = logs_on)
+    
     # some pre-calculations
     pop_per_cluster = np.outer(population_information["total_pop_scen"], population_information["pop_cluster_ratio2015"])
     pop_of_area = population_information["population"]
     food_shortage_capita = meta_sol["shortcomings"]/pop_of_area
+    # meta_sol["shortcimings"] reports shortcomings as positive values, and 
+    # surplus as zero
+    food_shortage_capita_only_shortage = food_shortage_capita.copy()
+    food_shortage_capita_only_shortage[food_shortage_capita_only_shortage == 0] = np.nan
+    # to avoid getting nan as average: set years that never have shortcomings back to zero
+    food_shortage_capita_only_shortage[:,np.sum(np.isnan(food_shortage_capita_only_shortage), axis = 0) == settings["N"]] = 0
+    
     
     wh_neg_fund = np.where(meta_sol["final_fund"] < 0)[0]
     ff_debt = -meta_sol["final_fund"][wh_neg_fund]
     ter_years = args["terminal_years"][wh_neg_fund].astype(int)
-    # total_guar_inc = np.sum(args["guaranteed_income"], axis = 1)
     
-    ff_debt_all = -meta_sol["final_fund"]
+    ff_debt_all = -meta_sol["final_fund"].copy()
     ff_debt_all[ff_debt_all < 0] = 0
     ter_years_all = args["terminal_years"].astype(int)
     
-    # shortcomings_capita = meta_sol["shortcomings"]/(pop_of_area/1e9)
-    
-    # setting up dictionary of parameters to add to the panda object as new row
-    _printing("\nAdding results to pandas", console_output = console_output, logs_on = logs_on)
-    
-    # settings
-    panda = {"Penalty method": settings["PenMet"],
-             "Input probability food security": settings["probF"],
-             "Input probability solvency": settings["probS"],
-             "Number of crops": settings["num_crops"],
-             "Number of clusters": settings["k"],
-             "Used clusters": settings["k_using"],
-             "Yield projection": settings["yield_projection"],
-             "Simulation start": settings["sim_start"],
-             "Population scenario": settings["pop_scenario"],
-             "Risk level covered": settings["risk"],
-             "Tax rate": settings["tax"],
+    # setting up dictionary of parameters to add to the panda object as new row:
+        
+    # 1 settings
+    panda = {"Penalty method":                     settings["PenMet"],
+             "Input probability food security":    settings["probF"],
+             "Input probability solvency":         settings["probS"],
+             "Number of crops":                    settings["num_crops"],
+             "Number of clusters":                 settings["k"],
+             "Used clusters":                      settings["k_using"],
+             "Yield projection":                   settings["yield_projection"],
+             "Simulation start":                   settings["sim_start"],
+             "Population scenario":                settings["pop_scenario"],
+             "Risk level covered":                 settings["risk"],
+             "Tax rate":                           settings["tax"],
              "Share of income that is guaranteed": settings["perc_guaranteed"],
-             "Initial fund size": settings["ini_fund"],
-             "Sample size": settings["N"],
-             "Sample size for validation": settings["validation_size"],
-             "Number of covered years": settings["T"]}
+             "Initial fund size":                  settings["ini_fund"],
+             "Sample size":                        settings["N"],
+             "Sample size for validation":         settings["validation_size"],
+             "Number of covered years":            settings["T"]}
     
-    # resulting penalties and probabilities
+    # 2 resulting penalties and probabilities
     panda["Penalty for food shortage"]               = args["rhoF"]
     panda["Penalty for insolvency"]                  = args["rhoS"]
     panda["Resulting probability for food security"] = meta_sol["probF"]
@@ -118,36 +123,45 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
     panda["Max. possible probability for solvency (excluding food security constraint)"] \
         = AddInfo_CalcParameters["probS_onlyS"]
     
-    # yield information
+    # 3 yield information
     panda["Probability for a catastrophic year"]                    = yield_information["prob_cat_year"]
-    panda["Share of samples with no catastrophe"]                   = yield_information["share_no_cat"],
+    panda["Share of samples with no catastrophe"]                   = yield_information["share_no_cat"]
     panda["Share of years/clusters with unprofitable rice yields"]  = yield_information["share_rice_np"]
     panda["Share of years/clusters with unprofitable maize yields"] = yield_information["share_maize_np"]
     
-    # population information
+    # 4 population information
     panda["Share of West Africa's population that is living in total considered region (2015)"] \
             = np.sum(population_information["pop_cluster_ratio2015"])
     panda["Share of West Africa's population that is living in considered clusters (2015)"] \
             = list(population_information["pop_cluster_ratio2015"])
          
-    # crop areas
+    # 5 crop areas
     panda["On average cultivated area per cluster"] = list(np.nanmean(crop_alloc, axis = (0,1)))
     panda["Average yearly total cultivated area"]   = np.nanmean(np.nansum(crop_alloc, axis = (1,2)))
         
-    # food demand and needed import
+    # 6 food demand and needed import
     panda["Import (given as model input)"] = args["import"]
     panda["Average food demand"]           = np.mean(args["demand"])
+    panda["Food demand per capita"]        = args["demand"][0]/population_information["population"][0] 
     
     panda["Average total necessary import (over samples and then years)"] \
-        = args["import"] + meta_sol["avg_nec_import"],
+        = args["import"] + meta_sol["avg_nec_import"]
+    panda["Average necessary add. import (over samples and then years)"] \
+        = meta_sol["avg_nec_import"] # includes also caes that don't need import as zero
     panda["Average necessary add. import excluding solvency constraint (over samples and then years)"] \
         = AddInfo_CalcParameters["import_onlyF"]
-    panda["Average necessary add. import (over samples and then years)"] \
-        = meta_sol["avg_nec_import"]
     panda["Average necessary add. import per capita (over samples and then years)"] \
-        = np.nanmean(food_shortage_capita[food_shortage_capita>0])*1e9
-     
-    # expected income, final fund and needed debt
+        = np.nanmean(np.nanmean(food_shortage_capita, axis = 0))*1e9
+    panda["Average necessary add. import per capita (over samples and then years, only cases that need import)"] \
+        = np.nanmean(np.nanmean(food_shortage_capita_only_shortage, axis = 0))*1e9 
+        # TODO: Befroe I only had "Average necessary add. import per capita
+        # (over samples and then years)", which was actually directly taking the
+        # average over samples and years in one step, and which excluded cases
+        # that don't need import (instead of including them as zero).
+        # Another option would be to take the average over the surplus or 
+        # food shortage 
+        
+    # 7 expected income, final fund and needed debt
     panda["Expected income (to calculate guaranteed income)"] \
         = list(AddInfo_CalcParameters["expected_incomes"])
     panda["Number of occurrences per cluster where farmers make losses"] \
@@ -156,38 +170,37 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
         = np.nansum(meta_sol["final_fund"] < 0)
     panda["Average final fund (over all samples)"] \
         = np.nanmean(meta_sol["final_fund"])
+        # TODO maybe don't include cases that don't have a catastrohpe in average?
     
     panda["Average income per cluster in final run (over samples and then years)"] \
-        = list(np.nanmean(np.nanmean(meta_sol["profits"], axis = 0), axis = 0))
+        = list(np.nanmean(np.nanmean(meta_sol["profits"], axis = 0), axis = 0))  # profits include both actual profits and losses
     panda["Average income per cluster in final run scaled with capita (over samples and then years)"] \
         = list(np.nanmean(np.nanmean(meta_sol["profits"], axis = 0)/(pop_per_cluster/1e9), axis = 0))
-    panda["Average government payouts per cluster (over samples)"] \
-        = list(np.nanmean(np.nansum(meta_sol["payouts"], axis = 1), axis = 0))
+    panda["Aggregated average government payouts per cluster (over samples)"] \
+        = list(np.nansum(np.nanmean(meta_sol["payouts"], axis = 0), axis = 0))
         
     panda["Average necessary debt (excluding food security constraint)"] \
         = AddInfo_CalcParameters["debt_onlyS"]
     panda["Average necessary debt"] \
-        = meta_sol["avg_nec_debt"]
+        = meta_sol["avg_nec_debt"] # includes cases that don't need debt as zero
     panda["Average necessary debt (over all samples with negative final fund)"] \
         = np.nanmean(ff_debt)
     panda["Average necessary debt per capita (over all samples with negative final fund)"] \
         = np.nanmean(ff_debt / (pop_of_area[ter_years]/1e9))
     panda["Average necessary debt per capita (over all samples)"] \
-        = np.nanmean(ff_debt_all / (pop_of_area[ter_years_all]/1e9))
-        
-    # different cost items    
+        = np.nanmean(ff_debt_all / (pop_of_area[ter_years_all]/1e9)) # negative debt set to zero
+    
+    # 8 different cost items    
     panda["Average food demand penalty (over samples and then years)"] \
         = np.nanmean(np.nanmean(meta_sol["fd_penalty"], axis = 0))
     panda["Average solvency penalty (over samples)"] \
         = np.mean(meta_sol["sol_penalty"])
-    panda["Average cultivation costs per cluster (over samples and then years)"] \
-        = list(np.nanmean(np.nanmean(meta_sol["yearly_fixed_costs"], axis = 0), axis = 0))
     panda["Average total cultivation costs"] \
         = np.nanmean(np.nansum(meta_sol["yearly_fixed_costs"], axis = (1,2)))
     panda["Expected total costs"] \
-        = meta_sol["exp_tot_costs"]
+        = meta_sol["exp_tot_costs"] # this includes varying cultivation costs (depending on catastrophic year)
         
-    # VSS
+    # 9 VSS
     panda["Value of stochastic solution"]                    = VSS_value
     panda["VSS as share of total costs (sto. solution)"]     = VSS_value/meta_sol["exp_tot_costs"]
     panda["VSS as share of total costs (det. solution)"]     = VSS_value/meta_sol_vss["exp_tot_costs"]
@@ -195,15 +208,15 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
     panda["Resulting probability for solvency for VSS"]      = meta_sol_vss["probS"]
         
       
-    # technincal variables   
+    # 10 technincal variables   
     panda["Validation value (deviation of total penalty costs)"] = validation_values["deviation_penalties"]
-    panda["Seed (for yield generation)"] = settings["seed"]
-    panda["Filename for full results"] = fn_fullresults
+    panda["Seed (for yield generation)"]                         = settings["seed"]
+    panda["Filename for full results"]                           = fn_fullresults
        
        
             
-    if np.isnan(panda["Average necessary add. import per capita (over samples and then years)"]):
-        panda["Average necessary add. import per capita (over samples and then years)"] = 0
+    # if np.isnan(panda["Average necessary add. import per capita (over samples and then years)"]):
+    #     panda["Average necessary add. import per capita (over samples and then years)"] = 0
     # if np.isnan(dict_for_pandas["Average food shortcomings per capita (over all years and samples with shortcomings)"]):
     #     dict_for_pandas["Average food shortcomings per capita (over all years and samples with shortcomings)"] = 0
      
@@ -292,7 +305,6 @@ def OpenPanda(file = "current_panda"):
     # get the subset of columns available in the demanded panda file
     dict_convert = {k:dict_convert[k] for k in  panda.columns.to_list()}
     
-
     # substitute conversions that need local function
     for key in dict_convert.keys():
         if dict_convert[key] == "list of floats":
@@ -350,49 +362,58 @@ def _SetUpPandaDicts():
         "Sample size": "",
         "Sample size for validation": "",
         "Number of covered years": "",
-        "Average food demand": "[$10^{12}\,$kcal]",
-        "Import (given as model input)": "[$10^{12}\,$kcal]",
-        "Average necessary add. import excluding solvency constraint (over samples and then years)": "[$10^{12}\,$kcal]",
-        "Average necessary add. import (over samples and then years)":"[$10^{12}\,$kcal]",
-        "Average total necessary import (over samples and then years)": "[$10^{12}\,$kcal]",
-        # TODO include avg for cases where imports are needed
-        "Average necessary add. import per capita (over samples and then years)": "[$10^{3}\,$kcal]",
-        "Expected income (to calculate guaranteed income)": "[$10^9\,\$$]",
+        
         "Penalty for food shortage": "[$\$/10^3\,$kcal]",
         "Penalty for insolvency": "[$\$/\$$]",
+        "Resulting probability for food security": "",
+        "Resulting probability for solvency": "",
         "Max. possible probability for food security (excluding solvency constraint)": "",
         "Max. possible probability for solvency (excluding food security constraint)": "",
+        
+        "Probability for a catastrophic year": "",
+        "Share of samples with no catastrophe": "",
+        "Share of years/clusters with unprofitable rice yields": "",
+        "Share of years/clusters with unprofitable maize yields": "",
+        
+        "Share of West Africa's population that is living in total considered region (2015)": "",
+        "Share of West Africa's population that is living in considered clusters (2015)": "",
+        
+        "On average cultivated area per cluster": "[$10^9\,ha$]",
+        "Average yearly total cultivated area": "[$10^9\,ha$]",
+        
+        "Import (given as model input)": "[$10^{12}\,$kcal]",
+        "Average food demand": "[$10^{12}\,$kcal]",
+        "Food demand per capita" : "[$10^{12}\,$kcal]",
+        "Average total necessary import (over samples and then years)": "[$10^{12}\,$kcal]",
+        "Average necessary add. import (over samples and then years)":"[$10^{12}\,$kcal]",
+        "Average necessary add. import excluding solvency constraint (over samples and then years)": "[$10^{12}\,$kcal]",
+        "Average necessary add. import per capita (over samples and then years)": "[$10^{3}\,$kcal]",
+        "Average necessary add. import per capita (over samples and then years, only cases that need import)": "[$10^{3}\,$kcal]",
+        
+        "Expected income (to calculate guaranteed income)": "[$10^9\,\$$]",
+        "Number of occurrences per cluster where farmers make losses": "",
+        "Number of samples with negative final fund": "",
+        "Average final fund (over all samples)": "[$10^9\,\$$]",
+        "Average income per cluster in final run (over samples and then years)": "[$10^9\,\$$]",
+        "Average income per cluster in final run scaled with capita (over samples and then years)": "[$\$$]",
+        "Aggregated average government payouts per cluster (over samples)": "[$10^9\,\$$]",
         "Average necessary debt (excluding food security constraint)": "[$10^9\,\$$]",
         "Average necessary debt": "[$10^9\,\$$]",
         "Average necessary debt (over all samples with negative final fund)": "[$10^9\,\$$]",
         "Average necessary debt per capita (over all samples with negative final fund)": "[$\$$]",
         "Average necessary debt per capita (over all samples)": "[$\$$]",
-        "Average final fund (over all samples)": "[$10^9\,\$$]",
-        "Number of samples with negative final fund": "",
-        "Probability for a catastrophic year": "",
-        "Share of samples with no catastrophe": "",
-        "Share of years/clusters with unprofitable rice yields": "",
-        "Share of years/clusters with unprofitable maize yields": "",
-        "Share of West Africa's population that is living in total considered region (2015)": "",
-        "Share of West Africa's population that is living in considered clusters (2015)": "",
-        "On average cultivated area per cluster": "[$10^9\,ha$]",
-        "Average yearly total cultivated area": "[$10^9\,ha$]",
+        
         "Average food demand penalty (over samples and then years)": "[$10^9\,\$$]",
         "Average solvency penalty (over samples)": "[$10^9\,\$$]",
-        "Average cultivation costs per cluster (over samples and then years)": "[$10^9\,\$$]",
         "Average total cultivation costs": "[$10^9\,\$$]",
         "Expected total costs": "[$10^9\,\$$]",
-        "Number of occurrences per cluster where farmers make losses": "",
-        "Average income per cluster in final run (over samples and then years)": "[$10^9\,\$$]",
-        "Average income per cluster in final run scaled with capita (over samples and then years)": "[$\$$]",
-        "Average government payouts per cluster (over samples)": "[$10^9\,\$$]",
-        "Resulting probability for food security": "",
-        "Resulting probability for solvency": "",
-        "Resulting probability for food security for VSS": "",
-        "Resulting probability for solvency for VSS": "",
+        
         "Value of stochastic solution": "[$10^9\,\$$]",
         "VSS as share of total costs (sto. solution)": "",
         "VSS as share of total costs (det. solution)": "",
+        "Resulting probability for food security for VSS": "",
+        "Resulting probability for solvency for VSS": "",
+        
         "Validation value (deviation of total penalty costs)": "",
         "Seed (for yield generation)": "",
         "Filename for full results": ""}   
@@ -413,113 +434,133 @@ def _SetUpPandaDicts():
          "Sample size": int,
          "Sample size for validation": int,
          "Number of covered years": int,
-         "Average food demand": float,
-         "Import (given as model input)": float,
-         "Average necessary add. import excluding solvency constraint (over samples and then years)": float,
-         "Average necessary add. import (over samples and then years)": float,
-         "Average total necessary import (over samples and then years)": float,
-         "Average necessary add. import per capita (over samples and then years)": float,
-         "Expected income (to calculate guaranteed income)": "list of floats",
+         
          "Penalty for food shortage": float,
          "Penalty for insolvency": float,
+         "Resulting probability for food security": float,
+         "Resulting probability for solvency": float,
          "Max. possible probability for food security (excluding solvency constraint)": float,
          "Max. possible probability for solvency (excluding food security constraint)": float,
-         "Average necessary debt (excluding food security constraint)": float,
-         "Average necessary debt": float, 
-         "Average necessary debt (over all samples with negative final fund)": float,
-         "Average necessary debt per capita (over all samples with negative final fund)": float,
-         "Average necessary debt per capita (over all samples)": float,
-         "Average final fund (over all samples)": float,
-         "Number of samples with negative final fund": int,
+         
          "Probability for a catastrophic year": float,
          "Share of samples with no catastrophe": float,
          "Share of years/clusters with unprofitable rice yields": float,
          "Share of years/clusters with unprofitable maize yields": float,
+        
          "Share of West Africa's population that is living in total considered region (2015)": float,
          "Share of West Africa's population that is living in considered clusters (2015)": "list of floats",
+        
          "On average cultivated area per cluster": "list of floats",
          "Average yearly total cultivated area": float,
-         "Average food demand penalty (over samples and then years)": float,
-         "Average solvency penalty (over samples)": float,
-         "Average cultivation costs per cluster (over samples and then years)": "list of floats",
-         "Average total cultivation costs": float,
-         "Expected total costs": float,
+         
+         "Import (given as model input)": float,
+         "Average food demand": float,
+         "Food demand per capita" : float,
+         "Average total necessary import (over samples and then years)": float,
+         "Average necessary add. import (over samples and then years)": float,
+         "Average necessary add. import excluding solvency constraint (over samples and then years)": float,
+         "Average necessary add. import per capita (over samples and then years)": float,
+         "Average necessary add. import per capita (over samples and then years, only cases that need import)": float,
+        
+         "Expected income (to calculate guaranteed income)": "list of floats",
          "Number of occurrences per cluster where farmers make losses": "list of ints",
+         "Number of samples with negative final fund": "list of ints",
+         "Average final fund (over all samples)": float,
          "Average income per cluster in final run (over samples and then years)": "list of floats",
          "Average income per cluster in final run scaled with capita (over samples and then years)": "list of floats",
-         "Average government payouts per cluster (over samples)": "list of floats",
-         "Resulting probability for food security": float,
-         "Resulting probability for solvency": float,
-         "Resulting probability for food security for VSS": float,
-         "Resulting probability for solvency for VSS": float,
+         "Aggregated average government payouts per cluster (over samples)": "list of floats",
+         "Average necessary debt (excluding food security constraint)": float,
+         "Average necessary debt": float,
+         "Average necessary debt (over all samples with negative final fund)": float,
+         "Average necessary debt per capita (over all samples with negative final fund)": float,
+         "Average necessary debt per capita (over all samples)": float,  
+         
+         "Average food demand penalty (over samples and then years)": float,
+         "Average solvency penalty (over samples)": float,
+         "Average total cultivation costs": float,
+         "Expected total costs": float,
+        
          "Value of stochastic solution": float,
          "VSS as share of total costs (sto. solution)": float,
          "VSS as share of total costs (det. solution)": float,
+         "Resulting probability for food security for VSS": float,
+         "Resulting probability for solvency for VSS": float,
+        
          "Validation value (deviation of total penalty costs)": float,
          "Seed (for yield generation)": int,
          "Filename for full results": str}
         
-    colnames = ['Penalty method',
-        'Input probability food security', 
-        'Input probability solvency', 
-        'Number of crops',
-        'Number of clusters', 
-        'Used clusters', 
-        'Yield projection', 
-        'Simulation start', 
-        'Population scenario', 
-        'Risk level covered', 
-        'Tax rate', 
-        'Share of income that is guaranteed', 
-        'Initial fund size', 
-        'Sample size', 
-        'Sample size for validation', 
-        'Number of covered years', 
-        'Average food demand', 
-        'Import (given as model input)', 
-        'Average necessary add. import excluding solvency constraint (over samples and then years)', 
-        'Average necessary add. import (over samples and then years)', 
-        'Average total necessary import (over samples and then years)', 
-        'Average necessary add. import per capita (over samples and then years)',
-        'Expected income (to calculate guaranteed income)', 
-        'Penalty for food shortage', 
-        'Penalty for insolvency', 
-        'Max. possible probability for food security (excluding solvency constraint)',
-        'Max. possible probability for solvency (excluding food security constraint)',
-        'Average necessary debt (excluding food security constraint)',
-        'Average necessary debt',
-        'Average necessary debt (over all samples with negative final fund)',
-        'Average necessary debt per capita (over all samples with negative final fund)',
-        'Average necessary debt per capita (over all samples)',
-        'Average final fund (over all samples)',
-        'Number of samples with negative final fund',
-        'Probability for a catastrophic year', 
-        'Share of samples with no catastrophe', 
-        'Share of years/clusters with unprofitable rice yields', 
-        'Share of years/clusters with unprofitable maize yields', 
-        'Share of West Africa\'s population that is living in total considered region (2015)', 
-        'Share of West Africa\'s population that is living in considered clusters (2015)',
-        'On average cultivated area per cluster', 
-        'Average yearly total cultivated area',
-        'Average food demand penalty (over samples and then years)', 
-        'Average solvency penalty (over samples)', 
-        'Average cultivation costs per cluster (over samples and then years)', 
-        'Average total cultivation costs',
-        'Expected total costs', 
-        'Number of occurrences per cluster where farmers make losses', 
-        'Average income per cluster in final run (over samples and then years)',
-        'Average income per cluster in final run scaled with capita (over samples and then years)',
-        'Average government payouts per cluster (over samples)', 
-        'Resulting probability for food security', 
-        'Resulting probability for solvency', 
-        'Resulting probability for food security for VSS', 
-        'Resulting probability for solvency for VSS', 
-        'Value of stochastic solution', 
-        'VSS as share of total costs (sto. solution)',
-        'VSS as share of total costs (det. solution)',
-        'Validation value (deviation of total penalty costs)',
-        'Seed (for yield generation)',
-        'Filename for full results']
+    colnames = ["Penalty method",
+        "Input probability food security",
+        "Input probability solvency",
+        "Number of crops",
+        "Number of clusters",
+        "Used clusters",
+        "Yield projection",
+        "Simulation start",
+        "Population scenario",
+        "Risk level covered",
+        "Tax rate",
+        "Share of income that is guaranteed",
+        "Initial fund size",
+        "Sample size",
+        "Sample size for validation",
+        "Number of covered years",
+        
+        "Penalty for food shortage",
+        "Penalty for insolvency",
+        "Resulting probability for food security",
+        "Resulting probability for solvency",
+        "Max. possible probability for food security (excluding solvency constraint)",
+        "Max. possible probability for solvency (excluding food security constraint)",
+        
+        "Probability for a catastrophic year",
+        "Share of samples with no catastrophe",
+        "Share of years/clusters with unprofitable rice yields",
+        "Share of years/clusters with unprofitable maize yields",
+        
+        "Share of West Africa's population that is living in total considered region (2015)",
+        "Share of West Africa's population that is living in considered clusters (2015)",
+        
+        "On average cultivated area per cluster",
+        "Average yearly total cultivated area",
+        
+        "Import (given as model input)",
+        "Average food demand",
+        "Food demand per capita",
+        "Average total necessary import (over samples and then years)",
+        "Average necessary add. import (over samples and then years)",
+        "Average necessary add. import excluding solvency constraint (over samples and then years)",
+        "Average necessary add. import per capita (over samples and then years)",
+        "Average necessary add. import per capita (over samples and then years, only cases that need import)",
+        
+        "Expected income (to calculate guaranteed income)",
+        "Number of occurrences per cluster where farmers make losses",
+        "Number of samples with negative final fund",
+        "Average final fund (over all samples)",
+        "Average income per cluster in final run (over samples and then years)",
+        "Average income per cluster in final run scaled with capita (over samples and then years)",
+        "Aggregated average government payouts per cluster (over samples)",
+        "Average necessary debt (excluding food security constraint)",
+        "Average necessary debt",
+        "Average necessary debt (over all samples with negative final fund)",
+        "Average necessary debt per capita (over all samples with negative final fund)",
+        "Average necessary debt per capita (over all samples)",
+        
+        "Average food demand penalty (over samples and then years)",
+        "Average solvency penalty (over samples)",
+        "Average total cultivation costs",
+        "Expected total costs",
+        
+        "Value of stochastic solution",
+        "VSS as share of total costs (sto. solution)",
+        "VSS as share of total costs (det. solution)",
+        "Resulting probability for food security for VSS",
+        "Resulting probability for solvency for VSS",
+        
+        "Validation value (deviation of total penalty costs)",
+        "Seed (for yield generation)",
+        "Filename for full results"]
     
     
     with open("ModelOutput/Pandas/ColumnUnits.txt", "wb") as fp:

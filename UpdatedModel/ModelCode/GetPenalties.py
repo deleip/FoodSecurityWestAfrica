@@ -251,7 +251,7 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
         _printing("     Finding corresponding penalty\n", console_output, logs_on = logs_on)
         rho, meta_sol = _RhoProbability(args, prob, rhoIni, checkedGuess, \
                objective, file, accuracy_rho, accuracy_prob, nec_help, "GivenProb", 
-               console_output, logs_on)
+               meta_zero, meta_max, max_crop_alloc, console_output, logs_on)
     # if probF cannot be reached but the maximum probability (or what is 
     # assumed to be the maximum probability) is hgiher than for rho -> 0,
     # find the lowest penalty that gives the highest probability
@@ -764,7 +764,7 @@ def _CheckOptimalProb(args, prob, objective,
     """
     
     if objective == "F":
-        rhoF = 1e4
+        rhoF = 1e3
         rhoS = 0
     elif objective == "S":
         rhoS = 1e6
@@ -877,11 +877,11 @@ def _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, necessa
     file = file.split("Crop")[0]
     
     # sorting lists according to penalties (from low to high)
-    s = sorted(zip(rhos_tried, crop_allocs, probabilities, necessary_help))
+    s = sorted(zip(rhos_tried, probabilities, crop_allocs, necessary_help))
     rhos_tried_order = rhos_tried.copy()
     rhos_tried = [x for x,_,_,_ in s]
-    crop_allocs = [x for _,x,_,_ in s]
-    probabilities = [x for _,_,x,_ in s]
+    probabilities = [x for _,x,_,_ in s]
+    crop_allocs = [x for _,_,x,_ in s]
     necessary_help = [x for _,_,_,x in s]
     
     # calculate best grid size for subplots

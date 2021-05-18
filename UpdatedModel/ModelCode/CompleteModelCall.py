@@ -131,7 +131,7 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
                                               plotTitle = plotTitle,
                                               panda_file = panda_file)
         except KeyboardInterrupt:
-            print(colored("\nThe model run was interupted by the user.", "red"), flush = True)
+            print(colored("\nThe model run was interrupted by the user.", "red"), flush = True)
             import ModelCode.GeneralSettings as GS
             if logs_on or (logs_on is None and GS.logs_on):                
                 log = open("ModelLogs/" + GS.fn_log + ".txt", "a")

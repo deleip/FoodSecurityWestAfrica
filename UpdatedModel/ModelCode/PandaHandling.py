@@ -44,14 +44,14 @@ def UpdatePandaWithAddInfo(OldFile = "current_panda", console_output = None):
     if console_output is None:
         from ModelCode.GeneralSettings import console_output
         
+    # load the panda that should be updated
+    oldPanda = OpenPanda(file = OldFile)
+    
     # updating the panda dicts
     os.remove("ModelOutput/Pandas/ColumnUnits.txt")
     os.remove("ModelOutput/Pandas/ColumnNames.txt")
     os.remove("ModelOutput/Pandas/ColumnTypes.txt")
     _SetUpPandaDicts()
-    
-    # load the panda that should be updated
-    oldPanda = OpenPanda(file = OldFile)
     
     # temporarily move the current_panda to tmp to be able to work on a
     # current_panda
