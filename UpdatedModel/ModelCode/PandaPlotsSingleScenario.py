@@ -483,11 +483,6 @@ def PandaPlotsCooperation(panda_file = "current_panda",
     None.
 
     """
-    
-    def _report(i, console_output = console_output, num_plots = 9):
-        if console_output:
-            sys.stdout.write("\r     Plot " + str(i) + " of " + str(num_plots))
-            
     # settings
     if console_output is None:
         from ModelCode.GeneralSettings import console_output
@@ -508,11 +503,17 @@ def PandaPlotsCooperation(panda_file = "current_panda",
         settingsIterate["k_using"] = ""
         fn_suffix = "_" + GetFilename(settingsIterate, groupSize = "", groupAim = grouping_aim, \
                           adjacent = adjacent)
-        
+            
+            
+    def _report(i, console_output = console_output, num_plots = 9):
+        if console_output:
+            sys.stdout.write("\r     Plot " + str(i) + " of " + str(num_plots))
+            
+    
     # plotting:
     PlotPandaAggregate(panda_file = panda_file,
                        output_var=['Average yearly total cultivated area', \
-                                   'Average total cultivation costs'],
+                                   'Total cultivation costs'],
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,

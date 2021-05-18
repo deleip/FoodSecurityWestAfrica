@@ -93,6 +93,10 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
     ff_debt_all[ff_debt_all < 0] = 0
     ter_years_all = args["terminal_years"].astype(int)
     
+    yearly_fixed_costs = np.nansum(meta_sol["yearly_fixed_costs"], axis = 2)
+    yearly_fixed_costs[yearly_fixed_costs == 0] = np.nan
+    cultivation_costs = np.sum(np.nanmean(yearly_fixed_costs, axis = 0))
+    
     # setting up dictionary of parameters to add to the panda object as new row:
         
     # 1 settings
@@ -138,6 +142,7 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
     # 5 crop areas
     panda["On average cultivated area per cluster"] = list(np.nanmean(crop_alloc, axis = (0,1)))
     panda["Average yearly total cultivated area"]   = np.nanmean(np.nansum(crop_alloc, axis = (1,2)))
+    panda["Total cultivation costs"]                = cultivation_costs
         
     # 6 food demand and needed import
     panda["Import (given as model input)"] = args["import"]
@@ -190,7 +195,7 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
     panda["Average necessary debt per capita (over all samples)"] \
         = np.nanmean(ff_debt_all / (pop_of_area[ter_years_all]/1e9)) # negative debt set to zero
     
-    # 8 different cost items    
+    # 8 different cost items in objective function
     panda["Average food demand penalty (over samples and then years)"] \
         = np.nanmean(np.nanmean(meta_sol["fd_penalty"], axis = 0))
     panda["Average solvency penalty (over samples)"] \
@@ -380,6 +385,7 @@ def _SetUpPandaDicts():
         
         "On average cultivated area per cluster": "[$10^9\,ha$]",
         "Average yearly total cultivated area": "[$10^9\,ha$]",
+        "Total cultivation costs": "[$10^9\,\$$]",
         
         "Import (given as model input)": "[$10^{12}\,$kcal]",
         "Average food demand": "[$10^{12}\,$kcal]",
@@ -452,6 +458,7 @@ def _SetUpPandaDicts():
         
          "On average cultivated area per cluster": "list of floats",
          "Average yearly total cultivated area": float,
+         "Total cultivation costs": float,
          
          "Import (given as model input)": float,
          "Average food demand": float,
@@ -524,6 +531,7 @@ def _SetUpPandaDicts():
         
         "On average cultivated area per cluster",
         "Average yearly total cultivated area",
+        "Total cultivation costs",
         
         "Import (given as model input)",
         "Average food demand",
