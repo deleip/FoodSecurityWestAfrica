@@ -320,8 +320,8 @@ settings, args, AddInfo_CalcParameters, yield_information, \
 population_information, status, durations, crop_alloc, meta_sol, \
 crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
     FS.FoodSecurityProblem(validation_size = 50000,
-                           k_using = [1], 
-                           N =  10000,
+                           k_using = [6], 
+                           N =  20000,
                            yield_projection = "trend",
                            pop_scenario = "Medium")
     

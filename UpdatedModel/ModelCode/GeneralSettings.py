@@ -1,5 +1,5 @@
 # General Settings 
-# Last modified May 13, 2021, at 19:27
+# Last modified May 24, 2021, at 18:59
 # (reset to original values)
 
 # accuracy demanded from the target probabilities (given as share of
@@ -9,8 +9,8 @@ accuracyS_demandedProb = 0.002
 
 # accuracy demanded from the maximum probabilities (given as share of
 # maximum probability)
-accuracyF_maxProb = 0.005
-accuracyS_maxProb = 0.005
+accuracyF_maxProb = 0.01
+accuracyS_maxProb = 0.01
 
 # accuracy of the penalties given thorugh size of the accuracy interval:
 # the size needs to be smaller than final rho * accuracy_rho
