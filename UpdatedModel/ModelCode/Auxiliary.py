@@ -140,19 +140,38 @@ def GetFilename(settings, groupSize = "", groupAim = "", \
     if groupSize != "":    
         groupSize = "GS" + str(groupSize)
    
-    if adjacent:
-        ad = "Adj"
+    if type(adjacent) is list:
+        for i in range(0, len(adjacent)):
+            if adjacent[i]:
+                adjacent[i] = "Adj"
+            else:
+                adjacent[i] = ""
     else:
-        ad = ""     
+        if adjacent:
+            adjacent = "Adj"
+        else:
+            adjacent = ""    
+        adjacent = [adjacent]         
+   
+    if type(groupAim) is not list:
+        groupAim = [groupAim]
+    
+    if len(groupAim) == 1:
+        groupAim = groupAim * len(adjacent)
+    if len(adjacent) == 1:
+        adjacent = adjacent * len(groupAim)
+    grouptypes = [groupAim[i] + str(groupSize) + adjacent[i] for i in range(0, len(adjacent))]
+    
+  
     
     
     fn = fn + "K" + '_'.join(str(n) for n in settingsTmp["k"])
     if settingsTmp["k_using"] != [""]:
         fn = fn + "using" +  '_'.join(str(n) for n in settingsTmp["k_using"]) 
-    fn = fn + groupAim + groupSize + ad + \
-        "Yield" + '_'.join(str(n).capitalize() for n in settingsTmp["yield_projection"]) + \
-        "Pop" + '_'.join(str(n).capitalize() for n in settingsTmp["pop_scenario"]) +  \
-        "Risk" + '_'.join(str(n) for n in settingsTmp["risk"])
+    fn = fn + "".join(n for n in grouptypes)
+    fn = fn + "Yield" + '_'.join(str(n).capitalize() for n in settingsTmp["yield_projection"]) 
+    fn = fn + "Pop" + '_'.join(str(n).capitalize() for n in settingsTmp["pop_scenario"])
+    fn = fn + "Risk" + '_'.join(str(n) for n in settingsTmp["risk"])
     if settingsTmp["N"] != [""]:
         fn = fn + "N" + '_'.join(str(n) for n in settingsTmp["N"])
     if validationTmp != [""]:

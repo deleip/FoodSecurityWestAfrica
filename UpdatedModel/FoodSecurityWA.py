@@ -60,11 +60,11 @@ comb3 = [(2, 100000, 200000),
         ("all", 500000, 600000)
         ]
 
-combs = [comb2]
+combs = [comb1]
 
 grouping_types = [#("Dissimilar", "Adj"),
-                  ("Dissimilar", ""),
-                  #("Similar", "Adj")
+                  #("Dissimilar", ""),
+                  ("Similar", "Adj")
                   ]
 
 for aim, adj in grouping_types:
@@ -130,7 +130,11 @@ comb3 = [(2, 100000, 200000),
 
 combs = [comb1]
 
-grouping_types = [("Dissimilar", "")]
+
+grouping_types = [#("Dissimilar", "Adj"),
+                  #("Dissimilar", ""),
+                  ("Similar", "Adj")
+                  ]
 
 for aim, adj in grouping_types:
     if adj == "Adj":
@@ -175,33 +179,82 @@ for aim, adj in grouping_types:
 
 # %% ##### 3. PLOTTING RESULTS  #####
 
-for (aim, adj) in [("Dissimilar", True),
-                   ("Dissimilar", False),
+plot_crop_areas = False
+
+for (aim, adj) in [("Dissimilar", False),
                    ("Similar", True)]:
-    print("\nPlotting crop areas", flush = True)
-    FS.CropAreasDependingOnColaboration(panda_file = "current_panda", 
-                                        groupAim = aim,
+    if adj == "Adj":
+        adj_text = "True"
+    else:
+        adj_text = "False"
+    for (pop_scenario, yield_projection) in [("fixed", "fixed"),
+                                             ("Medium", "trend")]:
+        print("\u2017"*65)
+        print("Aim: " + aim + ", adjacent: " + adj_text + ", population: " + pop_scenario + ", yield: " + yield_projection)
+        print("\u033F "*65)
+        
+        if plot_crop_areas:
+            print("\nPlotting crop areas", flush = True)
+            FS.CropAreasDependingOnColaboration(panda_file = "current_panda", 
+                                                groupAim = aim,
+                                                adjacent = adj,
+                                                console_output = None,
+                                                yield_projection = yield_projection,
+                                                pop_scenario = pop_scenario)
+        
+        print("\nPlotting coooperation plots", flush = True)
+        FS.PandaPlotsCooperation(panda_file = "current_panda", 
+                                        grouping_aim = aim,
                                         adjacent = adj,
-                                        console_output = None)
+                                        yield_projection = yield_projection,
+                                        pop_scenario = pop_scenario)
+        
+        print("\n\nPlotting other plots", flush = True)
+        FS.OtherPandaPlots(panda_file = "current_panda", 
+                           grouping_aim = aim,
+                           adjacent = adj,
+                           yield_projection = yield_projection,
+                           pop_scenario = pop_scenario)
     
-    print("\nPlotting coooperation plots", flush = True)
-    FS.PandaPlotsCooperation(panda_file = "current_panda", 
-                                    grouping_aim = aim,
-                                    adjacent = adj)
+# %% ##### 3. PLOTTING SCENARIO COMPARISONS  #####
     
-    print("\n\nPlotting other plots", flush = True)
-    FS.OtherPandaPlots(panda_file = "current_panda", 
-                       grouping_aim = aim,
-                       adjacent = adj)
-    
+print("\nPlotting scenario comparison plots", flush = True)
+print("\n  - DissimNonAdj_FixedVsTrend", flush = True)
 FS.PandaPlotsCooperation(panda_file = "current_panda", 
-                         scenarionames = ["DissimAdj", "DissimNonAdj", "SimAdj"],
-                         filenames_prefix = "GroupTypes",
-                         grouping_aim = ["Dissimilar", "Dissimilar", "Similar"],
-                         adjacent = [True, False, True])   
+                         scenarionames = ["Fixed", "Trend"],
+                         folder_comparisons = "DissimNonAdj_FixedVsTrend",
+                         grouping_aim = "Dissimilar",
+                         adjacent = False,
+                         yield_projection = ["fixed", "trend"],
+                         pop_scenario = ["fixed", "Medium"])   
 
+print("\n  - SimAdj_FixedVsTrend", flush = True)
+FS.PandaPlotsCooperation(panda_file = "current_panda", 
+                         scenarionames = ["Fixed", "Trend"],
+                         folder_comparisons = "SimAdj_FixedVsTrend",
+                         grouping_aim = "Similar",
+                         adjacent = True,
+                         yield_projection = ["fixed", "trend"],
+                         pop_scenario = ["fixed", "Medium"])   
 
+print("\n  - Fixed_DissimNonAdjVsSimAdj", flush = True)
+FS.PandaPlotsCooperation(panda_file = "current_panda", 
+                         scenarionames = ["DissimNonAdj", "SimAdj"],
+                         folder_comparisons = "Fixed_DissimNonAdjVsSimAdj",
+                         grouping_aim = ["Dissimilar", "Similar"],
+                         adjacent = [False, True],
+                         yield_projection = "fixed",
+                         pop_scenario = "fixed")   
 
+print("\n  - Trend_DissimNonAdjVsSimAdj", flush = True)
+FS.PandaPlotsCooperation(panda_file = "current_panda", 
+                         scenarionames = ["DissimNonAdj", "SimAdj"],
+                         folder_comparisons = "Trend_DissimNonAdjVsSimAdj",
+                         grouping_aim = ["Dissimilar", "Similar"],
+                         adjacent = [False, True],
+                         yield_projection = "trend",
+                         pop_scenario = "Medium")
+   
 # %% Plotting results for runs with trend, dissimilar, non-adjacent
 
 print("\nPlotting crop areas", flush = True)
@@ -244,6 +297,17 @@ print("\n\nPlotting other plots", flush = True)
 FS.OtherPandaPlots(panda_file = "current_panda", 
                    grouping_aim = "Dissimilar",
                    adjacent = False)
+
+# %% Comparing results for runs with and without trends (dissimilar, non-adjacent)
+
+print("\nPlotting coooperation plots", flush = True)
+FS.PandaPlotsCooperation(panda_file = "current_panda", 
+                        grouping_aim = "Dissimilar",
+                        adjacent = False,
+                        yield_projection = ["fixed", "trend"],
+                        pop_scenario = ["fixed", "Medium"],
+                        scenarionames = ["fixed", "trends"])
+
 
 
 
@@ -321,7 +385,7 @@ population_information, status, durations, crop_alloc, meta_sol, \
 crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
     FS.FoodSecurityProblem(validation_size = 50000,
                            k_using = [6], 
-                           N =  20000,
+                           N =  10000,
                            yield_projection = "trend",
                            pop_scenario = "Medium")
     

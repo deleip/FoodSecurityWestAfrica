@@ -34,27 +34,6 @@ def CheckFolderStructure():
         
     if not os.path.isdir("Figures"):
         os.mkdir("Figures")
-    
-    def _GroupingPlotFolders(main, a = True):
-        if not os.path.isdir("Figures/" + main):
-            os.mkdir("Figures/" + main)
-        if a:
-            if not os.path.isdir("Figures/" + main + "/CompareCropAllocs"):
-                os.mkdir("Figures/" + main + "/CompareCropAllocs")
-            if not os.path.isdir("Figures/" + main + "/CompareCropAllocsRiskPooling"):
-                os.mkdir("Figures/" + main + "/CompareCropAllocsRiskPooling")
-            if not os.path.isdir("Figures/" + main + "/PandaPlots"):
-                os.mkdir("Figures/" + main + "/PandaPlots")
-            main = main + "/PandaPlots"
-        if not os.path.isdir("Figures/" + main + "/Aggregated"):
-            os.mkdir("Figures/" + main + "/Aggregated")
-        if not os.path.isdir("Figures/" + main + "/All"):
-            os.mkdir("Figures/" + main + "/All")
-        if not os.path.isdir("Figures/" + main + "/Median"):
-            os.mkdir("Figures/" + main + "/Median")
-        if a:
-            if not os.path.isdir("Figures/" + main + "/Other"):
-                os.mkdir("Figures/" + main + "/Other")
         
     if not os.path.isdir("Figures/ClusterGroups"):
         os.mkdir("Figures/ClusterGroups")
@@ -72,7 +51,8 @@ def CheckFolderStructure():
     _GroupingPlotFolders("SimilarAdjacent")
     _GroupingPlotFolders("DissimilarNonAdjacent")
     _GroupingPlotFolders("SimilarNonAdjacent")
-    _GroupingPlotFolders("ComparingScenarios", a = False)
+    if not os.path.isdir("Figures/ComparingScenarios"):
+        os.mkdir("Figures/ComparingScenarios")
         
     if not os.path.isdir("InputData"):
         warn.warn("You are missing the input data")
@@ -149,6 +129,29 @@ def CheckFolderStructure():
             
     return(None)
             
+def _GroupingPlotFolders(main, a = True):
+    if not os.path.isdir("Figures/" + main):
+        os.mkdir("Figures/" + main)
+    if a:
+        if not os.path.isdir("Figures/" + main + "/CompareCropAllocs"):
+            os.mkdir("Figures/" + main + "/CompareCropAllocs")
+        if not os.path.isdir("Figures/" + main + "/CompareCropAllocsRiskPooling"):
+            os.mkdir("Figures/" + main + "/CompareCropAllocsRiskPooling")
+        if not os.path.isdir("Figures/" + main + "/PandaPlots"):
+            os.mkdir("Figures/" + main + "/PandaPlots")
+        main = main + "/PandaPlots"
+    if not os.path.isdir("Figures/" + main + "/AggregatedSum"):
+        os.mkdir("Figures/" + main + "/AggregatedSum")
+    if not os.path.isdir("Figures/" + main + "/AggregatedWeightedAvg"):
+        os.mkdir("Figures/" + main + "/AggregatedWeightedAvg")
+    if not os.path.isdir("Figures/" + main + "/All"):
+        os.mkdir("Figures/" + main + "/All")
+    if not os.path.isdir("Figures/" + main + "/Median"):
+        os.mkdir("Figures/" + main + "/Median")
+    if a:
+        if not os.path.isdir("Figures/" + main + "/Other"):
+            os.mkdir("Figures/" + main + "/Other")    
+    return(None)
             
 def CleanFolderStructure():
     """

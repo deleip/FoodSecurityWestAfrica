@@ -8,16 +8,18 @@ import numpy as np
 import pandas as pd
 import sys
 import pickle
+import os 
 import matplotlib.pyplot as plt
 from textwrap import wrap
 
 from ModelCode.PandaHandling import ReadFromPanda
 from ModelCode.SettingsParameters import DefaultSettingsExcept
 from ModelCode.Auxiliary import GetFilename
+from ModelCode.SetFolderStructure import _GroupingPlotFolders
 
 # %% ############### PLOTTING FUNCTIONS USING RESULTS PANDA CSV ###############
 
-def _ExtractResPanda(sub_panda, out_type, output_var, size):
+def _ExtractResPanda(sub_panda, out_type, output_var, size, weight = None, var_weight = None):
     """
     Aggregates results given by ReadFromPanda.
 
@@ -28,13 +30,20 @@ def _ExtractResPanda(sub_panda, out_type, output_var, size):
         grouping.
     out_type : str
         Specifies how the output variables should be aggregate over the different
-        cluster groups. "agg" for summation, "median" for returning minimum,
-        maximum and median over the cluster groups, "all" if result for all
-        cluster groups should be kept.
+        cluster groups. "agg_avgweight" weighted average,
+        "agg_sum" for summation, "median" for returning minimum, maximum
+        and median over the cluster groups, "all" if result for all cluster
+        groups should be kept.
     output_var : list of str or str
         The variables that are reported.
     size : int
         The group size for the grouping used.
+    weight: panda dataframe
+        Panda dataframe with variable that is to be used as weight.
+        Only necessary for out_type == "agg_avgweight".
+    var_weight: str
+        Name of variable that is used as weight .Only necessary for
+        out_type == "agg_avgweight".
 
     Returns
     -------
@@ -49,8 +58,23 @@ def _ExtractResPanda(sub_panda, out_type, output_var, size):
         
     output_var_fct = output_var.copy()
     
-    # sum up results of different clusters
-    if out_type == "agg":
+    # average results of different clusters with population as weight
+    if out_type == "agg_avgweight":
+        output_var_fct.insert(0, "Group size")
+        res = pd.DataFrame(columns = output_var_fct, index = [size])
+        res.iloc[0,0] = size
+        # calclate weights out of weight variable
+        weight[var_weight] = weight[var_weight]/(weight[var_weight].sum())
+        # weighted average
+        for i in range(0, len(output_var)):
+            res.iloc[0, i + 1] = (sub_panda[output_var[i]] * weight[var_weight]).sum()
+        res = res.add_suffix(" - Aggregated over all groups")
+        res.rename(columns = {"Group size - Aggregated over all groups": \
+                              "Group size"}, inplace = True)
+    
+    
+    # ... or sum up results of different clusters
+    elif out_type == "agg_sum":
         output_var_fct.insert(0, "Group size")
         res = pd.DataFrame(columns = output_var_fct, index = [size])
         res.iloc[0,0] = size
@@ -65,13 +89,15 @@ def _ExtractResPanda(sub_panda, out_type, output_var, size):
         for var in output_var_fct:
             colnames.append(var + " - Minimum")
             colnames.append(var + " - Median")
+            colnames.append(var + " - Mean")
             colnames.append(var + " - Maximum")
         res = pd.DataFrame(columns = colnames, index = [size])
         res.iloc[0,0] = size
         for idx, var in enumerate(output_var_fct):
-            res.iloc[0, idx*3 + 1] = sub_panda[var].min()
-            res.iloc[0, idx*3 + 2] = sub_panda[var].median()
-            res.iloc[0, idx*3 + 3] = sub_panda[var].max()
+            res.iloc[0, idx*4 + 1] = sub_panda[var].min()
+            res.iloc[0, idx*4 + 2] = sub_panda[var].median()
+            res.iloc[0, idx*4 + 3] = sub_panda[var].mean()
+            res.iloc[0, idx*4 + 4] = sub_panda[var].max()
     
     # ... or keep all cluster
     elif out_type == "all":
@@ -89,7 +115,8 @@ def _ExtractResPanda(sub_panda, out_type, output_var, size):
 
 def _Panda_GetResultsSingScen(file = "current_panda", 
                            output_var = None,
-                           out_type = "agg", # or median, or all
+                           out_type = "agg_sum", # or agg_avgweight, or median, or all
+                           var_weight = None,
                            grouping_aim = "Dissimilar",
                            adjacent = False,
                            **kwargs):
@@ -105,9 +132,13 @@ def _Panda_GetResultsSingScen(file = "current_panda",
         The variables that are reported. The defaul is None.
     out_type : str
         Specifies how the output variables should be aggregate over the different
-        cluster groups. "agg" for summation, "median" for returning minimum,
-        maximum and median over the cluster groups, "all" if result for all
-        cluster groups should be kept.
+        cluster groups. "agg_avgweight" for weighted average,
+        "agg_sum" for summation, "median" for returning minimum, maximum
+        and median over the cluster groups, "all" if result for all cluster
+        groups should be kept.
+    var_weight: str
+        Name of variable that is used as weight .Only necessary for
+        out_type == "agg_avgweight".
     grouping_aim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
         The default is "Dissimilar".
@@ -130,6 +161,7 @@ def _Panda_GetResultsSingScen(file = "current_panda",
        
     res = pd.DataFrame()
     
+    
     # get results for each cluster grouping size
     for size in [1,2,3,5,9]:
         with open("InputData/Clusters/ClusterGroups/GroupingSize" \
@@ -141,7 +173,22 @@ def _Panda_GetResultsSingScen(file = "current_panda",
                                   k_using = BestGrouping, \
                                   **kwargs)
             
-        res = res.append(_ExtractResPanda(panda_tmp, out_type, output_var, size))
+        if out_type == "agg_avgweight":
+            weight = ReadFromPanda(file = file, \
+                                   output_var = var_weight, \
+                                   k_using = BestGrouping, \
+                                   **kwargs)
+            res = res.append(_ExtractResPanda(sub_panda = panda_tmp, 
+                                              out_type = out_type, 
+                                              output_var = output_var,
+                                              size = size, 
+                                              weight = weight, 
+                                              var_weight = var_weight))
+        else:         
+            res = res.append(_ExtractResPanda(sub_panda = panda_tmp, 
+                                              out_type = out_type, 
+                                              output_var = output_var,
+                                              size = size))
             
     return(res)
 
@@ -250,7 +297,7 @@ def PlotPenaltyVsProb(panda_file = "current_panda",
         Suffix to add to filename (normally defining the settings for which 
         model results are visualized). Default is None.
     **kwargs : 
-        Settings specifiying for which mode
+        Settings specifiying for which model run results shall be plotted.
 
     Returns
     -------
@@ -275,6 +322,7 @@ def PlotPenaltyVsProb(panda_file = "current_panda",
         foldername = foldername + "Adjacent/"
     else:
         foldername = foldername + "NonAdjacent/"
+    foldername = foldername + "/PandaPlots"
     
     plt_file = "PenaltiesProbabilities" + fn_suffix
     
@@ -318,7 +366,7 @@ def PlotPenaltyVsProb(panda_file = "current_panda",
                  ", Adjacent: " + str(adjacent) + ")", fontsize = 26)
          
     # save plot
-    fig.savefig("Figures/" + foldername + "PandaPlots/Other/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
+    fig.savefig("Figures/" + foldername + "/Other/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
 
     # close plot
     if close_plots:
@@ -357,7 +405,7 @@ def PlotProbDetVsSto(panda_file = "current_panda",
         Suffix to add to filename (normally defining the settings for which 
         model results are visualized). Default is None.
     **kwargs : 
-        Settings specifiying for which mode
+        Settings specifiying for which model run results shall be plotted.
 
     Returns
     -------
@@ -382,6 +430,7 @@ def PlotProbDetVsSto(panda_file = "current_panda",
         foldername = foldername + "Adjacent/"
     else:
         foldername = foldername + "NonAdjacent/"
+    foldername = foldername + "/PandaPlots"
     
     plt_file = "ProbabilitiesDetVsSto" + fn_suffix
     
@@ -429,7 +478,7 @@ def PlotProbDetVsSto(panda_file = "current_panda",
                  ", Adjacent: " + str(adjacent) + ")", fontsize = 26)
           
     # save plot
-    fig.savefig("Figures/" + foldername + "PandaPlots/Other/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
+    fig.savefig("Figures/" + foldername + "/Other/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
 
     # close plot
     if close_plots:
@@ -440,6 +489,7 @@ def PlotProbDetVsSto(panda_file = "current_panda",
 
 def PandaPlotsCooperation(panda_file = "current_panda", 
                           scenarionames = None,
+                          folder_comparisons = "unnamed",
                           fn_suffix = None,
                           grouping_aim = "Dissimilar",
                           adjacent = False,
@@ -460,9 +510,13 @@ def PandaPlotsCooperation(panda_file = "current_panda",
         Added as legend to describe the different scenarios, and leads to plots
         being saved in /ComparingScenarios. If None, the folder according
         grouping_aim and adjacent is used. Default is None.
+    folder_comparisons: str
+        Subfolder of /ComparingScenarios (i.e. for example
+        ComparisonPlots/folder_comparison/AggregatedSum/NecImport.png).
+        Only relevant if scenarionames is not None.
     fn_suffix : str, optional
         Suffix to add to filename (normally defining the settings for which 
-        model results are visualized). Default is None.
+        model results are visualized). Default is None. Default is "unnamed".
     grouping_aim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
         The default is "Dissimilar".
@@ -493,8 +547,10 @@ def PandaPlotsCooperation(panda_file = "current_panda",
             foldername = foldername + "Adjacent"
         else:
             foldername = foldername + "NonAdjacent"
+        foldername = foldername + "/PandaPlots"
     else:
-        foldername = "ComparingScenarios"
+        _GroupingPlotFolders(main = "ComparingScenarios/" + folder_comparisons, a = False)
+        foldername = "ComparingScenarios/" + folder_comparisons
         
     if fn_suffix is None:
         settingsIterate = DefaultSettingsExcept(**kwargs)
@@ -505,13 +561,15 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                           adjacent = adjacent)
             
             
-    def _report(i, console_output = console_output, num_plots = 9):
+    def _report(i, console_output = console_output, num_plots = 15):
         if console_output:
             sys.stdout.write("\r     Plot " + str(i) + " of " + str(num_plots))
-            
+        return(i + 1)
+    i = 1         
     
     # plotting:
     PlotPandaAggregate(panda_file = panda_file,
+                       agg_type = "agg_sum",
                        output_var=['Average yearly total cultivated area', \
                                    'Total cultivation costs'],
                        scenarionames = scenarionames,
@@ -521,9 +579,10 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                        foldername = foldername,
                        close_plots = close_plots,
                        **kwargs)
-    _report(1)    
+    i = _report(i)    
         
     PlotPandaAggregate(panda_file = panda_file,
+                       agg_type = "agg_sum", 
                        output_var=['Average necessary add. import excluding solvency constraint (over samples and then years)', \
                                    'Average necessary debt (excluding food security constraint)'],
                        scenarionames = scenarionames,
@@ -533,9 +592,10 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                        foldername = foldername,
                        close_plots = close_plots,
                        **kwargs)
-    _report(2)    
+    i = _report(i)    
         
     PlotPandaAggregate(panda_file = panda_file,
+                       agg_type = "agg_sum",
                        output_var=['Average total necessary import (over samples and then years)', \
                                    'Average necessary debt'],
                        scenarionames = scenarionames,
@@ -545,7 +605,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                        foldername = foldername,
                        close_plots = close_plots,
                        **kwargs)
-    _report(3)    
+    i = _report(i)    
         
     PlotPandaSingle(panda_file = panda_file,
                     output_var=['Penalty for food shortage', \
@@ -557,7 +617,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
-    _report(4)    
+    i = _report(i)    
 
     PlotPandaSingle(panda_file = panda_file,
                     output_var=['Resulting probability for food security', \
@@ -569,8 +629,23 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
-    _report(5)    
+    i = _report(i)    
 
+    PlotPandaAggregate(panda_file = panda_file,
+                       agg_type = "agg_avgweight",
+                       var_weight = "Share of West Africa's population that is living in total considered region (2015)",
+                       weight_title = "population",
+                       output_var=['Resulting probability for food security', \
+                                   'Resulting probability for solvency'],
+                       scenarionames = scenarionames,
+                       grouping_aim = grouping_aim,
+                       adjacent = adjacent,
+                       plt_file = "ResProbabilities" + fn_suffix,
+                       foldername = foldername,
+                       close_plots = close_plots,
+                       **kwargs)
+    i = _report(i)    
+    
     PlotPandaSingle(panda_file = panda_file,
                     output_var=['Average necessary add. import per capita (over samples and then years)', \
                                 'Average necessary debt per capita (over all samples)'],
@@ -581,9 +656,37 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
-    _report(6)    
+    i = _report(i)  
+    
+    PlotPandaSingle(panda_file = panda_file,
+                    output_var=['Average necessary add. import per capita (over samples and then years, only cases that need import)', \
+                                'Average necessary debt per capita (over all samples with negative final fund)'],
+                    scenarionames = scenarionames,
+                    grouping_aim = grouping_aim,
+                    adjacent = adjacent,
+                    plt_file = "ShortcomingsOnlyWhenNeededCapita" + fn_suffix,
+                    foldername = foldername,
+                    close_plots = close_plots,
+                    **kwargs)
+    i = _report(i)  
+    
+    PlotPandaAggregate(panda_file = panda_file,
+                       agg_type = "agg_avgweight",
+                       var_weight = "Share of West Africa's population that is living in total considered region (2015)",
+                       weight_title = "population",
+                       output_var=['Average necessary add. import per capita (over samples and then years)', \
+                                   'Average necessary debt per capita (over all samples)'],
+                       scenarionames = scenarionames,
+                       grouping_aim = grouping_aim,
+                       adjacent = adjacent,
+                       plt_file = "ShortcomingsCapita" + fn_suffix,
+                       foldername = foldername,
+                       close_plots = close_plots,
+                       **kwargs)
+    i = _report(i)   
         
     PlotPandaAggregate(panda_file = panda_file,
+                       agg_type = "agg_sum", 
                        output_var=['Average food demand penalty (over samples and then years)', \
                                    'Average solvency penalty (over samples)'],
                        scenarionames = scenarionames,
@@ -593,7 +696,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                        foldername = foldername,
                        close_plots = close_plots,
                        **kwargs)
-    _report(7)    
+    i = _report(i)    
         
     PlotPandaSingle(panda_file = panda_file,
                     output_var=['Value of stochastic solution', \
@@ -606,7 +709,48 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
-    _report(8)    
+    i = _report(i)    
+    
+    PlotPandaSingle(panda_file = panda_file,
+                    output_var=['VSS in terms of avg. nec. debt', \
+                                'VSS in terms of avg. nec. debt as share of avg. nec. debt of det. solution',\
+                                'VSS in terms of avg. nec. debt as share of avg. nec. debt of sto. solution'],
+                    scenarionames = scenarionames,
+                    grouping_aim = grouping_aim,
+                    adjacent = adjacent,
+                    plt_file = "VSSdebt" + fn_suffix,
+                    foldername = foldername,
+                    close_plots = close_plots,
+                    **kwargs)
+    i = _report(i)  
+    
+    PlotPandaSingle(panda_file = panda_file,
+                    output_var=['VSS in terms of avg. nec. import', \
+                                'VSS in terms of avg. nec. import as share of avg. nec. import of det. solution',\
+                                'VSS in terms of avg. nec. import as share of avg. nec. import of sto. solution'],
+                    scenarionames = scenarionames,
+                    grouping_aim = grouping_aim,
+                    adjacent = adjacent,
+                    plt_file = "VSSimport" + fn_suffix,
+                    foldername = foldername,
+                    close_plots = close_plots,
+                    **kwargs)
+    i = _report(i)  
+    
+    
+    PlotPandaAggregate(panda_file = panda_file,
+                       agg_type = "agg_sum", 
+                       output_var=['Value of stochastic solution', \
+                                   'VSS in terms of avg. nec. debt', \
+                                   'VSS in terms of avg. nec. import'],
+                       scenarionames = scenarionames,
+                       grouping_aim = grouping_aim,
+                       adjacent = adjacent,
+                       plt_file = "VSSagg" + fn_suffix,
+                       foldername = foldername,
+                       close_plots = close_plots,
+                       **kwargs)
+    i = _report(i)    
         
     PlotPandaSingle(panda_file = panda_file,
                     output_var=['Resulting probability for food security for VSS',\
@@ -618,7 +762,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     foldername = foldername,
                     close_plots = close_plots,
                     **kwargs)
-    _report(9)    
+    i = _report(i)    
     
     
     return(None)
@@ -666,11 +810,12 @@ def OtherPandaPlots(panda_file = "current_panda",
     if console_output is None:
         from ModelCode.GeneralSettings import console_output
       
-    foldername = grouping_aim
-    if adjacent:
-        foldername = foldername + "Adjacent"
-    else:
-        foldername = foldername + "NonAdjacent"
+    # foldername = grouping_aim
+    # if adjacent:
+    #     foldername = foldername + "Adjacent"
+    # else:
+    #     foldername = foldername + "NonAdjacent"
+    # foldername = foldername + "/PandaPlots"
         
     if fn_suffix is None:
         settingsIterate = DefaultSettingsExcept(**kwargs)
@@ -698,11 +843,12 @@ def OtherPandaPlots(panda_file = "current_panda",
     return(None)
 
 def Panda_GetResults(file = "current_panda", 
-                                   output_var = None,
-                                   out_type = "agg", # or median, or all
-                                   grouping_aim = "Dissimilar",
-                                   adjacent = False,
-                                   **kwargs):
+                     output_var = None,
+                     out_type = "agg_sum", # or agg_avgweight, or median, or all
+                     var_weight = None,
+                     grouping_aim = "Dissimilar",
+                     adjacent = False,
+                     **kwargs):
     """
     This subsets and aggregates results for all cluster groups for all group
     sizes of specific grouping type, for multiple scenarios, i.e. model settings. 
@@ -720,9 +866,13 @@ def Panda_GetResults(file = "current_panda",
         The variables that are reported.
     out_type : str
         Specifies how the output variables should be aggregate over the different
-        cluster groups. "agg" for summation, "median" for returning minimum,
-        maximum and median over the cluster groups, "all" if result for all
-        cluster groups should be kept.
+        cluster groups. "agg_avgweight" for weighted average,
+        "agg_sum" for summation, "median" for returning minimum, maximum
+        and median over the cluster groups, "all" if result for all cluster
+        groups should be kept.
+    var_weight: str
+        Name of variable that is used as weight .Only necessary for
+        out_type == "agg_avgweight".
     grouping_aim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
         The default is "Dissimilar".
@@ -741,6 +891,7 @@ def Panda_GetResults(file = "current_panda",
     fulldict = kwargs.copy()
     fulldict["file"] = file
     fulldict["out_type"] = out_type
+    fulldict["var_weight"] = var_weight
     fulldict["grouping_aim"] = grouping_aim
     fulldict["adjacent"] = adjacent
 
@@ -840,7 +991,12 @@ def PlotPandaMedian(panda_file = "current_panda",
         units = pickle.load(fp)
     
     # get results
-    res = Panda_GetResults(panda_file, output_var, "median", grouping_aim, adjacent, **kwargs)
+    res = Panda_GetResults(file = panda_file, 
+                           output_var = output_var,
+                           out_type = "median", 
+                           grouping_aim = grouping_aim, 
+                           adjacent = adjacent, 
+                           **kwargs)
     
     # make sure the output variable are given as list
     if output_var is str:
@@ -850,7 +1006,7 @@ def PlotPandaMedian(panda_file = "current_panda",
     if subplots:
         fig = plt.figure(figsize = figsize)
         fig.subplots_adjust(bottom=0.2, top=0.9, left=0.1, right=0.9,
-                    wspace=0.2, hspace=0.35)
+                    wspace=0.3, hspace=0.35)
         num_rows = int(np.floor(np.sqrt(len(output_var))))
         num_cols = int(np.ceil(len(output_var)/num_rows))
     
@@ -870,22 +1026,26 @@ def PlotPandaMedian(panda_file = "current_panda",
                 if scenarionames is not None:
                     scenarionames.pop(scen)
                 continue
-            plt.scatter([1, 2, 3, 4, 5], res[scen][var + " - Maximum"], alpha = 0.8, color = cols[scen], marker = "^")
-            plt.scatter([1, 2, 3, 4, 5], res[scen][var + " - Median"], alpha = 0.8, color = cols[scen], marker = "X")
-            sc = plt.scatter([1, 2, 3, 4, 5], res[scen][var + " - Minimum"], alpha = 0.8, color = cols[scen])
+            plt.fill_between(x = [1, 2, 3, 4, 5], y1 = np.array(res[scen][var + " - Maximum"], dtype = float), 
+                                              y2 = np.array(res[scen][var + " - Minimum"], dtype = float), color = cols[scen], alpha = 0.3)
+            plt.scatter([1, 2, 3, 4, 5], res[scen][var + " - Maximum"], alpha = 0.7, color = cols[scen], marker = "o")
+            plt.scatter([1, 2, 3, 4, 5], res[scen][var + " - Median"], alpha = 1, color = cols[scen], marker = "X", label = "Median")
+            plt.plot([1, 2, 3, 4, 5], res[scen][var + " - Mean"], alpha = 0.7, color = cols[scen], marker = "o", linestyle = "solid", label = "Mean")
+            sc = plt.scatter([1, 2, 3, 4, 5], res[scen][var + " - Minimum"], alpha = 0.7, color = cols[scen])
             scatters.append(sc)
         plt.xticks([1, 2, 3, 4, 5], [9, 5, 3, 2, 1], fontsize = 16)
         plt.yticks(fontsize = 16)
         plt.xlabel("Number of different cluster groups", fontsize = 20)
         plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
+        plt.legend()
         if scenarionames is not None:
             plt.legend(scatters, scenarionames, fontsize = 18, title = "Scenarios", title_fontsize = 20)
         if (not subplots) and (plt_file is not None):
-            fig.savefig("Figures/" + foldername + "/PandaPlots/Median/" + plt_file + str(idx) + ".jpg", bbox_inches = "tight", pad_inches = 1)
+            fig.savefig("Figures/" + foldername + "/Median/" + plt_file + str(idx) + ".jpg", bbox_inches = "tight", pad_inches = 1)
         
     # save plot
     if subplots and (plt_file is not None):
-        fig.savefig("Figures/" + foldername + "/PandaPlots/Median/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
+        fig.savefig("Figures/" + foldername + "/Median/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
         
     # close plot
     if close_plots:
@@ -937,7 +1097,7 @@ def PlotPandaAll(panda_file = "current_panda",
         Whether plots should be closed after plotting (and saving). If None, 
         the default as defined in ModelCode/GeneralSettings is used.
     **kwargs : 
-        Settings specifiying for which mode
+        Settings specifiying for which model run results shall be plotted.
     
     Returns
     -------
@@ -959,7 +1119,12 @@ def PlotPandaAll(panda_file = "current_panda",
         units = pickle.load(fp)
     
     # get results
-    res = Panda_GetResults(panda_file, output_var, "all", grouping_aim, adjacent, **kwargs)
+    res = Panda_GetResults(file = panda_file, 
+                           output_var = output_var,
+                           out_type = "all", 
+                           grouping_aim = grouping_aim, 
+                           adjacent = adjacent, 
+                           **kwargs)
     
     # make sure the output variable are given as list
     if output_var is str:
@@ -969,7 +1134,7 @@ def PlotPandaAll(panda_file = "current_panda",
     if subplots:
         fig = plt.figure(figsize = figsize)
         fig.subplots_adjust(bottom=0.2, top=0.9, left=0.1, right=0.9,
-                    wspace=0.2, hspace=0.35)
+                    wspace=0.3, hspace=0.35)
         num_rows = int(np.floor(np.sqrt(len(output_var))))
         num_cols = int(np.ceil(len(output_var)/num_rows))
     
@@ -1004,7 +1169,7 @@ def PlotPandaAll(panda_file = "current_panda",
         
     # save plot
     if plt_file is not None:
-        fig.savefig("Figures/" + foldername + "/PandaPlots/All/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
+        fig.savefig("Figures/" + foldername + "/All/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
       
     # close plot
     if close_plots:
@@ -1014,6 +1179,9 @@ def PlotPandaAll(panda_file = "current_panda",
 
 
 def PlotPandaAggregate(panda_file = "current_panda", 
+                    agg_type = "agg_sum", # or "agg_avgweight"
+                    var_weight = None,
+                    weight_title = None,
                     output_var = None,
                     scenarionames = None,
                     grouping_aim = "Dissimilar",
@@ -1034,6 +1202,15 @@ def PlotPandaAggregate(panda_file = "current_panda",
     ----------
     panda_file : str, optional
         Filename of the panda csv to use. The default is "current_panda".
+    agg_type: str
+        Either "agg_sum" if values for different cluster groups should be 
+        added up, or "agg_avgweiht" if a weighted average should be calculated.
+    var_weight: str
+        Name of variable that is used as weight. Only necessary for
+        agg_type == "agg_avgweight".
+    weight_title: str
+        How the weight variable should be referred to in title .Only necessary 
+        for agg_type == "agg_avgweight".
     output_var : list of str or str
         The variables that are reported.
     grouping_aim : str, optional
@@ -1056,7 +1233,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
         Whether plots should be closed after plotting (and saving). If None, 
         the default as defined in ModelCode/GeneralSettings is used.
     **kwargs : 
-        Settings specifiying for which mode
+        Settings specifiying for which model run results shall be plotted.
 
     Returns
     -------
@@ -1079,9 +1256,22 @@ def PlotPandaAggregate(panda_file = "current_panda",
     
     with open("ModelOutput/Pandas/ColumnUnits.txt", "rb") as fp:
         units = pickle.load(fp)
+        
+    if agg_type == "agg_sum":
+        agg_title = " (aggregated by adding up)"
+        agg_folder = "/AggregatedSum/"
+    if agg_type == "agg_avgweight":
+        agg_title = " (aggregated by averaging with " + weight_title + " as weight)"
+        agg_folder = "/AggregatedWeightedAvg/"
     
     # get results
-    res = Panda_GetResults(panda_file, output_var, "agg", grouping_aim, adjacent, **kwargs)
+    res = Panda_GetResults(file = panda_file, 
+                           output_var = output_var,
+                           out_type = agg_type, 
+                           var_weight = var_weight,
+                           grouping_aim = grouping_aim, 
+                           adjacent = adjacent, 
+                           **kwargs)
     
     # make sure the output variable are given as list
     if output_var is str:
@@ -1093,17 +1283,17 @@ def PlotPandaAggregate(panda_file = "current_panda",
         fig.subplots_adjust(bottom=0.2, top=0.9, left=0.1, right=0.9,
                     wspace=0.2, hspace=0.35)
         num_rows = int(np.floor(np.sqrt(len(output_var))))
-        num_cols = int(np.ceil(np.sqrt(len(output_var))))
+        num_cols = int(np.ceil(len(output_var)/num_rows))
     
     # plot each of the oubput variables
     for idx, var in enumerate(output_var):
         if subplots:
             fig.add_subplot(num_rows, num_cols, idx + 1)
-            plt.suptitle("Development depending on colaboration of clusters", \
+            plt.suptitle("Development depending on colaboration of clusters" + agg_title, \
                   fontsize = 24)
         else:
             fig = plt.figure(figsize = figsize)
-            plt.title("Development depending on colaboration of clusters", \
+            plt.title("Development depending on colaboration of clusters" + agg_title, \
                   fontsize = 24, pad = 15)
         scatters = []
         mins = []
@@ -1123,11 +1313,13 @@ def PlotPandaAggregate(panda_file = "current_panda",
         plt.xlabel("Number of different cluster groups", fontsize = 20)
         plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
         if scenarionames is not None:
-            plt.legend(scatters, scenarionames, fontsize = 18, title = "Scenarios", title_fontsize = 20)
+            plt.legend(scatters, scenarionames, fontsize = 18, title = "Scenarios",
+                       title_fontsize = 20, loc = "best")
         
+
     # save plot
     if plt_file is not None:
-        fig.savefig("Figures/" + foldername + "/PandaPlots/Aggregated/" + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
+        fig.savefig("Figures/" + foldername + agg_folder + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
     
     # close plot
     if close_plots:

@@ -162,14 +162,17 @@ def _CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title,
                 else:
                     which += 1
                 axTmp = plt.Subplot(fig, inner[which])
+                # y_lim_bottom =  -0.05 * MaxAreas[idx][k]
             else:
                 axTmp = ax
+                # y_lim_bottom =  -0.05 * max([max(max_area_tmp) for max_area_tmp in MaxAreas])
             l1, = axTmp.plot(years, np.repeat(MaxAreas[idx][k], len(years)), \
                      color = cols_b[idx_col], lw = 5, alpha = 0.4)
             l2, = axTmp.plot(years, CropAllocs[idx][:,0,k], color = cols[idx_col], \
                      lw = 2, linestyle = "--")
             l3, = axTmp.plot(years, CropAllocs[idx][:,1,k], color = cols[idx_col], \
                      lw = 2, label = label)
+            axTmp.set_ylim((-0.05 * max([max(max_area_tmp) for max_area_tmp in MaxAreas]), 1.05 * max([max(max_area_tmp) for max_area_tmp in MaxAreas])))
             if subplots:
                 axTmp.set_title(legend_title + str(label), fontsize = fs_sptitle)
                 axTmp.set_xlim(years[0] - 0.5, years[-1] + 0.5)
@@ -503,6 +506,7 @@ def _PlotTotalAreas(total_areas, groupAim, adjacent, fnPlot = None,
     plt.xlabel("Years", fontsize = 20, labelpad = 5)
     plt.ylabel(r"Crop area in [$10^6\,$ha]", fontsize = 20, labelpad = 5)
     plt.xticks(ticks)
+    # plt.ylim(bottom = -0.2)
     plt.legend(title = "Num. groups", title_fontsize = 20, fontsize = 16)
     plt.title(title, fontsize = 24, pad = 10)
     plt.tick_params(labelsize = 16)

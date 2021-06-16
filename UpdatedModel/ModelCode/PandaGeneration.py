@@ -157,6 +157,8 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
         = AddInfo_CalcParameters["import_onlyF"]
     panda["Average necessary add. import per capita (over samples and then years)"] \
         = np.nanmean(np.nanmean(food_shortage_capita, axis = 0))*1e9
+    panda["Average necessary add. import per capita (including only samples that need import)"] \
+        = np.nanmean(np.nanmean(food_shortage_capita, axis = 0))*1e9
     panda["Average necessary add. import per capita (over samples and then years, only cases that need import)"] \
         = np.nanmean(np.nanmean(food_shortage_capita_only_shortage, axis = 0))*1e9 
         # TODO: Befroe I only had "Average necessary add. import per capita
@@ -206,9 +208,22 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
         = meta_sol["exp_tot_costs"] # this includes varying cultivation costs (depending on catastrophic year)
         
     # 9 VSS
-    panda["Value of stochastic solution"]                    = VSS_value
+    panda["Value of stochastic solution"]                    = VSS_value      # diff of total costs using det. solution and using 
     panda["VSS as share of total costs (sto. solution)"]     = VSS_value/meta_sol["exp_tot_costs"]
     panda["VSS as share of total costs (det. solution)"]     = VSS_value/meta_sol_vss["exp_tot_costs"]
+    panda["VSS in terms of avg. nec. debt"] \
+            = meta_sol_vss["avg_nec_debt"] - meta_sol["avg_nec_debt"]
+    panda["VSS in terms of avg. nec. debt as share of avg. nec. debt of det. solution"] \
+            = (meta_sol_vss["avg_nec_debt"] - meta_sol["avg_nec_debt"])/meta_sol_vss["avg_nec_debt"]
+    panda["VSS in terms of avg. nec. debt as share of avg. nec. debt of sto. solution"] \
+            =(meta_sol_vss["avg_nec_debt"] - meta_sol["avg_nec_debt"])/meta_sol["avg_nec_debt"]
+    panda["VSS in terms of avg. nec. import"] \
+            = meta_sol_vss["avg_nec_import"] - meta_sol["avg_nec_import"]
+    panda["VSS in terms of avg. nec. import as share of avg. nec. import of det. solution"] \
+            = (meta_sol_vss["avg_nec_import"] - meta_sol["avg_nec_import"])/meta_sol_vss["avg_nec_import"]
+    panda["VSS in terms of avg. nec. import as share of avg. nec. import of sto. solution"] \
+            = (meta_sol_vss["avg_nec_import"] - meta_sol["avg_nec_import"])/meta_sol["avg_nec_import"]
+    
     panda["Resulting probability for food security for VSS"] = meta_sol_vss["probF"]
     panda["Resulting probability for solvency for VSS"]      = meta_sol_vss["probS"]
         
@@ -391,7 +406,7 @@ def _SetUpPandaDicts():
         "Average food demand": "[$10^{12}\,$kcal]",
         "Food demand per capita" : "[$10^{12}\,$kcal]",
         "Average total necessary import (over samples and then years)": "[$10^{12}\,$kcal]",
-        "Average necessary add. import (over samples and then years)":"[$10^{12}\,$kcal]",
+        "Average necessary add. import (over samples and then years)": "[$10^{12}\,$kcal]",
         "Average necessary add. import excluding solvency constraint (over samples and then years)": "[$10^{12}\,$kcal]",
         "Average necessary add. import per capita (over samples and then years)": "[$10^{3}\,$kcal]",
         "Average necessary add. import per capita (over samples and then years, only cases that need import)": "[$10^{3}\,$kcal]",
@@ -417,12 +432,20 @@ def _SetUpPandaDicts():
         "Value of stochastic solution": "[$10^9\,\$$]",
         "VSS as share of total costs (sto. solution)": "",
         "VSS as share of total costs (det. solution)": "",
+        "VSS in terms of avg. nec. debt": "[$10^9\,\$$]",
+        "VSS in terms of avg. nec. debt as share of avg. nec. debt of det. solution": "",
+        "VSS in terms of avg. nec. debt as share of avg. nec. debt of sto. solution": "",
+        "VSS in terms of avg. nec. import": "[$10^{12}\,$kcal]",
+        "VSS in terms of avg. nec. import as share of avg. nec. import of det. solution": "",
+        "VSS in terms of avg. nec. import as share of avg. nec. import of sto. solution": "",        
         "Resulting probability for food security for VSS": "",
         "Resulting probability for solvency for VSS": "",
         
         "Validation value (deviation of total penalty costs)": "",
         "Seed (for yield generation)": "",
         "Filename for full results": ""}   
+    
+    
     
     convert =  {"Penalty method": str,
          "Input probability food security": float,
@@ -490,6 +513,12 @@ def _SetUpPandaDicts():
          "Value of stochastic solution": float,
          "VSS as share of total costs (sto. solution)": float,
          "VSS as share of total costs (det. solution)": float,
+         "VSS in terms of avg. nec. debt": float,
+         "VSS in terms of avg. nec. debt as share of avg. nec. debt of det. solution": float,
+         "VSS in terms of avg. nec. debt as share of avg. nec. debt of sto. solution": float,
+         "VSS in terms of avg. nec. import": float,
+         "VSS in terms of avg. nec. import as share of avg. nec. import of det. solution": float,
+         "VSS in terms of avg. nec. import as share of avg. nec. import of sto. solution": float,   
          "Resulting probability for food security for VSS": float,
          "Resulting probability for solvency for VSS": float,
         
@@ -563,6 +592,12 @@ def _SetUpPandaDicts():
         "Value of stochastic solution",
         "VSS as share of total costs (sto. solution)",
         "VSS as share of total costs (det. solution)",
+        "VSS in terms of avg. nec. debt",
+        "VSS in terms of avg. nec. debt as share of avg. nec. debt of det. solution",
+        "VSS in terms of avg. nec. debt as share of avg. nec. debt of sto. solution",
+        "VSS in terms of avg. nec. import",
+        "VSS in terms of avg. nec. import as share of avg. nec. import of det. solution",
+        "VSS in terms of avg. nec. import as share of avg. nec. import of sto. solution",  
         "Resulting probability for food security for VSS",
         "Resulting probability for solvency for VSS",
         
