@@ -106,9 +106,10 @@ def _ObjectiveFunction(x, num_clusters, num_crops, N, \
     prod = X * ylds                          # nan for years after catastrophe
     kcal  = np.swapaxes(prod, 2, 3)
     kcal = kcal * crop_cal                   # relevant for realistic values
+    food_supply = imports + np.sum(kcal, axis = (2, 3))
     
     # Shortcomings
-    S = demand - imports - np.sum(kcal, axis = (2, 3)) # nan for years after catastrophe
+    S = demand - food_supply # nan for years after catastrophe
     np.seterr(invalid='ignore')
     S[S < 0] = 0
     np.seterr(invalid='warn')
@@ -161,6 +162,7 @@ def _ObjectiveFunction(x, num_clusters, num_crops, N, \
           np.nansum(payouts, axis = (1,2)), # final fund per realization
         payouts, # government payouts (N, T, k)
         np.nansum(fixed_costs, axis = 2), #  fixcosts (N, T, k)
+        food_supply # food supply in kcal (production plus import if any)
         ) 
 
 def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
@@ -201,6 +203,8 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
           10^12kcal in each year.
         - expected_incomes: Average profits of farmers in 10^9$ for each cluster in
           each year.
+        - food_supply: Food supply (production plust import if there is any) 
+          in 10^12kcal for each year in each sample
         - profits: Profits of farmers in 10^9$ per cluster and year for each
           sample.
         - num_years_with_losses: Number of occurences where farmers of a 
@@ -220,25 +224,25 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
     # intermediate results of the calculation
     exp_tot_costs, fix_costs, shortcomings, exp_incomes, profits, \
     exp_shortcomings,  fd_penalty, avg_fd_penalty, sol_penalty, final_fund, \
-    payouts, yearly_fixed_costs = _ObjectiveFunction(crop_alloc, 
-                                           args["k"], 
-                                           args["num_crops"],
-                                           args["N"], 
-                                           args["cat_clusters"], 
-                                           args["terminal_years"],
-                                           args["ylds"], 
-                                           args["costs"], 
-                                           args["demand"],
-                                           args["import"],
-                                           args["ini_fund"],
-                                           args["tax"],
-                                           args["prices"],
-                                           args["T"],
-                                           args["guaranteed_income"],
-                                           args["crop_cal"], 
-                                           rhoF, 
-                                           rhoS)
-    
+    payouts, yearly_fixed_costs, food_supply = _ObjectiveFunction(crop_alloc, 
+                                                                args["k"], 
+                                                                args["num_crops"],
+                                                                args["N"], 
+                                                                args["cat_clusters"], 
+                                                                args["terminal_years"],
+                                                                args["ylds"], 
+                                                                args["costs"], 
+                                                                args["demand"],
+                                                                args["import"],
+                                                                args["ini_fund"],
+                                                                args["tax"],
+                                                                args["prices"],
+                                                                args["T"],
+                                                                args["guaranteed_income"],
+                                                                args["crop_cal"], 
+                                                                rhoF, 
+                                                                rhoS)
+                         
     # calculationg additional quantities:
     # probability of solvency in case of catastrophe
     prob_staying_solvent = np.sum(final_fund >= 0) /  args["N"]
@@ -271,6 +275,7 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
                 "shortcomings": shortcomings,
                 "exp_shortcomings": exp_shortcomings, # per year
                 "expected_incomes": exp_incomes,
+                "food_supply": food_supply,
                 "profits": profits,
                 "num_years_with_losses": num_years_with_losses,
                 "payouts": payouts,

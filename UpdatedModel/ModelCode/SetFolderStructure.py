@@ -35,6 +35,8 @@ def CheckFolderStructure():
     if not os.path.isdir("Figures"):
         os.mkdir("Figures")
         
+    if not os.path.isdir("Figures/PublicationPlots"):
+        os.mkdir("Figures/PublicationPlots")
     if not os.path.isdir("Figures/ClusterGroups"):
         os.mkdir("Figures/ClusterGroups")
     if not os.path.isdir("Figures/CropAllocs"):
@@ -51,6 +53,7 @@ def CheckFolderStructure():
     _GroupingPlotFolders("SimilarAdjacent")
     _GroupingPlotFolders("DissimilarNonAdjacent")
     _GroupingPlotFolders("SimilarNonAdjacent")
+    _GroupingPlotFolders("CustomNonAdjacent")
     if not os.path.isdir("Figures/ComparingScenarios"):
         os.mkdir("Figures/ComparingScenarios")
         

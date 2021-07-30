@@ -561,7 +561,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                           adjacent = adjacent)
             
             
-    def _report(i, console_output = console_output, num_plots = 15):
+    def _report(i, console_output = console_output, num_plots = 17):
         if console_output:
             sys.stdout.write("\r     Plot " + str(i) + " of " + str(num_plots))
         return(i + 1)
@@ -582,9 +582,23 @@ def PandaPlotsCooperation(panda_file = "current_panda",
     i = _report(i)    
         
     PlotPandaAggregate(panda_file = panda_file,
+                       agg_type = "agg_sum",
+                       output_var=["Average total cultivation costs", \
+                                   "Average total food demand penalty (over samples)", \
+                                   "Average solvency penalty (over samples)"],
+                       scenarionames = scenarionames,
+                       grouping_aim = grouping_aim,
+                       adjacent = adjacent,
+                       plt_file = "CultivationAndSocialCosts" + fn_suffix,
+                       foldername = foldername,
+                       close_plots = close_plots,
+                       **kwargs)
+    i = _report(i)    
+    
+    PlotPandaAggregate(panda_file = panda_file,
                        agg_type = "agg_sum", 
-                       output_var=['Average necessary add. import excluding solvency constraint (over samples and then years)', \
-                                   'Average necessary debt (excluding food security constraint)'],
+                       output_var=['Average aggregate food shortage excluding solvency constraint', \
+                                   'Average aggregate debt after payout (excluding food security constraint)'],
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,
@@ -596,8 +610,8 @@ def PandaPlotsCooperation(panda_file = "current_panda",
         
     PlotPandaAggregate(panda_file = panda_file,
                        agg_type = "agg_sum",
-                       output_var=['Average total necessary import (over samples and then years)', \
-                                   'Average necessary debt'],
+                       output_var=['Average aggregate food shortage', \
+                                   'Average aggregate debt after payout'],
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,
@@ -647,8 +661,8 @@ def PandaPlotsCooperation(panda_file = "current_panda",
     i = _report(i)    
     
     PlotPandaSingle(panda_file = panda_file,
-                    output_var=['Average necessary add. import per capita (over samples and then years)', \
-                                'Average necessary debt per capita (over all samples)'],
+                    output_var=['Average aggregate food shortage per capita', \
+                                'Average aggregate debt after payout per capita'],
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
                     adjacent = adjacent,
@@ -659,8 +673,8 @@ def PandaPlotsCooperation(panda_file = "current_panda",
     i = _report(i)  
     
     PlotPandaSingle(panda_file = panda_file,
-                    output_var=['Average necessary add. import per capita (over samples and then years, only cases that need import)', \
-                                'Average necessary debt per capita (over all samples with negative final fund)'],
+                    output_var=['Average aggregate food shortage per capita (including only samples that have shortage)', \
+                                'Average aggregate debt after payout per capita (including only samples with negative final fund)'],
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
                     adjacent = adjacent,
@@ -670,12 +684,24 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     **kwargs)
     i = _report(i)  
     
+    PlotPandaSingle(panda_file = panda_file,
+                    output_var=['Average aggregate food shortage (without taking into account imports)', \
+                                'Average aggregate debt after payout'],
+                    scenarionames = scenarionames,
+                    grouping_aim = grouping_aim,
+                    adjacent = adjacent,
+                    plt_file = "Shortcomings" + fn_suffix,
+                    foldername = foldername,
+                    close_plots = close_plots,
+                    **kwargs)
+    i = _report(i) 
+    
     PlotPandaAggregate(panda_file = panda_file,
                        agg_type = "agg_avgweight",
                        var_weight = "Share of West Africa's population that is living in total considered region (2015)",
                        weight_title = "population",
-                       output_var=['Average necessary add. import per capita (over samples and then years)', \
-                                   'Average necessary debt per capita (over all samples)'],
+                       output_var=['Average aggregate food shortage per capita', \
+                                   'Average aggregate debt after payout per capita'],
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,
@@ -920,6 +946,7 @@ def Panda_GetResults(file = "current_panda",
             try:
                 res.append(_Panda_GetResultsSingScen(output_var = output_var, **fulldict_tmp))
             except SystemExit:
+                print("The " + str(idx + 1) + ". scenario is not available", flush = True)
                 res.append(None)
                 
     return(res)
@@ -1281,9 +1308,11 @@ def PlotPandaAggregate(panda_file = "current_panda",
     if subplots:
         fig = plt.figure(figsize = figsize)
         fig.subplots_adjust(bottom=0.2, top=0.9, left=0.1, right=0.9,
-                    wspace=0.2, hspace=0.35)
+                    wspace=0.3, hspace=0.35)
         num_rows = int(np.floor(np.sqrt(len(output_var))))
         num_cols = int(np.ceil(len(output_var)/num_rows))
+        
+    markers = ["X", "o", "^", "P", "s", "v"]    
     
     # plot each of the oubput variables
     for idx, var in enumerate(output_var):
@@ -1303,7 +1332,8 @@ def PlotPandaAggregate(panda_file = "current_panda",
                 if scenarionames is not None:
                     scenarionames.pop(scen)
                 continue
-            sc = plt.scatter([1, 2, 3, 4, 5], res[scen][var + " - Aggregated over all groups"], marker = "X")
+            plt.plot([1, 2, 3, 4, 5], res[scen][var + " - Aggregated over all groups"], lw = 2.8)
+            sc = plt.scatter([1, 2, 3, 4, 5], res[scen][var + " - Aggregated over all groups"], marker = markers[scen], s = 70)
             scatters.append(sc)
             mins.append(min(-res[scen][var + " - Aggregated over all groups"].max()*0.01, res[scen][var + " - Aggregated over all groups"].min()*1.05))
             maxs.append(res[scen][var + " - Aggregated over all groups"].max()*1.1)

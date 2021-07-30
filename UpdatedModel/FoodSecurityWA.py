@@ -105,7 +105,7 @@ for aim, adj in grouping_types:
                                                k_using = list(cluster_active),
                                                N = N)
 
-# %% ############# 2.RUN WITH TRENDS FOR DIFFERENT GROUP TYPES  ###############
+# %% #### 2.RUN WITH YIELD TREND AND MEDIUM POPULATION GROWTH FOR DIFFERENT GROUP TYPES  ####
 
 # group size, sample size N, validation sample size M
 comb1 = [(1, 10000, 50000),
@@ -175,8 +175,382 @@ for aim, adj in grouping_types:
                                                N = N,
                                                yield_projection = "trend",
                                                pop_scenario = "Medium")
-                
+            
+# %% ############# 2.RUN WITH ONLY YIELD TRENDS ###############
 
+# group size, sample size N, validation sample size M
+comb1 = [(1, 10000, 50000),
+        (2, 20000, 50000),
+        (3, 50000, 100000),
+        (5, 100000, 200000),
+        ("all", 100000, 200000)
+        ]
+
+comb2 = [(1, 20000, 50000),
+        (2, 40000, 100000),
+        (3, 100000, 200000),
+        (5, 200000, 300000),
+        ("all", 250000, 400000)
+        ]
+
+comb3 = [(2, 100000, 200000),
+        (3, 250000, 400000),
+        (5, 400000, 500000),
+        ("all", 500000, 600000)
+        ]
+
+combs = [comb1]
+
+
+grouping_types = [#("Dissimilar", "Adj"),
+                  #("Dissimilar", ""),
+                  ("Similar", "Adj")
+                  ]
+
+for aim, adj in grouping_types:
+    if adj == "Adj":
+        adj_text = "True"
+    else:
+        adj_text = "False"
+    for idx, comb in enumerate(combs):
+        for size, N, M in comb:
+            if size == "all":
+                print("\u2017"*65)
+                print("Aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: all, comb: " + str(idx + 1))
+                print("\u033F "*65)
+                settings, args, AddInfo_CalcParameters, yield_information, \
+                population_information, status, durations, crop_alloc, meta_sol, \
+                crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
+                    FS.FoodSecurityProblem(validation_size = M,
+                                           plotTitle = "All clusters",
+                                           k_using = size,
+                                           N = N,
+                                           yield_projection = "trend",
+                                           pop_scenario = "fixed")
+            else:
+                with open("InputData/Clusters/ClusterGroups/GroupingSize" \
+                              + str(size) + aim + adj + ".txt", "rb") as fp:
+                        BestGrouping = pickle.load(fp)        
+                        
+                for cluster_active in BestGrouping:
+                    print("\u2017"*65)
+                    print("Aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: " + str(cluster_active) + ", comb: " + str(idx + 1))
+                    print("\u033F "*65)
+                    
+                    settings, args, AddInfo_CalcParameters, yield_information, \
+                    population_information, status, durations, crop_alloc, meta_sol, \
+                    crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
+                        FS.FoodSecurityProblem(validation_size = M,
+                                               plotTitle = "Aim: " + aim  + ", Adjacent: " + adj_text,
+                                               k_using = list(cluster_active),
+                                               N = N,
+                                               yield_projection = "trend",
+                                               pop_scenario = "fixed")
+    
+# %% ########### 2. RUN WITH YIELD TRENDS AND LOW POPULATION GROWTH ###########
+
+# group size, sample size N, validation sample size M
+comb1 = [(1, 10000, 50000),
+        (2, 20000, 50000),
+        (3, 50000, 100000),
+        (5, 100000, 200000),
+        ("all", 100000, 200000)
+        ]
+
+comb2 = [(1, 20000, 50000),
+        (2, 40000, 100000),
+        (3, 100000, 200000),
+        (5, 200000, 300000),
+        ("all", 250000, 400000)
+        ]
+
+comb3 = [(2, 100000, 200000),
+        (3, 250000, 400000),
+        (5, 400000, 500000),
+        ("all", 500000, 600000)
+        ]
+
+combs = [comb1]
+
+
+grouping_types = [#("Dissimilar", "Adj"),
+                  #("Dissimilar", ""),
+                  ("Similar", "Adj")
+                  ]
+
+for aim, adj in grouping_types:
+    if adj == "Adj":
+        adj_text = "True"
+    else:
+        adj_text = "False"
+    for idx, comb in enumerate(combs):
+        for size, N, M in comb:
+            if size == "all":
+                print("\u2017"*65)
+                print("Aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: all, comb: " + str(idx + 1))
+                print("\u033F "*65)
+                settings, args, AddInfo_CalcParameters, yield_information, \
+                population_information, status, durations, crop_alloc, meta_sol, \
+                crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
+                    FS.FoodSecurityProblem(validation_size = M,
+                                           plotTitle = "All clusters",
+                                           k_using = size,
+                                           N = N,
+                                           yield_projection = "trend",
+                                           pop_scenario = "Low")
+            else:
+                with open("InputData/Clusters/ClusterGroups/GroupingSize" \
+                              + str(size) + aim + adj + ".txt", "rb") as fp:
+                        BestGrouping = pickle.load(fp)        
+                        
+                for cluster_active in BestGrouping:
+                    print("\u2017"*65)
+                    print("Aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: " + str(cluster_active) + ", comb: " + str(idx + 1))
+                    print("\u033F "*65)
+                    
+                    settings, args, AddInfo_CalcParameters, yield_information, \
+                    population_information, status, durations, crop_alloc, meta_sol, \
+                    crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
+                        FS.FoodSecurityProblem(validation_size = M,
+                                               plotTitle = "Aim: " + aim  + ", Adjacent: " + adj_text,
+                                               k_using = list(cluster_active),
+                                               N = N,
+                                               yield_projection = "trend",
+                                               pop_scenario = "Low")     
+                        
+# %% ########### 2.RUN WITH YIELD TRENDS AND HIGH POPULATION GROWTH ############
+
+# group size, sample size N, validation sample size M
+comb1 = [(1, 10000, 50000),
+        (2, 20000, 50000),
+        (3, 50000, 100000),
+        (5, 100000, 200000),
+        ("all", 100000, 200000)
+        ]
+
+comb2 = [(1, 20000, 50000),
+        (2, 40000, 100000),
+        (3, 100000, 200000),
+        (5, 200000, 300000),
+        ("all", 250000, 400000)
+        ]
+
+comb3 = [(2, 100000, 200000),
+        (3, 250000, 400000),
+        (5, 400000, 500000),
+        ("all", 500000, 600000)
+        ]
+
+combs = [comb1]
+
+
+grouping_types = [#("Dissimilar", "Adj"),
+                  #("Dissimilar", ""),
+                  ("Similar", "Adj")
+                  ]
+
+for aim, adj in grouping_types:
+    if adj == "Adj":
+        adj_text = "True"
+    else:
+        adj_text = "False"
+    for idx, comb in enumerate(combs):
+        for size, N, M in comb:
+            if size == "all":
+                print("\u2017"*65)
+                print("Aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: all, comb: " + str(idx + 1))
+                print("\u033F "*65)
+                settings, args, AddInfo_CalcParameters, yield_information, \
+                population_information, status, durations, crop_alloc, meta_sol, \
+                crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
+                    FS.FoodSecurityProblem(validation_size = M,
+                                           plotTitle = "All clusters",
+                                           k_using = size,
+                                           N = N,
+                                           yield_projection = "trend",
+                                           pop_scenario = "High")
+            else:
+                with open("InputData/Clusters/ClusterGroups/GroupingSize" \
+                              + str(size) + aim + adj + ".txt", "rb") as fp:
+                        BestGrouping = pickle.load(fp)        
+                        
+                for cluster_active in BestGrouping:
+                    print("\u2017"*65)
+                    print("Aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: " + str(cluster_active) + ", comb: " + str(idx + 1))
+                    print("\u033F "*65)
+                    
+                    settings, args, AddInfo_CalcParameters, yield_information, \
+                    population_information, status, durations, crop_alloc, meta_sol, \
+                    crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
+                        FS.FoodSecurityProblem(validation_size = M,
+                                               plotTitle = "Aim: " + aim  + ", Adjacent: " + adj_text,
+                                               k_using = list(cluster_active),
+                                               N = N,
+                                               yield_projection = "trend",
+                                               pop_scenario = "High")                
+# %% ############# 2.RUN WITH ONLY POPULATION TRENDS ###############
+
+# group size, sample size N, validation sample size M
+comb1 = [(1, 10000, 50000),
+        (2, 20000, 50000),
+        (3, 50000, 100000),
+        (5, 100000, 200000),
+        ("all", 100000, 200000)
+        ]
+
+comb2 = [(1, 20000, 50000),
+        (2, 40000, 100000),
+        (3, 100000, 200000),
+        (5, 200000, 300000),
+        ("all", 250000, 400000)
+        ]
+
+comb3 = [(2, 100000, 200000),
+        (3, 250000, 400000),
+        (5, 400000, 500000),
+        ("all", 500000, 600000)
+        ]
+
+combs = [comb1]
+
+
+grouping_types = [#("Dissimilar", "Adj"),
+                  #("Dissimilar", ""),
+                  ("Similar", "Adj")
+                  ]
+
+for aim, adj in grouping_types:
+    if adj == "Adj":
+        adj_text = "True"
+    else:
+        adj_text = "False"
+    for idx, comb in enumerate(combs):
+        for size, N, M in comb:
+            if size == "all":
+                print("\u2017"*65)
+                print("Aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: all, comb: " + str(idx + 1))
+                print("\u033F "*65)
+                settings, args, AddInfo_CalcParameters, yield_information, \
+                population_information, status, durations, crop_alloc, meta_sol, \
+                crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
+                    FS.FoodSecurityProblem(validation_size = M,
+                                           plotTitle = "All clusters",
+                                           k_using = size,
+                                           N = N,
+                                           yield_projection = "fixed",
+                                           pop_scenario = "High")
+            else:
+                with open("InputData/Clusters/ClusterGroups/GroupingSize" \
+                              + str(size) + aim + adj + ".txt", "rb") as fp:
+                        BestGrouping = pickle.load(fp)        
+                        
+                for cluster_active in BestGrouping:
+                    print("\u2017"*65)
+                    print("Aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: " + str(cluster_active) + ", comb: " + str(idx + 1))
+                    print("\u033F "*65)
+                    
+                    settings, args, AddInfo_CalcParameters, yield_information, \
+                    population_information, status, durations, crop_alloc, meta_sol, \
+                    crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
+                        FS.FoodSecurityProblem(validation_size = M,
+                                               plotTitle = "Aim: " + aim  + ", Adjacent: " + adj_text,
+                                               k_using = list(cluster_active),
+                                               N = N,
+                                               yield_projection = "fixed",
+                                               pop_scenario = "High")
+                
+                
+# %% ######## Custom grouping
+
+gs1 = [(1,), (2,), (3,), (4,), (5,), (6,), (7,), (8,), (9,)]
+gs2 = [(2, 9), (1, 4), (5, 8), (3, 6), (7,)]
+gs3 = [(2, 6, 9), (1, 3, 4), (5, 7, 8)]
+gs5 = [(1, 2, 9, 4), (3, 5, 7, 8, 6)]
+gs9 = [(1, 2, 9, 4, 3, 5, 7, 8, 6)]
+
+
+with open("InputData/Clusters/ClusterGroups/GroupingSize" \
+                              + str(1) + "Custom" + ".txt", "wb") as fp:
+    pickle.dump(gs1, fp)
+with open("InputData/Clusters/ClusterGroups/GroupingSize" \
+                              + str(2) + "Custom" + ".txt", "wb") as fp:
+    pickle.dump(gs2, fp)
+with open("InputData/Clusters/ClusterGroups/GroupingSize" \
+                         + str(3) + "Custom" + ".txt", "wb") as fp:
+    pickle.dump(gs3, fp)
+with open("InputData/Clusters/ClusterGroups/GroupingSize" \
+                          + str(5) + "Custom" + ".txt", "wb") as fp:
+    pickle.dump(gs5, fp)
+with open("InputData/Clusters/ClusterGroups/GroupingSize" \
+                          + str(9) + "Custom" + ".txt", "wb") as fp:
+    pickle.dump(gs9, fp)
+                
+   
+# %% ############### 2. DEFAULT RUN FOR DIFFERENT GROUP TYPES  ################
+
+# group size, sample size N, validation sample size M
+comb1 = [(1, 10000, 50000),
+        (2, 20000, 50000),
+        (3, 50000, 100000),
+        (5, 100000, 200000),
+        ("all", 100000, 200000)
+        ]
+
+comb2 = [(1, 20000, 50000),
+        (2, 40000, 100000),
+        (3, 100000, 200000),
+        (5, 200000, 300000),
+        ("all", 250000, 400000)
+        ]
+
+comb3 = [(2, 100000, 200000),
+        (3, 250000, 400000),
+        (5, 400000, 500000),
+        ("all", 500000, 600000)
+        ]
+
+combs = [comb1]
+
+grouping_types = [("Custom", "")]
+
+for aim, adj in grouping_types:
+    # if aim == "Dissimilar":
+    #     continue
+    if adj == "Adj":
+        adj_text = "True"
+    else:
+        adj_text = "False"
+    for idx, comb in enumerate(combs):
+        for size, N, M in comb:
+            if size == "all":
+                print("\u2017"*65)
+                print("Aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: all, comb: " + str(idx + 1))
+                print("\u033F "*65)
+                settings, args, AddInfo_CalcParameters, yield_information, \
+                population_information, status, durations, crop_alloc, meta_sol, \
+                crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
+                    FS.FoodSecurityProblem(validation_size = M,
+                                           plotTitle = "All clusters",
+                                           k_using = size,
+                                           N = N)
+            else:
+                with open("InputData/Clusters/ClusterGroups/GroupingSize" \
+                              + str(size) + aim + adj + ".txt", "rb") as fp:
+                        BestGrouping = pickle.load(fp)
+                        
+                for cluster_active in BestGrouping:
+                    print("\u2017"*65)
+                    print("Aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: " + str(cluster_active) + ", comb: " + str(idx + 1))
+                    print("\u033F "*65)
+                    
+                    settings, args, AddInfo_CalcParameters, yield_information, \
+                    population_information, status, durations, crop_alloc, meta_sol, \
+                    crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
+                        FS.FoodSecurityProblem(validation_size = M,
+                                               plotTitle = "Aim: " + aim  + ", Adjacent: " + adj_text,
+                                               k_using = list(cluster_active),
+                                               N = N)                
+   
 # %% ##### 3. PLOTTING RESULTS  #####
 
 plot_crop_areas = False
@@ -254,7 +628,59 @@ FS.PandaPlotsCooperation(panda_file = "current_panda",
                          adjacent = [False, True],
                          yield_projection = "trend",
                          pop_scenario = "Medium")
-   
+
+
+print("\n  - YieldTrend_LowVsMediumVsHighPop", flush = True)
+FS.PandaPlotsCooperation(panda_file = "current_panda", 
+                         scenarionames = ["low population growth", "medium population growth", "high population growth"],
+                         folder_comparisons = "YieldTrend_LowVsMediumVsHighPop",
+                         grouping_aim = "Similar",
+                         adjacent = True,
+                         yield_projection = "trend",
+                         pop_scenario = ["Low", "Medium", "High"])
+
+
+print("\n  - OnlyYieldTrendVsOnlyHighPopTrendVsNoTrend", flush = True)
+FS.PandaPlotsCooperation(panda_file = "current_panda", 
+                         scenarionames = ["only yield trend", "only high population growth", "no trends"],
+                         folder_comparisons = "OnlyYieldTrendVsOnlyHighPopTrendVsNoTrend",
+                         grouping_aim = "Similar",
+                         adjacent = True,
+                         yield_projection = ["trend", "fixed", "fixed"],
+                         pop_scenario = ["fixed", "High", "fixed"])
+     
+# %%
+print("\nPlotting coooperation plots", flush = True)
+FS.PandaPlotsCooperation(panda_file = "current_panda", 
+                        grouping_aim = "Similar",
+                        adjacent = True,
+                        yield_projection = "fixed",
+                        pop_scenario = "fixed")
+
+# %% Plotting results for runs without trend, custom grouping
+
+print("\nPlotting crop areas", flush = True)
+FS.CropAreasDependingOnColaboration(panda_file = "current_panda", 
+                                    groupAim = "Custom",
+                                    adjacent = False,
+                                    console_output = None,
+                                    yield_projection = "fixed",
+                                    pop_scenario = "fixed")
+
+print("\nPlotting coooperation plots", flush = True)
+FS.PandaPlotsCooperation(panda_file = "current_panda", 
+                                grouping_aim = "Custom",
+                                adjacent = False,
+                                yield_projection = "fixed",
+                                pop_scenario = "fixed")
+
+print("\n\nPlotting other plots", flush = True)
+FS.OtherPandaPlots(panda_file = "current_panda", 
+                   grouping_aim = "Custom",
+                   adjacent = False,
+                   yield_projection = "fixed",
+                   pop_scenario = "fixed") 
+
 # %% Plotting results for runs with trend, dissimilar, non-adjacent
 
 print("\nPlotting crop areas", flush = True)

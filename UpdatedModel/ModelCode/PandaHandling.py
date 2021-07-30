@@ -328,3 +328,34 @@ def ReadFromPanda(file = "current_panda",
         
     return(sub_panda)
             
+def LoadFullResults(file = "current_panda", **kwargs):
+    """
+    Function returning the full model results for specific settings, taking
+    the run with the highest sample size if N is not specified
+
+    Parameters
+    ----------
+    file : str, optional
+        Filename of the panda csv to use. The default is "current_panda".
+    **kwargs : 
+        Settings specifiying for which model run results shall be returned, 
+        passed to ReadFromPanda
+        
+    Returns
+    -------
+    Everything returned when running the model (FoodSecurityProblem).
+
+    """
+    
+    fn = ReadFromPanda(file = file,
+                       output_var = "Filename for full results",
+                       **kwargs)
+    
+    settings, args, AddInfo_CalcParameters, yield_information, \
+    population_information, status, all_durations, crop_alloc, meta_sol, \
+    crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \
+                LoadModelResults(fn["Filename for full results"].iloc[0])
+                
+    return(settings, args, AddInfo_CalcParameters, yield_information, 
+           population_information, status, all_durations, crop_alloc, meta_sol, 
+           crop_alloc_vss, meta_sol_vss, VSS_value, validation_values)

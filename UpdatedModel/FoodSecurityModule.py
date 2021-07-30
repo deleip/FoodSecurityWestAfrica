@@ -38,6 +38,7 @@ from ModelCode.PandaGeneration import OverViewCurrentPandaVariables
 
 from ModelCode.PandaHandling import UpdatePandaWithAddInfo
 from ModelCode.PandaHandling import ReadFromPanda
+from ModelCode.PandaHandling import LoadFullResults
 
 from ModelCode.PandaPlotsSingleScenario import PlotPandaSingle
 from ModelCode.PandaPlotsSingleScenario import PlotPenaltyVsProb

@@ -501,7 +501,7 @@ def SetParameters(settings,
         country_avg_prices = pickle.load(fp)
     # Gambia is not included in our area
     country_avg_prices = country_avg_prices.drop(axis = 0, labels = [4])             
-        
+    # weighted average (using area share as weight)    
     price_maize = np.nansum(country_avg_prices["Maize"].values * \
                                             country_codes["Shares"].values)
     price_rice = np.nansum(country_avg_prices["Rice"].values * \

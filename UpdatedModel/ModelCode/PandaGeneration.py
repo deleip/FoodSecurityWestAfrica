@@ -149,17 +149,15 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
     panda["Average food demand"]           = np.mean(args["demand"])
     panda["Food demand per capita"]        = args["demand"][0]/population_information["population"][0] 
     
-    panda["Average total necessary import (over samples and then years)"] \
+    panda["Average aggregate food shortage (without taking into account imports)"] \
         = args["import"] + meta_sol["avg_nec_import"]
-    panda["Average necessary add. import (over samples and then years)"] \
+    panda["Average aggregate food shortage"] \
         = meta_sol["avg_nec_import"] # includes also caes that don't need import as zero
-    panda["Average necessary add. import excluding solvency constraint (over samples and then years)"] \
+    panda["Average aggregate food shortage excluding solvency constraint"] \
         = AddInfo_CalcParameters["import_onlyF"]
-    panda["Average necessary add. import per capita (over samples and then years)"] \
+    panda["Average aggregate food shortage per capita"] \
         = np.nanmean(np.nanmean(food_shortage_capita, axis = 0))*1e9
-    panda["Average necessary add. import per capita (including only samples that need import)"] \
-        = np.nanmean(np.nanmean(food_shortage_capita, axis = 0))*1e9
-    panda["Average necessary add. import per capita (over samples and then years, only cases that need import)"] \
+    panda["Average aggregate food shortage per capita (including only samples that have shortage)"] \
         = np.nanmean(np.nanmean(food_shortage_capita_only_shortage, axis = 0))*1e9 
         # TODO: Befroe I only had "Average necessary add. import per capita
         # (over samples and then years)", which was actually directly taking the
@@ -186,20 +184,22 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
     panda["Aggregated average government payouts per cluster (over samples)"] \
         = list(np.nansum(np.nanmean(meta_sol["payouts"], axis = 0), axis = 0))
         
-    panda["Average necessary debt (excluding food security constraint)"] \
+    panda["Average aggregate debt after payout (excluding food security constraint)"] \
         = AddInfo_CalcParameters["debt_onlyS"]
-    panda["Average necessary debt"] \
+    panda["Average aggregate debt after payout"] \
         = meta_sol["avg_nec_debt"] # includes cases that don't need debt as zero
-    panda["Average necessary debt (over all samples with negative final fund)"] \
+    panda["Average aggregate debt after payout (including only samples with negative final fund)"] \
         = np.nanmean(ff_debt)
-    panda["Average necessary debt per capita (over all samples with negative final fund)"] \
+    panda["Average aggregate debt after payout per capita (including only samples with negative final fund)"] \
         = np.nanmean(ff_debt / (pop_of_area[ter_years]/1e9))
-    panda["Average necessary debt per capita (over all samples)"] \
+    panda["Average aggregate debt after payout per capita"] \
         = np.nanmean(ff_debt_all / (pop_of_area[ter_years_all]/1e9)) # negative debt set to zero
     
     # 8 different cost items in objective function
     panda["Average food demand penalty (over samples and then years)"] \
         = np.nanmean(np.nanmean(meta_sol["fd_penalty"], axis = 0))
+    panda["Average total food demand penalty (over samples)"] \
+        =np.nanmean(np.nansum(meta_sol["fd_penalty"], axis = 1))
     panda["Average solvency penalty (over samples)"] \
         = np.mean(meta_sol["sol_penalty"])
     panda["Average total cultivation costs"] \
@@ -235,8 +235,8 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
        
        
             
-    # if np.isnan(panda["Average necessary add. import per capita (over samples and then years)"]):
-    #     panda["Average necessary add. import per capita (over samples and then years)"] = 0
+    # if np.isnan(panda["Average aggregate food shortage per capita"]):
+    #     panda["Average aggregate food shortage per capita"] = 0
     # if np.isnan(dict_for_pandas["Average food shortcomings per capita (over all years and samples with shortcomings)"]):
     #     dict_for_pandas["Average food shortcomings per capita (over all years and samples with shortcomings)"] = 0
      
@@ -331,6 +331,12 @@ def OpenPanda(file = "current_panda"):
             dict_convert[key] = _ConvertListsFloats
         elif dict_convert[key] == "list of ints":
             dict_convert[key] = _ConvertListsInts
+            
+    # print(dict_convert.keys(), flush = True)
+    # for key in dict_convert.keys():
+    #     print(key, flush = True)
+    #     dict_tmp = {key: dict_convert[key]}
+    #     panda = pd.read_csv("ModelOutput/Pandas/" + file + ".csv", converters = dict_tmp)
     
     # re-read panda with conversions
     panda = pd.read_csv("ModelOutput/Pandas/" + file + ".csv", converters = dict_convert)
@@ -398,18 +404,18 @@ def _SetUpPandaDicts():
         "Share of West Africa's population that is living in total considered region (2015)": "",
         "Share of West Africa's population that is living in considered clusters (2015)": "",
         
-        "On average cultivated area per cluster": "[$10^9\,ha$]",
-        "Average yearly total cultivated area": "[$10^9\,ha$]",
+        "On average cultivated area per cluster": "[$10^9\,$ha]",
+        "Average yearly total cultivated area": "[$10^9\,$ha]",
         "Total cultivation costs": "[$10^9\,\$$]",
         
         "Import (given as model input)": "[$10^{12}\,$kcal]",
         "Average food demand": "[$10^{12}\,$kcal]",
         "Food demand per capita" : "[$10^{12}\,$kcal]",
-        "Average total necessary import (over samples and then years)": "[$10^{12}\,$kcal]",
-        "Average necessary add. import (over samples and then years)": "[$10^{12}\,$kcal]",
-        "Average necessary add. import excluding solvency constraint (over samples and then years)": "[$10^{12}\,$kcal]",
-        "Average necessary add. import per capita (over samples and then years)": "[$10^{3}\,$kcal]",
-        "Average necessary add. import per capita (over samples and then years, only cases that need import)": "[$10^{3}\,$kcal]",
+        "Average aggregate food shortage (without taking into account imports)": "[$10^{12}\,$kcal]",
+        "Average aggregate food shortage": "[$10^{12}\,$kcal]",
+        "Average aggregate food shortage excluding solvency constraint": "[$10^{12}\,$kcal]",
+        "Average aggregate food shortage per capita": "[$10^{3}\,$kcal]",
+        "Average aggregate food shortage per capita (including only samples that have shortage)": "[$10^{3}\,$kcal]",
         
         "Expected income (to calculate guaranteed income)": "[$10^9\,\$$]",
         "Number of occurrences per cluster where farmers make losses": "",
@@ -418,13 +424,14 @@ def _SetUpPandaDicts():
         "Average income per cluster in final run (over samples and then years)": "[$10^9\,\$$]",
         "Average income per cluster in final run scaled with capita (over samples and then years)": "[$\$$]",
         "Aggregated average government payouts per cluster (over samples)": "[$10^9\,\$$]",
-        "Average necessary debt (excluding food security constraint)": "[$10^9\,\$$]",
-        "Average necessary debt": "[$10^9\,\$$]",
-        "Average necessary debt (over all samples with negative final fund)": "[$10^9\,\$$]",
-        "Average necessary debt per capita (over all samples with negative final fund)": "[$\$$]",
-        "Average necessary debt per capita (over all samples)": "[$\$$]",
+        "Average aggregate debt after payout (excluding food security constraint)": "[$10^9\,\$$]",
+        "Average aggregate debt after payout": "[$10^9\,\$$]",
+        "Average aggregate debt after payout (including only samples with negative final fund)": "[$10^9\,\$$]",
+        "Average aggregate debt after payout per capita (including only samples with negative final fund)": "[$\$$]",
+        "Average aggregate debt after payout per capita": "[$\$$]",
         
         "Average food demand penalty (over samples and then years)": "[$10^9\,\$$]",
+        "Average total food demand penalty (over samples)": "[$10^9\,\$$]",
         "Average solvency penalty (over samples)": "[$10^9\,\$$]",
         "Average total cultivation costs": "[$10^9\,\$$]",
         "Expected total costs": "[$10^9\,\$$]",
@@ -486,11 +493,11 @@ def _SetUpPandaDicts():
          "Import (given as model input)": float,
          "Average food demand": float,
          "Food demand per capita" : float,
-         "Average total necessary import (over samples and then years)": float,
-         "Average necessary add. import (over samples and then years)": float,
-         "Average necessary add. import excluding solvency constraint (over samples and then years)": float,
-         "Average necessary add. import per capita (over samples and then years)": float,
-         "Average necessary add. import per capita (over samples and then years, only cases that need import)": float,
+         "Average aggregate food shortage (without taking into account imports)": float,
+         "Average aggregate food shortage": float,
+         "Average aggregate food shortage excluding solvency constraint": float,
+         "Average aggregate food shortage per capita": float,
+         "Average aggregate food shortage per capita (including only samples that have shortage)": float,
         
          "Expected income (to calculate guaranteed income)": "list of floats",
          "Number of occurrences per cluster where farmers make losses": "list of ints",
@@ -499,13 +506,14 @@ def _SetUpPandaDicts():
          "Average income per cluster in final run (over samples and then years)": "list of floats",
          "Average income per cluster in final run scaled with capita (over samples and then years)": "list of floats",
          "Aggregated average government payouts per cluster (over samples)": "list of floats",
-         "Average necessary debt (excluding food security constraint)": float,
-         "Average necessary debt": float,
-         "Average necessary debt (over all samples with negative final fund)": float,
-         "Average necessary debt per capita (over all samples with negative final fund)": float,
-         "Average necessary debt per capita (over all samples)": float,  
+         "Average aggregate debt after payout (excluding food security constraint)": float,
+         "Average aggregate debt after payout": float,
+         "Average aggregate debt after payout (including only samples with negative final fund)": float,
+         "Average aggregate debt after payout per capita (including only samples with negative final fund)": float,
+         "Average aggregate debt after payout per capita": float,  
          
          "Average food demand penalty (over samples and then years)": float,
+         "Average total food demand penalty (over samples)": float,
          "Average solvency penalty (over samples)": float,
          "Average total cultivation costs": float,
          "Expected total costs": float,
@@ -565,11 +573,11 @@ def _SetUpPandaDicts():
         "Import (given as model input)",
         "Average food demand",
         "Food demand per capita",
-        "Average total necessary import (over samples and then years)",
-        "Average necessary add. import (over samples and then years)",
-        "Average necessary add. import excluding solvency constraint (over samples and then years)",
-        "Average necessary add. import per capita (over samples and then years)",
-        "Average necessary add. import per capita (over samples and then years, only cases that need import)",
+        "Average aggregate food shortage (without taking into account imports)",
+        "Average aggregate food shortage",
+        "Average aggregate food shortage excluding solvency constraint",
+        "Average aggregate food shortage per capita",
+        "Average aggregate food shortage per capita (including only samples that have shortage)",
         
         "Expected income (to calculate guaranteed income)",
         "Number of occurrences per cluster where farmers make losses",
@@ -578,13 +586,14 @@ def _SetUpPandaDicts():
         "Average income per cluster in final run (over samples and then years)",
         "Average income per cluster in final run scaled with capita (over samples and then years)",
         "Aggregated average government payouts per cluster (over samples)",
-        "Average necessary debt (excluding food security constraint)",
-        "Average necessary debt",
-        "Average necessary debt (over all samples with negative final fund)",
-        "Average necessary debt per capita (over all samples with negative final fund)",
-        "Average necessary debt per capita (over all samples)",
+        "Average aggregate debt after payout (excluding food security constraint)",
+        "Average aggregate debt after payout",
+        "Average aggregate debt after payout (including only samples with negative final fund)",
+        "Average aggregate debt after payout per capita (including only samples with negative final fund)",
+        "Average aggregate debt after payout per capita",
         
         "Average food demand penalty (over samples and then years)",
+        "Average total food demand penalty (over samples)",
         "Average solvency penalty (over samples)",
         "Average total cultivation costs",
         "Expected total costs",
