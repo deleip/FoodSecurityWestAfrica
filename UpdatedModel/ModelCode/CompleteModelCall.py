@@ -309,7 +309,7 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
     # VSS
     vss_start  = tm.time()
     _printing("\nCalculating VSS", console_output = console_output, logs_on = logs_on)
-    crop_alloc_vss, meta_sol_vss = VSS(settings, exp_incomes, args)
+    crop_alloc_vss, meta_sol_vss = VSS(settings, args)
     VSS_value = meta_sol_vss["exp_tot_costs"] - meta_sol["exp_tot_costs"]
     vss_end  = tm.time()
     all_durations["VSS"] = vss_end - vss_start

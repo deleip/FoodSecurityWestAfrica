@@ -15,7 +15,7 @@ from ModelCode.Auxiliary import _printing
 
 # %% #################### VALUE OF THE STOCHASTIC SOLUTION ####################  
  
-def VSS(settings, expected_incomes, args):
+def VSS(settings, args):
     """
     Calculating expected total costs using the optimal crop area allocation 
     assuming expected yield values as yield realization.
@@ -41,6 +41,35 @@ def VSS(settings, expected_incomes, args):
         deterministic model.
 
     """
+    # 1. expected income in deterministic case:
+        
+    # change some settings: we are interested in the expected income in 2016
+    # (no need to change start year, as we set scenarios to fixed)
+    settings_ExpIn = settings.copy()
+    settings_ExpIn["yield_projection"] = "fixed"
+    settings_ExpIn["pop_scenario"] = "fixed"
+    settings_ExpIn["T"] = 1
+    
+    # get arguments to calculate deterministic solution (in particular the 
+    # expected yields instead of yield samples)
+    args_vss_ExpIn, yield_information_ExpIn, population_information_ExpIn = \
+        SetParameters(settings_ExpIn, expected_incomes = None, VSS = True, 
+                      console_output = False, logs_on = False)
+    
+    # solve model for the expected yields
+    status, crop_alloc_vss_ExpIn, meta_sol_vss_ExpIn, prob, durations = \
+                SolveReducedLinearProblemGurobiPy(args_vss_ExpIn, 
+                                      args["rhoF"], args["rhoS"], 
+                                      console_output = False, logs_on = False)
+                
+    # get information of using VSS solution in stochastic setting
+    meta_sol_vss_ExpIn = GetMetaInformation(crop_alloc_vss_ExpIn, 
+                               args_vss_ExpIn, args["rhoF"], args["rhoS"])
+    expected_incomes = meta_sol_vss_ExpIn["expected_incomes"].flatten()
+        
+    
+    # 2. crop allocation and meta information for deterministic social planner 
+    
     # get arguments to calculate deterministic solution (in particular the 
     # expected yields instead of yield samples)
     args_vss, yield_information, population_information = \
@@ -52,8 +81,12 @@ def VSS(settings, expected_incomes, args):
                 SolveReducedLinearProblemGurobiPy(args_vss, args["rhoF"],
                       args["rhoS"], console_output = False, logs_on = False)
                 
-    # get information of using VSS solution in stochastic setting
-    meta_sol_vss = GetMetaInformation(crop_alloc_vss, args, args["rhoF"], args["rhoS"])
+    # get information of using VSS solution in stochastic setting (but with 
+    # guaranteed income of deterministic setting)
+    args_VSS_sto = args.copy()
+    args_VSS_sto["guaranteed_income"] = args_vss["guaranteed_income"]
+    meta_sol_vss = GetMetaInformation(crop_alloc_vss, args_vss, 
+                                      args["rhoF"], args["rhoS"])
     return(crop_alloc_vss, meta_sol_vss)      
     
 

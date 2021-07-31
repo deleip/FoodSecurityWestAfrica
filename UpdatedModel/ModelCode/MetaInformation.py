@@ -218,6 +218,7 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
           after payouts.
         - avg_nec_import: Average import needed to cover full food demand
         - necessary_debt: Average debt needed to cover full government payouts
+        - guaranteed_income: guaranteed_income as given in args
     """
     
     # running the objective function with option to get 
@@ -283,6 +284,7 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
                 "probF": prob_food_security,
                 "probS": prob_staying_solvent,
                 "avg_nec_import": np.nanmean(exp_shortcomings),
-                "avg_nec_debt": np.nanmean(debt)}
+                "avg_nec_debt": np.nanmean(debt),
+                "guaranteed_income": args["guaranteed_income"]}
     
     return(meta_sol)  

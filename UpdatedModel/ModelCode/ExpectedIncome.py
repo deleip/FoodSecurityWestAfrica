@@ -107,7 +107,7 @@ def _CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     settings_ExpIn = settings.copy()
 
     # change some settings: we are interested in the expected income in 2016
-    settings_ExpIn["seed"] = 201120
+    # (no need to change start year, as we set scenarios to fixed)
     settings_ExpIn["yield_projection"] = "fixed"
     settings_ExpIn["pop_scenario"] = "fixed"
     settings_ExpIn["T"] = 1
