@@ -257,7 +257,7 @@ def SetParameters(settings,
         - T: number of years covered in model          
         - guaranteed_income: np.array of size (T, len(k_using)) giving 
           the income guaranteed by the government for each year and cluster
-          in case of catastrophe in 10^9$
+          in case of catastrophe in 10^9$, based on expected income
         - crop_cal : np.array of size (num_crops,) giving the calorie content
           of the crops in 10^12kcal/10^6t
         - max_areas: np.array of size (len(k_using),) giving the upper 

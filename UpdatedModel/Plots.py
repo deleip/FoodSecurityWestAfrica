@@ -75,7 +75,8 @@ for cl in range(1, 10):
     
     # plot distribution of profits/losses
     ax1_tmp = plt.Subplot(fig[1], inner[1][cl - 1])
-    ax1_tmp.axvline(args["guaranteed_income"][0,0], color = "red", linestyle = "dashed", alpha = 0.6)
+    ax1_tmp.axvline(meta_sol["guaranteed_income"][0,0], color = "red", linestyle = "dashed", alpha = 0.6)
+    ax1_tmp.axvline(meta_sol_vss["guaranteed_income"][0,0], color = "green", linestyle = "dashed", alpha = 0.6)
     ax1_tmp.hist(meta_sol["profits"].flatten(), bins = 100, alpha = 0.6) 
     ax1_tmp.hist(meta_sol_vss["profits"].flatten(), bins = 100, alpha = 0.6)   
     ax1_tmp.set_title("Cluster " + str(cl))
@@ -92,7 +93,8 @@ for cl in range(1, 10):
     income = np.maximum(meta_sol["profits"], guaranteed)
     income_vss = np.maximum(meta_sol_vss["profits"], guaranteed)
     ax2_tmp = plt.Subplot(fig[2], inner[2][cl - 1])
-    ax2_tmp.axvline(args["guaranteed_income"][0,0], color = "red", linestyle = "dashed", alpha = 0.6)
+    ax1_tmp.axvline(meta_sol["guaranteed_income"][0,0], color = "red", linestyle = "dashed", alpha = 0.6)
+    ax1_tmp.axvline(meta_sol_vss["guaranteed_income"][0,0], color = "green", linestyle = "dashed", alpha = 0.6)
     ax2_tmp.hist(income.flatten(), bins = 100, alpha = 0.6) 
     ax2_tmp.hist(income_vss.flatten(), bins = 100, alpha = 0.6)   
     ax2_tmp.set_title("Cluster " + str(cl))
@@ -119,16 +121,16 @@ for cl in range(1, 10):
     
 # add labels  
 titles = ["Distribution of food production",
-          "Distribution of profits",
-          "Distribution of income (including payouts)",
+          "Distribution of profits w/o payouts",
+          "Distribution of profits including payouts",
           "Distribution of final fund (after payouts)"]
 xlabels = [r"Food supply in cluster [$10^{12}\,kcal$]",
            r"Aggregated profits of farmers in cluster [$10^9\,\$$]",
            r"Aggregated income of farmers (including payouts) in cluster [$10^9\,\$$]",
            r"Final fund size after payouts [$10^9\,\$$]"]
 legend_labels = ["Food demand", 
-                 "Guaranteed income",
-                 "Guaranteed income",
+                 "Guaranteed income (sto.)",
+                 "Guaranteed income (sto.)",
                  "Zero"]
 filenames = ["FoodSupplyDistribution_NoTrends",
              "ProfitDistribution_NoTrends",
@@ -145,9 +147,15 @@ for i in range(0, 4):
                              label='Deterministic solution', alpha = 0.6),
                        Line2D([0], [0], color = 'r', lw = 1.5, ls = "dashed",
                               label = legend_labels[i], alpha = 0.6)]
+    
+    if i in [1,2]:
+        legend_elements.append( Line2D([0], [0], color = 'green', lw = 1.5, 
+              ls = "dashed", label = "Guaranteed income (det.)", alpha = 0.6))
+        
     ax[i].legend(handles = legend_elements, bbox_to_anchor = (1.02, 0.5),
                  loc = 'center left', fontsize = 14)
-    fig[i].savefig("Figures/PublicationPlots/" + filenames[i] + ".jpg", bbox_inches = "tight", pad_inches = 1, format = "jpg")
+    fig[i].savefig("Figures/PublicationPlots/" + filenames[i] + ".jpg", 
+                   bbox_inches = "tight", pad_inches = 1, format = "jpg")
     plt.close(fig[i])
 
 # %% ################# DISTRIBUTION OF FOOD SUPPLY AND INCOME #################
@@ -237,7 +245,8 @@ for idx, size in enumerate([1, 2, 3, 5, 9]):
     
         # plot distribution of profits/losses
         ax1_tmp = plt.Subplot(fig[1], inner[1][rows, colfirst:collast])
-        ax1_tmp.axvline(np.sum(args["guaranteed_income"], axis = 1)[0], color = "red", linestyle = "dashed", alpha = 0.6)
+        ax1_tmp.axvline(np.sum(meta_sol["guaranteed_income"], axis = 1)[0], color = "red", linestyle = "dashed", alpha = 0.6)
+        ax1_tmp.axvline(np.sum(meta_sol_vss["guaranteed_income"], axis = 1)[0], color = "green", linestyle = "dashed", alpha = 0.6)
         ax1_tmp.hist(np.sum(meta_sol["profits"], axis = 2).flatten(), bins = 100, alpha = 0.6) 
         ax1_tmp.hist(np.sum(meta_sol_vss["profits"], axis = 2).flatten(), bins = 100, alpha = 0.6)
         if size == 1:
@@ -249,13 +258,14 @@ for idx, size in enumerate([1, 2, 3, 5, 9]):
                      transform = ax1_tmp.transAxes)
         fig[1].add_subplot(ax1_tmp)
         
-        # plot distribution of income (including government payouts)
+        # plot distribution of profits including government payouts
         guaranteed = args["cat_clusters"] * args["guaranteed_income"]
         guaranteed[guaranteed == 0] = -np.inf
         income = np.maximum(meta_sol["profits"], guaranteed)
         income_vss = np.maximum(meta_sol_vss["profits"], guaranteed)
         ax2_tmp = plt.Subplot(fig[2], inner[2][rows, colfirst:collast])
-        ax2_tmp.axvline(args["guaranteed_income"][0,0], color = "red", linestyle = "dashed", alpha = 0.6)
+        ax1_tmp.axvline(np.sum(meta_sol["guaranteed_income"], axis = 1)[0], color = "red", linestyle = "dashed", alpha = 0.6)
+        ax1_tmp.axvline(np.sum(meta_sol_vss["guaranteed_income"], axis = 1)[0], color = "green", linestyle = "dashed", alpha = 0.6)
         ax2_tmp.hist(np.sum(income, axis = 2).flatten(), bins = 100, alpha = 0.6) 
         ax2_tmp.hist(np.sum(income_vss, axis = 2).flatten(), bins = 100, alpha = 0.6)   
         if size == 1:
@@ -285,16 +295,16 @@ for idx, size in enumerate([1, 2, 3, 5, 9]):
 
 # add labels  
 titles = ["Distribution of food production",
-          "Distribution of profits",
-          "Distribution of income (including payouts)",
+          "Distribution of profits w/o payouts",
+          "Distribution of profits including payouts",
           "Distribution of final fund (after payouts)"]
 xlabels = [r"Food supply in cluster [$10^{12}\,kcal$]",
            r"Aggregated profits of farmers in cluster [$10^9\,\$$]",
            r"Aggregated income of farmers (including payouts) in cluster [$10^9\,\$$]",
            r"Final fund size after payouts [$10^9\,\$$]"]
 legend_labels = ["Food demand", 
-                 "Guaranteed income",
-                 "Guaranteed income",
+                 "Guaranteed income (sto.)",
+                 "Guaranteed income (sto.)",
                  "Zero"]
 filenames = ["FoodSupplyDistribution_NoTrends_WithCoop",
              "ProfitDistribution_NoTrends_WithCoop",
@@ -311,9 +321,14 @@ for i in range(0, 4):
                              label='Deterministic solution', alpha = 0.6),
                        Line2D([0], [0], color = 'r', lw = 1.5, ls = "dashed",
                               label = legend_labels[i], alpha = 0.6)]
+    if i in [1,2]:
+        legend_elements.append( Line2D([0], [0], color = 'green', lw = 1.5, 
+              ls = "dashed", label = "Guaranteed income (det.)", alpha = 0.6))
+        
     ax[i].legend(handles = legend_elements, bbox_to_anchor = (1.02, 0.5),
                  loc = 'center left', fontsize = 14)
-    fig[i].savefig("Figures/PublicationPlots/" + filenames[i] + ".jpg", bbox_inches = "tight", pad_inches = 1, format = "jpg")
+    fig[i].savefig("Figures/PublicationPlots/" + filenames[i] + ".jpg",
+                   bbox_inches = "tight", pad_inches = 1, format = "jpg")
     plt.close(fig[i])
 
 

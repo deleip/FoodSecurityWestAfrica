@@ -210,7 +210,7 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
         'fix_costs', 'yearly_fixed_costs', 'fd_penalty', 'avg_fd_penalty', 
         'sol_penalty', 'shortcomings', 'exp_shortcomings', 'expected_incomes', 
         'profits', 'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
-        'probS', 'avg_nec_import', 'avg_nec_debt')
+        'probS', 'avg_nec_import', 'avg_nec_debt', 'guaranteed_income')
     crop_alloc_vss : np.array
         deterministic solution for optimal crop areas    
     meta_sol_vss : dict
