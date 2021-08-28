@@ -44,18 +44,16 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
     rhoS : float
         The correct penalty rhoF to reach the probability probS (or the highest
         possible probS).
-    probF_onlyF : float
-        The probability for food security when only including the final rhoF 
-        with rhoS = 0.
-    probS_onlyS : float
-        The probability for solvency when only including the final rhoF 
-        with rhoS = 0.
-    avg_nec_import : float
-        The average necessary import needed when only including the final rhoF 
-        with rhoS = 0.
-    avg_nec_debt : float
-        The average necessary debt needed when only including the final rhoF 
-        with rhoS = 0.
+    meta_solF: dict
+        Additional information on the model results when running only for rhoF
+        (with rhoS = 0).
+    meta_solS: dict
+        Additional information on the model results when running only for rhoS 
+        (with rhoF = 0).
+    crop_allocF: np.array
+        Optimal crop allocation when only using rhoF (with rhoS = 0).
+    crop_allocS: np.array
+        Optimal crop allocation when only using rhoS (with rhoF = 0).
     """
     # extract some settings (that were originally passed on directly...)
     probF = args["probF"]
@@ -80,17 +78,15 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
         # get dictionary of settings for which rhoF has been calculated already
         with open("PenaltiesAndIncome/RhoFs.txt", "rb") as fp:    
             dict_rhoFs = pickle.load(fp)
-        with open("PenaltiesAndIncome/resProbFs.txt", "rb") as fp:    
-            dict_probFs = pickle.load(fp)
-        with open("PenaltiesAndIncome/resAvgImport.txt", "rb") as fp:    
-            dict_import = pickle.load(fp)
+        with open("PenaltiesAndIncome/crop_allocF.txt", "rb") as fp:    
+            dict_crop_allocF = pickle.load(fp)
             
         # if this setting was already calculated, fetch rhoF
         if SettingsAffectingRhoF in dict_rhoFs.keys():
             rhoF = dict_rhoFs[SettingsAffectingRhoF]
             _printing("Fetching rhoF: " + str(rhoF), console_output = console_output, logs_on = logs_on)
-            probF_onlyF = dict_probFs[SettingsAffectingRhoF]
-            avg_nec_import = dict_import[SettingsAffectingRhoF]
+            crop_allocF = dict_crop_allocF[SettingsAffectingRhoF]
+            meta_solF = GetMetaInformation(crop_allocF, args, rhoF, 0)
         else:
             # if this setting was calculated for a lower N and no initial
             # guess was given, we use the rhoF calculted for the lower N as 
@@ -101,24 +97,18 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
                 
             # calculating rhoF
             _printing("Calculating rhoF and import", console_output = console_output, logs_on = logs_on)
-            rhoF, meta_solF = \
+            rhoF, meta_solF, crop_allocF = \
                 _GetRhoWrapper(args, probF, rhoFini, checkedGuess, "F",
                   SettingsAffectingRhoF, console_output = None, logs_on = None)
-                
-            probF_onlyF = meta_solF["probF"] 
-            avg_nec_import = meta_solF["avg_nec_import"]
             
             dict_rhoFs[SettingsAffectingRhoF] = rhoF
-            dict_probFs[SettingsAffectingRhoF] = probF_onlyF
-            dict_import[SettingsAffectingRhoF] = avg_nec_import
+            dict_crop_allocF[SettingsAffectingRhoF] = crop_allocF
         
         # saving updated dicts
         with open("PenaltiesAndIncome/RhoFs.txt", "wb") as fp:    
              pickle.dump(dict_rhoFs, fp)
-        with open("PenaltiesAndIncome/resProbFs.txt", "wb") as fp:    
-             pickle.dump(dict_probFs, fp)
-        with open("PenaltiesAndIncome/resAvgImport.txt", "wb") as fp:     
-             pickle.dump(dict_import, fp)
+        with open("PenaltiesAndIncome/crop_allocF.txt", "wb") as fp:     
+             pickle.dump(dict_crop_allocF, fp)
             
   
     if probS == 0:
@@ -143,17 +133,15 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
         # get dictionary of settings for which rhoS has been calculated already
         with open("PenaltiesAndIncome/RhoSs.txt", "rb") as fp:    
             dict_rhoSs = pickle.load(fp)
-        with open("PenaltiesAndIncome/resProbSs.txt", "rb") as fp:    
-            dict_probSs = pickle.load(fp)
-        with open("PenaltiesAndIncome/resAvgDebt.txt", "rb") as fp:    
-            dict_debt = pickle.load(fp)
+        with open("PenaltiesAndIncome/crop_allocS.txt", "rb") as fp:    
+            dict_crop_allocS = pickle.load(fp)
            
         # if this setting was already calculated, fetch rhoS
         if SettingsAffectingRhoS in dict_rhoSs.keys():
             rhoS = dict_rhoSs[SettingsAffectingRhoS]
             _printing("\nFetching rhoS: " + str(rhoS), console_output = console_output, logs_on = logs_on)
-            probS_onlyS = dict_probSs[SettingsAffectingRhoS]
-            avg_nec_debt = dict_debt[SettingsAffectingRhoS]           
+            crop_allocS = dict_crop_allocS[SettingsAffectingRhoS]    
+            meta_solS = GetMetaInformation(crop_allocS, args, 0, rhoS)
         else:
             # if this setting was calculated for a lower N and no initial
             # guess was given, we use the rhoS calculted for the lower N as 
@@ -164,26 +152,20 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
                 
             # calculating rhoS
             _printing("\nCalculating rhoS", console_output = console_output, logs_on = logs_on)
-            rhoS, meta_solS = \
+            rhoS, meta_solS, crop_allocS = \
                 _GetRhoWrapper(args, probS, rhoSini, checkedGuess, "S",
                   SettingsAffectingRhoS, console_output = None, logs_on = None)
-                
-            probS_onlyS = meta_solS["probS"]
-            avg_nec_debt = meta_solS["avg_nec_debt"]
-            
+   
             dict_rhoSs[SettingsAffectingRhoS] = rhoS
-            dict_probSs[SettingsAffectingRhoS] = probS_onlyS
-            dict_debt[SettingsAffectingRhoS] = avg_nec_debt
+            dict_crop_allocS[SettingsAffectingRhoS] = crop_allocS
         
         # saving updated dict
         with open("PenaltiesAndIncome/RhoSs.txt", "wb") as fp:    
              pickle.dump(dict_rhoSs, fp)
-        with open("PenaltiesAndIncome/resProbSs.txt", "wb") as fp:    
-             pickle.dump(dict_probSs, fp)
-        with open("PenaltiesAndIncome/resAvgDebt.txt", "wb") as fp:     
-             pickle.dump(dict_debt, fp)
+        with open("PenaltiesAndIncome/crop_allocS.txt", "wb") as fp:     
+             pickle.dump(dict_crop_allocS, fp)
              
-    return(rhoF, rhoS, probF_onlyF, probS_onlyS, avg_nec_import, avg_nec_debt)
+    return(rhoF, rhoS, meta_solF, meta_solS, crop_allocF, crop_allocS)
 
 def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
                   file, console_output = None, logs_on = None):
@@ -223,6 +205,8 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
         The final penalty
     meta_sol : dict
         Dictionary on model outputs for the resulting penalty.
+    crop_alloc : np.array
+        Optimal crop allocation for the resulting penalty.
     """
     
     def _get_necessary_help(meta_sol, objective = objective):
@@ -249,7 +233,7 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
     # if probF can be reached find lowest penalty that gives probF
     if maxProb >= prob:
         _printing("     Finding corresponding penalty\n", console_output, logs_on = logs_on)
-        rho, meta_sol = _RhoProbability(args, prob, rhoIni, checkedGuess, \
+        rho, meta_sol, crop_alloc = _RhoProbability(args, prob, rhoIni, checkedGuess, \
                objective, file, accuracy_rho, accuracy_prob, nec_help, "GivenProb", 
                meta_zero, meta_max, max_crop_alloc, console_output, logs_on)
     # if probF cannot be reached but the maximum probability (or what is 
@@ -257,7 +241,7 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
     # find the lowest penalty that gives the highest probability
     elif maxProb > meta_zero["prob" + objective]:
         _printing("     Finding penalty that leads to max. probability\n", console_output, logs_on = logs_on)
-        rho, meta_sol = _RhoProbability(args, maxProb, rhoIni, checkedGuess, \
+        rho, meta_sol, crop_alloc = _RhoProbability(args, maxProb, rhoIni, checkedGuess, \
                objective, file, accuracy_rho, accuracy_maxProb, nec_help, "MaxProb", 
                meta_zero, meta_max, max_crop_alloc, console_output, logs_on)
     # if the max. probability is zero, find the lowest penalty that minimizes the
@@ -269,14 +253,14 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
         elif objective == "S":
             _printing(f"     Finding lowest penalty minimizing average total debt ({nec_help:.2e} 10^9 $)\n", 
                      console_output, logs_on = logs_on)
-        rho, meta_sol = _RhoMinHelp(args, prob, rhoIni,
+        rho, meta_sol, crop_alloc = _RhoMinHelp(args, prob, rhoIni,
                 checkedGuess, objective, nec_help, accuracy_rho, 
                 meta_zero, meta_max, max_crop_alloc, file, \
                 console_output = console_output, logs_on = logs_on)
             
     _printing("\n     Final rho" + objective + ": " + str(rho), console_output = console_output, logs_on = logs_on)
     
-    return(rho, meta_sol)
+    return(rho, meta_sol, crop_alloc)
 
     
 # %% ##################### TWO PENALTY CALCULATION ALGORITHMS ######################
@@ -338,8 +322,10 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, accuracy_
     -------
     rho : float
         The final penalty
-    meta_sol : dict
+    meta_sol_out : dict
         Dictionary on model outputs for the resulting penalty.
+    crop_alloc_out : np.array
+        Optimal crop allocation for the resulting penalty.
     """
     
     min_prob = meta_zero["prob"+objective]
@@ -376,7 +362,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, accuracy_
     # if we get the right prob for our guess, and a lower prob for rhoCheck 
     # at the lower end of our accuracy-interval, we know that the correct 
     # rho is in that interval and can return our guess
-    rho, meta_sol = _checkIniGuess(rhoIni, 
+    rho, meta_sol, crop_alloc = _checkIniGuess(rhoIni, 
                                   args,
                                   checkedGuess,
                                   prob = prob,
@@ -387,7 +373,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, accuracy_
                                   console_output = console_output,
                                   logs_on = logs_on)
     if rho is not None:
-        return(rho, meta_sol)
+        return(rho, meta_sol, crop_alloc)
     
     # else we start from scratch
     if objective == "F":
@@ -401,6 +387,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, accuracy_
     rhoLastUp = 0
     lowestCorrect = np.inf
     meta_sol_lowestCorrect = np.inf
+    crop_alloc_lowestCorrest = np.inf
     crop_allocs = []
     rhos_tried = []
     probabilities = []
@@ -418,6 +405,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, accuracy_
     if _testProbAccuracy(meta_sol):
         lowestCorrect = rhoIni
         meta_sol_lowestCorrect = meta_sol
+        crop_alloc_lowestCorrest = crop_alloc
                 
     # remember guess
     rhoOld = rhoIni
@@ -457,6 +445,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, accuracy_
             if accuracy_int < rhoNew * accuracy_rho:    
                 rho = rhoNew
                 meta_sol_out = meta_sol
+                crop_alloc_out = crop_alloc
                 break
         elif meta_sol["prob"+objective] < prob:
             if lowestCorrect != np.inf:
@@ -464,6 +453,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, accuracy_
                 if accuracy_int < lowestCorrect * accuracy_rho:
                     rho = lowestCorrect
                     meta_sol_out = meta_sol_lowestCorrect
+                    crop_alloc_out = crop_alloc_lowestCorrest
                     break
             else:
                 accuracy_int = rhoLastDown - rhoNew
@@ -480,6 +470,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, accuracy_
         if _testProbAccuracy(meta_sol) and lowestCorrect > rhoNew:
             lowestCorrect = rhoNew
             meta_sol_lowestCorrect = meta_sol
+            crop_alloc_lowestCorrest = crop_alloc
     
     # last report
     _ReportProgressFindingRho(rhoNew, meta_sol, durations, \
@@ -498,12 +489,12 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, accuracy_
             prob_zero = meta_zero["probS"]
         accuracy_help = accuracy_help_perc * (nec_help_zero - nec_help)
         
-        _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, \
+        _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, probabilities, \
                          necessary_help, objective, method, file, nec_help,
                          nec_help_zero, accuracy_help, prob_zero,
                          meta_max, max_crop_alloc, prob, tol_prob)
              
-    return(rho, meta_sol_out)
+    return(rho, meta_sol_out, crop_alloc_out)
 
          
 def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
@@ -558,8 +549,10 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
     -------
     rho : float
         The final penalty
-    meta_sol : dict
+    meta_sol_out : dict
         Dictionary on model outputs for the resulting penalty.
+    crop_alloc_out : np.array
+        Optimal crop allocation for the resulting penalty.
     """   
     
     from ModelCode.GeneralSettings import accuracy_help as accuracy_help_perc
@@ -606,7 +599,7 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
         return(testPassed)
     
     # check if rho from run with smaller N works here as well:
-    rho, meta_sol = _checkIniGuess(rhoIni, 
+    rho, meta_sol, crop_alloc = _checkIniGuess(rhoIni, 
                                   args,
                                   checkedGuess,
                                   nec_help = nec_help,
@@ -618,7 +611,7 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
                                   logs_on = logs_on)
    
     if rho is not None:
-        return(rho, meta_sol)
+        return(rho, meta_sol, crop_alloc)
     
     # else we start from scratch
     if objective == "F":
@@ -632,6 +625,7 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
     rhoLastUp = 0
     lowestCorrect = np.inf
     meta_sol_lowestCorrect = np.inf
+    crop_alloc_lowestCorrest = np.inf
     crop_allocs = []
     rhos_tried = []
     probabilities = []
@@ -650,6 +644,7 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
     if testPassed:
         lowestCorrect = rhoIni
         meta_sol_lowestCorrect = meta_sol
+        crop_alloc_lowestCorrest = crop_alloc
                 
     # remember guess
     rhoOld = rhoIni
@@ -686,6 +681,7 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
             if accuracy_int < rhoNew * accuracy_rho:
                 rho = rhoNew
                 meta_sol_out = meta_sol
+                crop_alloc_out = crop_alloc
                 break
         else:
             if lowestCorrect != np.inf:
@@ -693,6 +689,7 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
                 if accuracy_int < lowestCorrect * accuracy_rho:
                     rho = lowestCorrect
                     meta_sol_out = meta_sol_lowestCorrect
+                    crop_alloc_out = crop_alloc_lowestCorrest
                     break
             else:
                 accuracy_int = rhoLastDown - rhoNew
@@ -707,6 +704,7 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
         if  testPassed and lowestCorrect > rhoNew:
             lowestCorrect = rhoNew
             meta_sol_lowestCorrect = meta_sol
+            crop_alloc_lowestCorrest = crop_alloc
     
     # last report
     _ReportProgressFindingRho(rhoNew, meta_sol, durations, \
@@ -715,12 +713,12 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
         
     # ploting of information
     if args["T"] > 1:
-        _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, \
+        _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, probabilities, \
                          necessary_help, objective, "MinHelp", file, nec_help,
                          nec_help_zero, accuracy_help, prob_zero, meta_max,
                          max_crop_alloc)
         
-    return(rho, meta_sol_out)
+    return(rho, meta_sol_out, crop_alloc_out)
 
 
 # %% ######################### AUXILIARY FUNCTIONS ############################
@@ -794,7 +792,7 @@ def _CheckOptimalProb(args, prob, objective,
             
     return(maxProb, meta_max, meta_zero, crop_alloc)
 
-def _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, necessary_help, \
+def _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, probabilities, necessary_help, \
                      objective, method, file, min_nec_help, nec_help_zero,
                      accuracy_help, minProb, meta_max, max_crop_alloc,
                      target_prob = None, tol_prob = None):
@@ -811,8 +809,6 @@ def _PlotPenatlyStuff(rho, rhos_tried, crop_allocs, args, probabilities, necessa
         List of all penalties that were tried.
     crop_allocs : list of np.arrays
         List of resulting crop areas for each penalty that was tried.
-    args : dict
-        Dictionary of arguments needed as model input.
     probabilities : list of floats
         List of resulting probabilities for each penalty that was tried.
     necessary_help : list of floats
@@ -1252,6 +1248,8 @@ def _checkIniGuess(rhoIni,
         The final penalty (if guess worked) or None.
     meta_sol : dict
         The corresponding meta_sol or None.
+    crop_alloc : np.array
+        The corresponding optimal crop allocation or None.
 
     """
     
@@ -1299,7 +1297,7 @@ def _checkIniGuess(rhoIni,
                                  logs_on = logs_on)
         if checkedGuess:
             _printing("     We have a rhoF from a different N that was already double-checked!", console_output = console_output, logs_on = logs_on)
-            return(rhoIni, meta_sol)
+            return(rhoIni, meta_sol, crop_alloc)
         elif testPassed:    
             status, crop_alloc_check, meta_sol_check, sto_prob, durations = \
                     SolveReducedLinearProblemGurobiPy(args, rhoFcheck, rhoScheck,
@@ -1310,11 +1308,11 @@ def _checkIniGuess(rhoIni,
                                  logs_on = logs_on)
             if not testPassed:
                 _printing("     Cool, that worked!", console_output = console_output, logs_on = logs_on)
-                return(rhoIni, meta_sol)
+                return(rhoIni, meta_sol, crop_alloc)
         _printing("     Oops, that guess didn't work - starting from scratch\n", \
                  console_output = console_output, logs_on = logs_on)
             
-    return(None, None)
+    return(None, None, None)
 
     
 def _ReportProgressFindingRho(rho,

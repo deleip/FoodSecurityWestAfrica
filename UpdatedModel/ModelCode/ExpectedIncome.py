@@ -127,10 +127,8 @@ def _CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     # first guess
     with open("PenaltiesAndIncome/RhoFs.txt", "rb") as fp:    
         dict_rhoFs = pickle.load(fp)
-    with open("PenaltiesAndIncome/resProbFs.txt", "rb") as fp:    
-        dict_probFs = pickle.load(fp)
-    with open("PenaltiesAndIncome/resAvgImport.txt", "rb") as fp:    
-        dict_import = pickle.load(fp)
+    with open("PenaltiesAndIncome/crop_allocF.txt", "rb") as fp:    
+        dict_crop_allocF = pickle.load(fp)
         
     rhoFini, checkedGuess = _GetInitialGuess(dict_rhoFs, SettingsFirstGuess, settings["N"])
     
@@ -141,19 +139,16 @@ def _CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     args, yield_information, population_information = \
         SetParameters(settings_ExpIn, console_output = False, logs_on = False)
     
-    rhoF, meta_sol = _GetRhoWrapper(args, probF, rhoFini, checkedGuess, "F",
+    rhoF, meta_solF, crop_allocF = _GetRhoWrapper(args, probF, rhoFini, checkedGuess, "F",
                   SettingsAffectingRhoF, console_output = False, logs_on = False)
           
     dict_rhoFs[SettingsAffectingRhoF] = rhoF
-    dict_probFs[SettingsAffectingRhoF] = meta_sol["probF"]
-    dict_import[SettingsAffectingRhoF] = meta_sol["avg_nec_import"]
+    dict_crop_allocF[SettingsAffectingRhoF] = crop_allocF
     
     # saving updated dicts
     with open("PenaltiesAndIncome/RhoFs.txt", "wb") as fp:    
          pickle.dump(dict_rhoFs, fp)
-    with open("PenaltiesAndIncome/resProbFs.txt", "wb") as fp:    
-         pickle.dump(dict_probFs, fp)
-    with open("PenaltiesAndIncome/resAvgImport.txt", "wb") as fp:     
-         pickle.dump(dict_import, fp)
+    with open("PenaltiesAndIncome/crop_allocF.txt", "wb") as fp:     
+         pickle.dump(dict_crop_allocF, fp)
         
-    return(meta_sol["expected_incomes"].flatten())
+    return(meta_solF["avg_profits"].flatten())

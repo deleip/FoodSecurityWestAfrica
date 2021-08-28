@@ -14,37 +14,56 @@ from ModelCode.Auxiliary import _printing
 
 # %% ########## FUNCTIONS TO CREATE AND FILL THE RESULTS PANDA OBJECT ###########
 
-def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
-                    population_information, crop_alloc, \
-                    meta_sol, meta_sol_vss, VSS_value, validation_values, \
-                    fn_fullresults, console_output = None, logs_on = None,
-                    file = "current_panda"):
+# TODO! 
+
+def _WriteToPandas(settings, args, yield_information, population_information, \
+                status, all_durations, exp_incomes, crop_alloc, \
+                meta_sol, crop_allocF, meta_solF, crop_allocS, meta_solS, \
+                crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, \
+                fn_fullresults, console_output = None, logs_on = None,
+                file = "current_panda"):
     """
     Adds information on the model run to the given pandas csv.
     
     Parameters
-    ----------
+    ---------- 
     settings : dict
         The model input settings that were given by user. 
     args : dict
         Dictionary of arguments needed as direct model input.
-    AddInfo_CalcParameters : dict
-        Additional information from calculatings expected income and penalties
-        which are not needed as model input.
     yield_information : dict
         Information on the yield distributions for the considered clusters.
     population_information : dict
         Information on the population in the considered area.
+    status : int
+        status of solver (optimal: 2)
+    all_durations :  dict
+        Information on the duration of different steps of the model framework.
+    exp_incomes : dict
+        Expected income (on which guaranteed income is based) for the stochastic
+        and the deterministic setting.
     crop_alloc :  np.array
-        optimal crop areas for all years, crops, clusters
+        gives the optimal crop areas for all years, crops, clusters
     meta_sol : dict 
         additional information about the model output ('exp_tot_costs', 
         'fix_costs', 'yearly_fixed_costs', 'fd_penalty', 'avg_fd_penalty', 
-        'sol_penalty', 'shortcomings', 'exp_shortcomings', 'expected_incomes', 
+        'sol_penalty', 'shortcomings', 'exp_shortcomings', 'avg_profits', 
         'profits', 'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
-        'probS', 'avg_nec_import', 'avg_nec_debt')
+        'probS', 'avg_nec_import', 'avg_nec_debt', 'guaranteed_income')
+    crop_allocF : np.array
+        optimal crop allocation for scenario with only food security objective
+    meta_solF : dict
+        additional information on model output for scenario with only food
+        security objective
+    crop_allocS : np.array
+        optimal crop allocation for scenario with only solvency objective
+    meta_solS : dict
+        additional information on model output for scenario with only solvency
+        objective
+    crop_alloc_vss : np.array
+        deterministic solution for optimal crop areas    
     meta_sol_vss : dict
-        additional information on the deterministic solution 
+        additional information on the deterministic solution  
     VSS_value : float
         VSS calculated as the difference between total costs using 
         deterministic solution for crop allocation and stochastic solution
@@ -123,9 +142,9 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
     panda["Resulting probability for food security"] = meta_sol["probF"]
     panda["Resulting probability for solvency"]      = meta_sol["probS"]
     panda["Max. possible probability for food security (excluding solvency constraint)"] \
-        = AddInfo_CalcParameters["probF_onlyF"]
+        = meta_solF["probF"]
     panda["Max. possible probability for solvency (excluding food security constraint)"] \
-        = AddInfo_CalcParameters["probS_onlyS"]
+        = meta_solS["probS"]
     
     # 3 yield information
     panda["Probability for a catastrophic year"]                    = yield_information["prob_cat_year"]
@@ -154,7 +173,7 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
     panda["Average aggregate food shortage"] \
         = meta_sol["avg_nec_import"] # includes also caes that don't need import as zero
     panda["Average aggregate food shortage excluding solvency constraint"] \
-        = AddInfo_CalcParameters["import_onlyF"]
+        = meta_solF["avg_nec_import"]
     panda["Average aggregate food shortage per capita"] \
         = np.nanmean(np.nanmean(food_shortage_capita, axis = 0))*1e9
     panda["Average aggregate food shortage per capita (including only samples that have shortage)"] \
@@ -166,17 +185,14 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
         # Another option would be to take the average over the surplus or 
         # food shortage 
         
-    # 7 expected income, final fund and needed debt
-    panda["Expected income (to calculate guaranteed income)"] \
-        = list(AddInfo_CalcParameters["expected_incomes"])
+    # 7 a priori expected income, resulting average income
+    panda["Expected income (stochastic setting)"] \
+        = list(exp_incomes["sto. setting"])
+    panda["Expected income (deterministic setting)"] \
+        = list(exp_incomes["det. setting"])
+        
     panda["Number of occurrences per cluster where farmers make losses"] \
         = list(meta_sol["num_years_with_losses"])
-    panda["Number of samples with negative final fund"] \
-        = np.nansum(meta_sol["final_fund"] < 0)
-    panda["Average final fund (over all samples)"] \
-        = np.nanmean(meta_sol["final_fund"])
-        # TODO maybe don't include cases that don't have a catastrohpe in average?
-    
     panda["Average income per cluster in final run (over samples and then years)"] \
         = list(np.nanmean(np.nanmean(meta_sol["profits"], axis = 0), axis = 0))  # profits include both actual profits and losses
     panda["Average income per cluster in final run scaled with capita (over samples and then years)"] \
@@ -184,8 +200,15 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
     panda["Aggregated average government payouts per cluster (over samples)"] \
         = list(np.nansum(np.nanmean(meta_sol["payouts"], axis = 0), axis = 0))
         
+    # 8 final fund and needed debt
+    panda["Number of samples with negative final fund"] \
+        = np.nansum(meta_sol["final_fund"] < 0)
+    panda["Average final fund (over all samples)"] \
+        = np.nanmean(meta_sol["final_fund"])
+        # TODO maybe don't include cases that don't have a catastrohpe in average?
+        
     panda["Average aggregate debt after payout (excluding food security constraint)"] \
-        = AddInfo_CalcParameters["debt_onlyS"]
+        = meta_solS["avg_nec_debt"]
     panda["Average aggregate debt after payout"] \
         = meta_sol["avg_nec_debt"] # includes cases that don't need debt as zero
     panda["Average aggregate debt after payout (including only samples with negative final fund)"] \
@@ -195,7 +218,7 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
     panda["Average aggregate debt after payout per capita"] \
         = np.nanmean(ff_debt_all / (pop_of_area[ter_years_all]/1e9)) # negative debt set to zero
     
-    # 8 different cost items in objective function
+    # 9 different cost items in objective function
     panda["Average food demand penalty (over samples and then years)"] \
         = np.nanmean(np.nanmean(meta_sol["fd_penalty"], axis = 0))
     panda["Average total food demand penalty (over samples)"] \
@@ -207,7 +230,7 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
     panda["Expected total costs"] \
         = meta_sol["exp_tot_costs"] # this includes varying cultivation costs (depending on catastrophic year)
         
-    # 9 VSS
+    # 10 VSS
     panda["Value of stochastic solution"]                    = VSS_value      # diff of total costs using det. solution and using 
     panda["VSS as share of total costs (sto. solution)"]     = VSS_value/meta_sol["exp_tot_costs"]
     panda["VSS as share of total costs (det. solution)"]     = VSS_value/meta_sol_vss["exp_tot_costs"]
@@ -228,7 +251,7 @@ def _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
     panda["Resulting probability for solvency for VSS"]      = meta_sol_vss["probS"]
         
       
-    # 10 technincal variables   
+    # 11 technincal variables   
     panda["Validation value (deviation of total penalty costs)"] = validation_values["deviation_penalties"]
     panda["Seed (for yield generation)"]                         = settings["seed"]
     panda["Filename for full results"]                           = fn_fullresults
@@ -416,14 +439,16 @@ def _SetUpPandaDicts():
         "Average aggregate food shortage excluding solvency constraint": "[$10^{12}\,$kcal]",
         "Average aggregate food shortage per capita": "[$10^{3}\,$kcal]",
         "Average aggregate food shortage per capita (including only samples that have shortage)": "[$10^{3}\,$kcal]",
-        
-        "Expected income (to calculate guaranteed income)": "[$10^9\,\$$]",
+
+        "Expected income (stochastic setting)": "[$10^9\,\$$]",
+        "Expected income (deterministic setting)": "[$10^9\,\$$]",
         "Number of occurrences per cluster where farmers make losses": "",
-        "Number of samples with negative final fund": "",
-        "Average final fund (over all samples)": "[$10^9\,\$$]",
         "Average income per cluster in final run (over samples and then years)": "[$10^9\,\$$]",
         "Average income per cluster in final run scaled with capita (over samples and then years)": "[$\$$]",
         "Aggregated average government payouts per cluster (over samples)": "[$10^9\,\$$]",
+        
+        "Number of samples with negative final fund": "",
+        "Average final fund (over all samples)": "[$10^9\,\$$]",
         "Average aggregate debt after payout (excluding food security constraint)": "[$10^9\,\$$]",
         "Average aggregate debt after payout": "[$10^9\,\$$]",
         "Average aggregate debt after payout (including only samples with negative final fund)": "[$10^9\,\$$]",
@@ -497,15 +522,17 @@ def _SetUpPandaDicts():
          "Average aggregate food shortage": float,
          "Average aggregate food shortage excluding solvency constraint": float,
          "Average aggregate food shortage per capita": float,
-         "Average aggregate food shortage per capita (including only samples that have shortage)": float,
-        
-         "Expected income (to calculate guaranteed income)": "list of floats",
+         "Average aggregate food shortage per capita (including only samples that have shortage)": float,   
+  
+         "Expected income (stochastic setting)": "list of floats",
+         "Expected income (deterministic setting)": "list of floats",
          "Number of occurrences per cluster where farmers make losses": "list of ints",
-         "Number of samples with negative final fund": "list of ints",
-         "Average final fund (over all samples)": float,
          "Average income per cluster in final run (over samples and then years)": "list of floats",
          "Average income per cluster in final run scaled with capita (over samples and then years)": "list of floats",
          "Aggregated average government payouts per cluster (over samples)": "list of floats",
+         
+         "Number of samples with negative final fund": "list of ints",
+         "Average final fund (over all samples)": float,
          "Average aggregate debt after payout (excluding food security constraint)": float,
          "Average aggregate debt after payout": float,
          "Average aggregate debt after payout (including only samples with negative final fund)": float,
@@ -578,14 +605,16 @@ def _SetUpPandaDicts():
         "Average aggregate food shortage excluding solvency constraint",
         "Average aggregate food shortage per capita",
         "Average aggregate food shortage per capita (including only samples that have shortage)",
-        
-        "Expected income (to calculate guaranteed income)",
+         
+        "Expected income (stochastic setting)",
+        "Expected income (deterministic setting)",
         "Number of occurrences per cluster where farmers make losses",
-        "Number of samples with negative final fund",
-        "Average final fund (over all samples)",
         "Average income per cluster in final run (over samples and then years)",
         "Average income per cluster in final run scaled with capita (over samples and then years)",
         "Aggregated average government payouts per cluster (over samples)",
+        
+        "Number of samples with negative final fund",
+        "Average final fund (over all samples)",
         "Average aggregate debt after payout (excluding food security constraint)",
         "Average aggregate debt after payout",
         "Average aggregate debt after payout (including only samples with negative final fund)",

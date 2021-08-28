@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created on Sat Jan 23 16:15:20 2021
 
@@ -65,16 +64,18 @@ def UpdatePandaWithAddInfo(OldFile = "current_panda", console_output = None):
         filename = oldPanda.at[i,'Filename for full results']
         
         # loading full results
-        settings, args, AddInfo_CalcParameters, yield_information, \
-        population_information, status, durations, crop_alloc, meta_sol, \
-        crop_alloc_vs, meta_sol_vss, VSS_value, validation_values = \
+        settings, args, yield_information, population_information, \
+        status, all_durations, exp_incomes, crop_alloc, meta_sol, \
+        crop_allocF, meta_solF, crop_allocS, meta_solS, \
+        crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \
             LoadModelResults(filename)
             
         # applying updated write_to_pandas
-        _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
-                        population_information, crop_alloc, \
-                        meta_sol, meta_sol_vss, VSS_value, validation_values, \
-                        filename, console_output = False, logs_on = False, file = OldFile + "_updating")
+        _WriteToPandas(settings, args, yield_information, population_information, \
+                       status, all_durations, exp_incomes, crop_alloc, meta_sol, \
+                       crop_allocF, meta_solF, crop_allocS, meta_solS, \
+                       crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, \
+                       filename, console_output = False, logs_on = False, file = OldFile + "_updating")
 
     # remove old panda file
     os.remove("ModelOutput/Pandas/" + OldFile + ".csv")
@@ -351,11 +352,13 @@ def LoadFullResults(file = "current_panda", **kwargs):
                        output_var = "Filename for full results",
                        **kwargs)
     
-    settings, args, AddInfo_CalcParameters, yield_information, \
-    population_information, status, all_durations, crop_alloc, meta_sol, \
+    settings, args, yield_information, population_information, \
+    status, all_durations, exp_incomes, crop_alloc, meta_sol, \
+    crop_allocF, meta_solF, crop_allocS, meta_solS, \
     crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \
                 LoadModelResults(fn["Filename for full results"].iloc[0])
                 
-    return(settings, args, AddInfo_CalcParameters, yield_information, 
-           population_information, status, all_durations, crop_alloc, meta_sol, 
+    return(settings, args, yield_information, population_information, \
+           status, all_durations, exp_incomes, crop_alloc, meta_sol, \
+           crop_allocF, meta_solF, crop_allocS, meta_solS, \
            crop_alloc_vss, meta_sol_vss, VSS_value, validation_values)

@@ -54,6 +54,7 @@ def CheckFolderStructure():
     _GroupingPlotFolders("DissimilarNonAdjacent")
     _GroupingPlotFolders("SimilarNonAdjacent")
     _GroupingPlotFolders("CustomNonAdjacent")
+    _GroupingPlotFolders("Custom_ProfitNonAdjacent")
     if not os.path.isdir("Figures/ComparingScenarios"):
         os.mkdir("Figures/ComparingScenarios")
         
@@ -110,20 +111,14 @@ def CheckFolderStructure():
     if not os.path.exists("PenaltiesAndIncome/RhoFs.txt"):
         with open("PenaltiesAndIncome/RhoFs.txt", "wb") as fp:
             pickle.dump({}, fp)
-    if not os.path.exists("PenaltiesAndIncome/resProbFs.txt"):
-        with open("PenaltiesAndIncome/resProbFs.txt", "wb") as fp:
-            pickle.dump({}, fp)
-    if not os.path.exists("PenaltiesAndIncome/resAvgImport.txt"):
-        with open("PenaltiesAndIncome/resAvgImport.txt", "wb") as fp:
+    if not os.path.exists("PenaltiesAndIncome/crop_allocF.txt"):
+        with open("PenaltiesAndIncome/crop_allocF.txt", "wb") as fp:
             pickle.dump({}, fp) 
     if not os.path.exists("PenaltiesAndIncome/RhoSs.txt"):
         with open("PenaltiesAndIncome/RhoSs.txt", "wb") as fp:
             pickle.dump({}, fp) 
-    if not os.path.exists("PenaltiesAndIncome/resProbSs.txt"):
-        with open("PenaltiesAndIncome/resProbSs.txt", "wb") as fp:
-            pickle.dump({}, fp) 
-    if not os.path.exists("PenaltiesAndIncome/resAvgDebt.txt"):
-        with open("PenaltiesAndIncome/resAvgDebt.txt", "wb") as fp:
+    if not os.path.exists("PenaltiesAndIncome/crop_allocS.txt"):
+        with open("PenaltiesAndIncome/crop_allocS.txt", "wb") as fp:
             pickle.dump({}, fp) 
             
     if not os.path.exists("PenaltiesAndIncome/ExpectedIncomes.txt"):

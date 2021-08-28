@@ -50,21 +50,24 @@ for i in range(0, 4):
 for cl in range(1, 10):
     
     # get results
-    settings, args, AddInfo_CalcParameters, yield_information, \
-    population_information, status, all_durations, crop_alloc, meta_sol, \
+    settings, args, yield_information, population_information, \
+    status, all_durations, exp_incomes, crop_alloc, meta_sol, \
+    crop_allocF, meta_solF, crop_allocS, meta_solS, \
     crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \
                 FS.LoadFullResults(k_using = [cl])
                 
     # increase in cultivation costs for sto. solution
-    cultivation_costs_sto = np.sum(crop_alloc * args["costs"])   
-    cultivation_costs_det = np.sum(crop_alloc_vss * args["costs"])   
+    cultivation_costs_det = np.sum(crop_alloc_vss * args["costs"])  
+    cultivation_costs_F = np.sum(crop_allocF * args["costs"]) 
+    cultivation_costs_sto = np.sum(crop_alloc * args["costs"])    
     rel_increase = (cultivation_costs_sto - cultivation_costs_det)/cultivation_costs_det
     
     # plot distribution of food supply
     ax0_tmp = plt.Subplot(fig[0], inner[0][cl - 1])
-    ax0_tmp.axvline(args["demand"][0], color = "red", linestyle = "dashed", alpha = 0.6)
-    ax0_tmp.hist(meta_sol["food_supply"].flatten(), bins = 100, alpha = 0.6) 
+    ax0_tmp.axvline(args["demand"][0], color = "blue", linestyle = "dashed", alpha = 0.6)
     ax0_tmp.hist(meta_sol_vss["food_supply"].flatten(), bins = 100, alpha = 0.6)   
+    ax0_tmp.hist(meta_solF["food_supply"].flatten(), bins = 100, alpha = 0.6)   
+    ax0_tmp.hist(meta_sol["food_supply"].flatten(), bins = 100, alpha = 0.6) 
     ax0_tmp.set_title("Cluster " + str(cl))
     ax0_tmp.set_yticks([])
     ax0_tmp.text(x = 0.01, y = 0.99, 
@@ -75,10 +78,11 @@ for cl in range(1, 10):
     
     # plot distribution of profits/losses
     ax1_tmp = plt.Subplot(fig[1], inner[1][cl - 1])
-    ax1_tmp.axvline(meta_sol["guaranteed_income"][0,0], color = "red", linestyle = "dashed", alpha = 0.6)
+    ax1_tmp.axvline(meta_sol["guaranteed_income"][0,0], color = "blue", linestyle = "dashed", alpha = 0.6)
     ax1_tmp.axvline(meta_sol_vss["guaranteed_income"][0,0], color = "green", linestyle = "dashed", alpha = 0.6)
-    ax1_tmp.hist(meta_sol["profits"].flatten(), bins = 100, alpha = 0.6) 
-    ax1_tmp.hist(meta_sol_vss["profits"].flatten(), bins = 100, alpha = 0.6)   
+    ax1_tmp.hist(meta_sol_vss["profits"].flatten(), bins = 100, alpha = 0.6) 
+    ax1_tmp.hist(meta_solF["profits"].flatten(), bins = 100, alpha = 0.6)    
+    ax1_tmp.hist(meta_sol["profits"].flatten(), bins = 100, alpha = 0.6)  
     ax1_tmp.set_title("Cluster " + str(cl))
     ax1_tmp.set_yticks([])
     ax1_tmp.text(x = 0.01, y = 0.99, 
@@ -88,15 +92,19 @@ for cl in range(1, 10):
     fig[1].add_subplot(ax1_tmp)
     
     # plot distribution of income (including government payouts)
-    guaranteed = args["cat_clusters"] * args["guaranteed_income"]
+    guaranteed = args["cat_clusters"] * meta_sol["guaranteed_income"]
     guaranteed[guaranteed == 0] = -np.inf
+    guaranteed_vss = args["cat_clusters"] * meta_sol_vss["guaranteed_income"]
+    guaranteed_vss[guaranteed_vss == 0] = -np.inf
     income = np.maximum(meta_sol["profits"], guaranteed)
-    income_vss = np.maximum(meta_sol_vss["profits"], guaranteed)
+    income_vss = np.maximum(meta_sol_vss["profits"], guaranteed_vss)
+    income_F = np.maximum(meta_solF["profits"], guaranteed)
     ax2_tmp = plt.Subplot(fig[2], inner[2][cl - 1])
-    ax1_tmp.axvline(meta_sol["guaranteed_income"][0,0], color = "red", linestyle = "dashed", alpha = 0.6)
+    ax1_tmp.axvline(meta_sol["guaranteed_income"][0,0], color = "blue", linestyle = "dashed", alpha = 0.6)
     ax1_tmp.axvline(meta_sol_vss["guaranteed_income"][0,0], color = "green", linestyle = "dashed", alpha = 0.6)
-    ax2_tmp.hist(income.flatten(), bins = 100, alpha = 0.6) 
-    ax2_tmp.hist(income_vss.flatten(), bins = 100, alpha = 0.6)   
+    ax2_tmp.hist(income_vss.flatten(), bins = 100, alpha = 0.6) 
+    ax2_tmp.hist(income_F.flatten(), bins = 100, alpha = 0.6) 
+    ax2_tmp.hist(income.flatten(), bins = 100, alpha = 0.6)     
     ax2_tmp.set_title("Cluster " + str(cl))
     ax2_tmp.set_yticks([])
     ax2_tmp.text(x = 0.01, y = 0.99, 
@@ -107,9 +115,10 @@ for cl in range(1, 10):
     
     # final fund (after payouts)
     ax3_tmp = plt.Subplot(fig[3], inner[3][cl - 1])
-    ax3_tmp.axvline(0, color = "red", linestyle = "dashed", alpha = 0.6)
-    ax3_tmp.hist(meta_sol["final_fund"].flatten(), bins = 100, alpha = 0.6) 
+    ax3_tmp.axvline(0, color = "blue", linestyle = "dashed", alpha = 0.6)
     ax3_tmp.hist(meta_sol_vss["final_fund"].flatten(), bins = 100, alpha = 0.6)   
+    ax3_tmp.hist(meta_solF["final_fund"].flatten(), bins = 100, alpha = 0.6)
+    ax3_tmp.hist(meta_sol["final_fund"].flatten(), bins = 100, alpha = 0.6)    
     ax3_tmp.set_title("Cluster " + str(cl))
     ax3_tmp.set_yticks([])
     ax3_tmp.text(x = 0.01, y = 0.99, 
@@ -141,11 +150,13 @@ for i in range(0, 4):
     ax[i].set_title(titles[i], fontsize = 30, pad = 35)
     ax[i].set_xlabel(xlabels[i], fontsize = 14, labelpad = 25)
     
-    legend_elements =  [Patch(facecolor='#1f77b4',
-                             label='Robust solution', alpha = 0.6),
-                       Patch(facecolor='orange', 
+    legend_elements =  [Patch(facecolor='#1f77b4', 
                              label='Deterministic solution', alpha = 0.6),
-                       Line2D([0], [0], color = 'r', lw = 1.5, ls = "dashed",
+                       Patch(facecolor='#ff7f0e', 
+                             label='Only food security', alpha = 0.6),
+                       Patch(facecolor='#2ca02c',
+                             label='Robust solution', alpha = 0.6),
+                       Line2D([0], [0], color = 'blue', lw = 1.5, ls = "dashed",
                               label = legend_labels[i], alpha = 0.6)]
     
     if i in [1,2]:
@@ -165,7 +176,10 @@ for i in range(0, 4):
 aim = "Similar"
 adj = "Adj"
 
-mapping = [pd.DataFrame({"group" : [(1,), (2,), (3,), (4,), (5,), (6,), (7,), (8,), (9,)],
+
+# for similar adjactent
+mapping_sim_adj = \
+          [pd.DataFrame({"group" : [(1,), (2,), (3,), (4,), (5,), (6,), (7,), (8,), (9,)],
                          "colfirst" : [5, 0, 7, 6, 2, 8, 1, 3, 4],
                          "collast" : [6, 1, 8, 7, 3, 9, 2, 4, 5],
                          "row": [0, 0, 0, 0, 0, 0, 0, 0, 0]}),
@@ -185,6 +199,29 @@ mapping = [pd.DataFrame({"group" : [(1,), (2,), (3,), (4,), (5,), (6,), (7,), (8
                          "colfirst" : [0],
                          "collast" : [9],
                          "row": [4]})]
+
+# for custom grouping based on profit generation
+# mapping_sim_adj = \
+#           [pd.DataFrame({"group" : [(1,), (2,), (3,), (4,), (5,), (6,), (7,), (8,), (9,)],
+#                          "colfirst" : [0, 2, 4, 7, 5, 8, 6, 3, 1],
+#                          "collast" : [1, 3, 5, 8, 6, 9, 7, 4, 2],
+#                          "row": [0, 0, 0, 0, 0, 0, 0, 0, 0]}),
+#            pd.DataFrame({"group": [(3,), (1, 9), (2, 8), (4, 6), (5, 7)],
+#                          "colfirst" : [4, 0, 2, 7, 5],
+#                          "collast" : [5, 2, 4, 9, 7],
+#                          "row": [1, 1, 1, 1, 1, ]}),
+#            pd.DataFrame({"group" : [(1, 8, 9), (2, 5, 7), (3, 4, 6)],
+#                          "colfirst" : [3, 0, 6],
+#                          "collast" : [6, 3, 9],
+#                          "row": [2, 2, 2]}),
+#            pd.DataFrame({"group" : [(2, 5, 7, 8), (1, 3, 4, 6, 9)],
+#                          "colfirst" : [0, 4],
+#                          "collast" : [4, 9],
+#                          "row": [3, 3]}),
+#            pd.DataFrame({"group": [(1, 2, 3, 4, 5, 6, 7, 8, 9)],
+#                          "colfirst" : [0],
+#                          "collast" : [9],
+#                          "row": [4]})]
 
 # set up figure structure
 fig = []
@@ -211,7 +248,7 @@ for idx, size in enumerate([1, 2, 3, 5, 9]):
     with open("InputData/Clusters/ClusterGroups/GroupingSize" \
                   + str(size) + aim + adj + ".txt", "rb") as fp:
             BestGrouping = pickle.load(fp)
-    tmp = mapping[idx]
+    tmp = mapping_sim_adj[idx]
     for cl in BestGrouping:
         # position of subplot
         rows = tmp["row"][tmp.loc[:, "group"] == cl].values[0]
@@ -219,21 +256,24 @@ for idx, size in enumerate([1, 2, 3, 5, 9]):
         collast = tmp["collast"][tmp.loc[:, "group"] == cl].values[0]
         
         # get results
-        settings, args, AddInfo_CalcParameters, yield_information, \
-        population_information, status, all_durations, crop_alloc, meta_sol, \
+        settings, args, yield_information, population_information, \
+        status, all_durations, exp_incomes, crop_alloc, meta_sol, \
+        crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \
                     FS.LoadFullResults(k_using = [cl])
                     
         # increase in cultivation costs for sto. solution
-        cultivation_costs_sto = np.sum(crop_alloc * args["costs"])   
-        cultivation_costs_det = np.sum(crop_alloc_vss * args["costs"])   
+        cultivation_costs_det = np.sum(crop_alloc_vss * args["costs"])
+        cultivation_costs_F = np.sum(crop_allocF * args["costs"])
+        cultivation_costs_sto = np.sum(crop_alloc * args["costs"])      
         rel_increase = (cultivation_costs_sto - cultivation_costs_det)/cultivation_costs_det
         
         # plot distribution of food supply
         ax0_tmp = plt.Subplot(fig[0], inner[0][rows, colfirst:collast])
-        ax0_tmp.axvline(args["demand"][0], color = "red", linestyle = "dashed", alpha = 0.6)
-        ax0_tmp.hist(meta_sol["food_supply"].flatten(), bins = 100, alpha = 0.6) 
+        ax0_tmp.axvline(args["demand"][0], color = "blue", linestyle = "dashed", alpha = 0.6)
         ax0_tmp.hist(meta_sol_vss["food_supply"].flatten(), bins = 100, alpha = 0.6)   
+        ax0_tmp.hist(meta_solF["food_supply"].flatten(), bins = 100, alpha = 0.6) 
+        ax0_tmp.hist(meta_sol["food_supply"].flatten(), bins = 100, alpha = 0.6) 
         if size == 1:
             ax0_tmp.set_title("Cluster " + str(cl[0]))
         ax0_tmp.set_yticks([])
@@ -245,10 +285,11 @@ for idx, size in enumerate([1, 2, 3, 5, 9]):
     
         # plot distribution of profits/losses
         ax1_tmp = plt.Subplot(fig[1], inner[1][rows, colfirst:collast])
-        ax1_tmp.axvline(np.sum(meta_sol["guaranteed_income"], axis = 1)[0], color = "red", linestyle = "dashed", alpha = 0.6)
+        ax1_tmp.axvline(np.sum(meta_sol["guaranteed_income"], axis = 1)[0], color = "blue", linestyle = "dashed", alpha = 0.6)
         ax1_tmp.axvline(np.sum(meta_sol_vss["guaranteed_income"], axis = 1)[0], color = "green", linestyle = "dashed", alpha = 0.6)
-        ax1_tmp.hist(np.sum(meta_sol["profits"], axis = 2).flatten(), bins = 100, alpha = 0.6) 
         ax1_tmp.hist(np.sum(meta_sol_vss["profits"], axis = 2).flatten(), bins = 100, alpha = 0.6)
+        ax1_tmp.hist(np.sum(meta_solF["profits"], axis = 2).flatten(), bins = 100, alpha = 0.6) 
+        ax1_tmp.hist(np.sum(meta_sol["profits"], axis = 2).flatten(), bins = 100, alpha = 0.6) 
         if size == 1:
             ax1_tmp.set_title("Cluster " + str(cl[0]))
         ax1_tmp.set_yticks([])
@@ -259,15 +300,19 @@ for idx, size in enumerate([1, 2, 3, 5, 9]):
         fig[1].add_subplot(ax1_tmp)
         
         # plot distribution of profits including government payouts
-        guaranteed = args["cat_clusters"] * args["guaranteed_income"]
+        guaranteed = args["cat_clusters"] * meta_sol["guaranteed_income"]
         guaranteed[guaranteed == 0] = -np.inf
+        guaranteed_vss = args["cat_clusters"] * meta_sol_vss["guaranteed_income"]
+        guaranteed_vss[guaranteed_vss == 0] = -np.inf
         income = np.maximum(meta_sol["profits"], guaranteed)
-        income_vss = np.maximum(meta_sol_vss["profits"], guaranteed)
+        income_F = np.maximum(meta_solF["profits"], guaranteed)
+        income_vss = np.maximum(meta_sol_vss["profits"], guaranteed_vss)
         ax2_tmp = plt.Subplot(fig[2], inner[2][rows, colfirst:collast])
-        ax1_tmp.axvline(np.sum(meta_sol["guaranteed_income"], axis = 1)[0], color = "red", linestyle = "dashed", alpha = 0.6)
+        ax1_tmp.axvline(np.sum(meta_sol["guaranteed_income"], axis = 1)[0], color = "blue", linestyle = "dashed", alpha = 0.6)
         ax1_tmp.axvline(np.sum(meta_sol_vss["guaranteed_income"], axis = 1)[0], color = "green", linestyle = "dashed", alpha = 0.6)
-        ax2_tmp.hist(np.sum(income, axis = 2).flatten(), bins = 100, alpha = 0.6) 
         ax2_tmp.hist(np.sum(income_vss, axis = 2).flatten(), bins = 100, alpha = 0.6)   
+        ax2_tmp.hist(np.sum(income_F, axis = 2).flatten(), bins = 100, alpha = 0.6) 
+        ax2_tmp.hist(np.sum(income, axis = 2).flatten(), bins = 100, alpha = 0.6) 
         if size == 1:
             ax2_tmp.set_title("Cluster " + str(cl[0]))
         ax2_tmp.set_yticks([])
@@ -279,9 +324,10 @@ for idx, size in enumerate([1, 2, 3, 5, 9]):
         
         # final fund (after payouts)
         ax3_tmp = plt.Subplot(fig[3], inner[3][rows, colfirst:collast])
-        ax3_tmp.axvline(0, color = "red", linestyle = "dashed", alpha = 0.6)
-        ax3_tmp.hist(meta_sol["final_fund"].flatten(), bins = 100, alpha = 0.6) 
-        ax3_tmp.hist(meta_sol_vss["final_fund"].flatten(), bins = 100, alpha = 0.6)   
+        ax3_tmp.axvline(0, color = "blue", linestyle = "dashed", alpha = 0.6)
+        ax3_tmp.hist(meta_sol_vss["final_fund"].flatten(), bins = 100, alpha = 0.6)  
+        ax3_tmp.hist(meta_solF["final_fund"].flatten(), bins = 100, alpha = 0.6)  
+        ax3_tmp.hist(meta_sol["final_fund"].flatten(), bins = 100, alpha = 0.6)  
         if size == 1:
             ax3_tmp.set_title("Cluster " + str(cl[0]))
         ax3_tmp.set_yticks([])
@@ -315,11 +361,13 @@ for i in range(0, 4):
     ax[i].set_title(titles[i], fontsize = 30, pad = 35)
     ax[i].set_xlabel(xlabels[i], fontsize = 14, labelpad = 25)
     
-    legend_elements =  [Patch(facecolor='#1f77b4',
-                             label='Robust solution', alpha = 0.6),
-                       Patch(facecolor='orange', 
+    legend_elements =  [Patch(facecolor='#1f77b4', 
                              label='Deterministic solution', alpha = 0.6),
-                       Line2D([0], [0], color = 'r', lw = 1.5, ls = "dashed",
+                       Patch(facecolor='#ff7f0e', 
+                             label='Only food security', alpha = 0.6),
+                       Patch(facecolor='#2ca02c',
+                             label='Robust solution', alpha = 0.6),
+                       Line2D([0], [0], color = 'blue', lw = 1.5, ls = "dashed",
                               label = legend_labels[i], alpha = 0.6)]
     if i in [1,2]:
         legend_elements.append( Line2D([0], [0], color = 'green', lw = 1.5, 
@@ -330,5 +378,9 @@ for i in range(0, 4):
     fig[i].savefig("Figures/PublicationPlots/" + filenames[i] + ".jpg",
                    bbox_inches = "tight", pad_inches = 1, format = "jpg")
     plt.close(fig[i])
+    
+    
+    
+    
 
 

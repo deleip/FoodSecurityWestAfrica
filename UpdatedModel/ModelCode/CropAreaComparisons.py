@@ -425,9 +425,10 @@ def _GetResultsToCompare(ResType = "k_using", panda_file = "current_panda", \
         _printing("     " + ResType + ": " + str(val), 
                  console_output = console_output, logs_on = False)
         
-        settings, args, AddInfo_CalcParameters, yield_information, \
-        population_information, status, durations, crop_alloc, meta_sol, \
-        crop_alloc_vs, meta_sol_vss, VSS_value, validation_values = \
+        settings, args, yield_information, population_information, \
+        status, all_durations, exp_incomes, crop_alloc, meta_sol, \
+        crop_allocF, meta_solF, crop_allocS, meta_solS, \
+        crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \
             LoadModelResults(panda_filenames.at[idx, "Filename for full results"])
 
         CropAllocs.append(crop_alloc)

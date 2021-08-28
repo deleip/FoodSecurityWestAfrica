@@ -65,7 +65,7 @@ def VSS(settings, args):
     # get information of using VSS solution in stochastic setting
     meta_sol_vss_ExpIn = GetMetaInformation(crop_alloc_vss_ExpIn, 
                                args_vss_ExpIn, args["rhoF"], args["rhoS"])
-    expected_incomes = meta_sol_vss_ExpIn["expected_incomes"].flatten()
+    expected_incomes = meta_sol_vss_ExpIn["avg_profits"].flatten()
         
     
     # 2. crop allocation and meta information for deterministic social planner 
@@ -85,9 +85,9 @@ def VSS(settings, args):
     # guaranteed income of deterministic setting)
     args_VSS_sto = args.copy()
     args_VSS_sto["guaranteed_income"] = args_vss["guaranteed_income"]
-    meta_sol_vss = GetMetaInformation(crop_alloc_vss, args_vss, 
+    meta_sol_vss = GetMetaInformation(crop_alloc_vss, args_VSS_sto, 
                                       args["rhoF"], args["rhoS"])
-    return(crop_alloc_vss, meta_sol_vss)      
+    return(crop_alloc_vss, expected_incomes, meta_sol_vss)      
     
 
 # %% ################### OUT OF SAMLE VALIDATION OF RESULT ####################  

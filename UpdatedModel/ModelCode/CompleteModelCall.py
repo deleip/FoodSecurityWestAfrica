@@ -71,9 +71,6 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
         The model input settings that were given by user. 
     args : dict
         Dictionary of arguments needed as direct model input.
-    AddInfo_CalcParameters : dict
-        Additional information from calculating expected income and penalties
-        which are not needed as model input.
     yield_information : dict
         Information on the yield distributions for the considered clusters.
     population_information : dict
@@ -82,14 +79,27 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
         status of solver (optimal: 2)
     all_durations :  dict
         Information on the duration of different steps of the model framework.
+    exp_incomes : dict
+        Expected income (on which guaranteed income is based) for the stochastic
+        and the deterministic setting.
     crop_alloc :  np.array
         gives the optimal crop areas for all years, crops, clusters
     meta_sol : dict 
         additional information about the model output ('exp_tot_costs', 
         'fix_costs', 'yearly_fixed_costs', 'fd_penalty', 'avg_fd_penalty', 
-        'sol_penalty', 'shortcomings', 'exp_shortcomings', 'expected_incomes', 
+        'sol_penalty', 'shortcomings', 'exp_shortcomings', 'avg_profits', 
         'profits', 'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
         'probS', 'avg_nec_import', 'avg_nec_debt')
+    crop_allocF : np.array
+        optimal crop allocation for scenario with only food security objective
+    meta_solF : dict
+        additional information on model output for scenario with only food
+        security objective
+    crop_allocS : np.array
+        optimal crop allocation for scenario with only solvency objective
+    meta_solS : dict
+        additional information on model output for scenario with only solvency
+        objective
     crop_alloc_vss : np.array
         deterministic solution for optimal crop areas    
     meta_sol_vss : dict
@@ -121,8 +131,9 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
     # if model output does not exist yet it is calculated
     if not os.path.isfile("ModelOutput/SavedRuns/" + fn + ".txt"):
         try:
-           settings, args, AddInfo_CalcParameters, yield_information, \
-           population_information, status, all_durations, crop_alloc, meta_sol, \
+           settings, args, yield_information, population_information, \
+           status, all_durations, exp_incomes, crop_alloc, meta_sol, \
+           crop_allocF, meta_solF, crop_allocS, meta_solS, \
            crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \
                                 _OptimizeModel(settings,
                                               console_output = console_output,
@@ -143,8 +154,9 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
     else:            
         _printing("Loading results", console_output = console_output, logs_on = False)
         
-        settings, args, AddInfo_CalcParameters, yield_information, \
-        population_information, status, all_durations, crop_alloc, meta_sol, \
+        settings, args, yield_information, population_information, \
+        status, all_durations, exp_incomes, crop_alloc, meta_sol, \
+        crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \
             LoadModelResults(fn)
         
@@ -154,8 +166,9 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
                       max_areas = args["max_areas"], close_plots = close_plots,
                       title = plotTitle, file = fn)
     
-    return(settings, args, AddInfo_CalcParameters, yield_information, \
-           population_information, status, all_durations, crop_alloc, meta_sol, \
+    return(settings, args, yield_information, population_information, \
+           status, all_durations, exp_incomes, crop_alloc, meta_sol, \
+           crop_allocF, meta_solF, crop_allocS, meta_solS, \
            crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn)          
 
 def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, \
@@ -192,9 +205,6 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
         The model input settings that were given by user. 
     args : dict
         Dictionary of arguments needed as direct model input.
-    AddInfo_CalcParameters : dict
-        Additional information from calculating expected income and penalties
-        which are not needed as model input.
     yield_information : dict
         Information on the yield distributions for the considered clusters.
     population_information : dict
@@ -203,14 +213,27 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
         status of solver (optimal: 2)
     all_durations :  dict
         Information on the duration of different steps of the model framework.
+    exp_incomes : dict
+        Expected income (on which guaranteed income is based) for the stochastic
+        and the deterministic setting.
     crop_alloc :  np.array
         gives the optimal crop areas for all years, crops, clusters
     meta_sol : dict 
         additional information about the model output ('exp_tot_costs', 
         'fix_costs', 'yearly_fixed_costs', 'fd_penalty', 'avg_fd_penalty', 
-        'sol_penalty', 'shortcomings', 'exp_shortcomings', 'expected_incomes', 
+        'sol_penalty', 'shortcomings', 'exp_shortcomings', 'avg_profits', 
         'profits', 'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
         'probS', 'avg_nec_import', 'avg_nec_debt', 'guaranteed_income')
+    crop_allocF : np.array
+        optimal crop allocation for scenario with only food security objective
+    meta_solF : dict
+        additional information on model output for scenario with only food
+        security objective
+    crop_allocS : np.array
+        optimal crop allocation for scenario with only solvency objective
+    meta_solS : dict
+        additional information on model output for scenario with only solvency
+        objective
     crop_alloc_vss : np.array
         deterministic solution for optimal crop areas    
     meta_sol_vss : dict
@@ -260,34 +283,23 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
     # get parameters for the given settings
     ex_income_start  = tm.time()
     exp_incomes = GetExpectedIncome(settings, console_output = console_output, logs_on = logs_on)
-    AddInfo_CalcParameters = {"expected_incomes": exp_incomes}
+    exp_incomes = {"sto. setting" : exp_incomes}
     ex_income_end  = tm.time()
     all_durations["GetExpectedIncome"] = ex_income_end - ex_income_start
     _printing("\nGetting parameters", console_output = console_output, logs_on = logs_on)
     args, yield_information, population_information = \
-                    SetParameters(settings, exp_incomes)
+                    SetParameters(settings, exp_incomes["sto. setting"])
     
     # get the right penalties
     penalties_start  = tm.time()
     if settings["PenMet"] == "prob":
-        rhoF, rhoS, probF_onlyF, probS_onlyS, import_onlyF, debt_onlyS = \
+        rhoF, rhoS, meta_solF, meta_solS, crop_allocF, crop_allocS = \
             GetPenalties(settings, args, console_output = console_output, logs_on = logs_on)
-            
         args["rhoF"] = rhoF
         args["rhoS"] = rhoS
-        
-        AddInfo_CalcParameters["probF_onlyF"] = probF_onlyF
-        AddInfo_CalcParameters["probS_onlyS"] = probS_onlyS
-        AddInfo_CalcParameters["import_onlyF"] = import_onlyF
-        AddInfo_CalcParameters["debt_onlyS"] = debt_onlyS
     else:
         args["rhoF"] = settings["rhoF"]
         args["rhoS"] = settings["rhoS"]
-        
-        AddInfo_CalcParameters["probF_onlyF"] = None
-        AddInfo_CalcParameters["probS_onlyS"] = None
-        AddInfo_CalcParameters["import_onlyF"] = None
-        AddInfo_CalcParameters["debt_onlyS"] = None
         
     penalties_end  = tm.time()
     all_durations["GetPenalties"] = penalties_end - penalties_start
@@ -309,7 +321,8 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
     # VSS
     vss_start  = tm.time()
     _printing("\nCalculating VSS", console_output = console_output, logs_on = logs_on)
-    crop_alloc_vss, meta_sol_vss = VSS(settings, args)
+    crop_alloc_vss, expected_incomes_vss, meta_sol_vss = VSS(settings, args)
+    exp_incomes["det. setting"] = expected_incomes_vss
     VSS_value = meta_sol_vss["exp_tot_costs"] - meta_sol["exp_tot_costs"]
     vss_end  = tm.time()
     all_durations["VSS"] = vss_end - vss_start
@@ -318,18 +331,20 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
     validation_start  = tm.time()
     if settings["validation_size"] is not None:
         _printing("\nOut of sample validation", console_output = console_output, logs_on = logs_on)
-        validation_values = OutOfSampleVal(crop_alloc, settings, exp_incomes, args["rhoF"], \
-                              args["rhoS"], meta_sol, console_output, logs_on = logs_on)
+        validation_values = OutOfSampleVal(crop_alloc, settings, 
+                    exp_incomes["sto. setting"], args["rhoF"], args["rhoS"], \
+                    meta_sol, console_output, logs_on = logs_on)
     validation_end  = tm.time()
     all_durations["Validation"] = validation_end - validation_start
 
     # add results to pandas overview
     fn = GetFilename(settings)
     if panda_file is not None:
-        _WriteToPandas(settings, args, AddInfo_CalcParameters, yield_information, \
-                        population_information, crop_alloc, \
-                        meta_sol, meta_sol_vss, VSS_value, validation_values, \
-                        fn, console_output, logs_on, panda_file)     
+        _WriteToPandas(settings, args, yield_information, population_information, \
+                       status, all_durations, exp_incomes, crop_alloc, meta_sol, \
+                       crop_allocF, meta_solF, crop_allocS, meta_solS, \
+                       crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, \
+                       fn, console_output, logs_on, panda_file)               
             
     # timing
     all_end  = tm.time()   
@@ -342,19 +357,21 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
     # saving results
     if save:
         info = ["settings", "args", "yield_information", "population_information", \
-                "status", "durations", "crop_alloc", "crop_alloc_vss", \
-                "VSS_value", "validation_values"]
+                "status", "durations", "crop_alloc", "crop_allocF", "crop_allocS", \
+                "crop_alloc_vss", "VSS_value", "validation_values"]
             
         with open("ModelOutput/SavedRuns/" + fn + ".txt", "wb") as fp:
             pickle.dump(info, fp)
             pickle.dump(settings, fp)
             pickle.dump(args, fp)
-            pickle.dump(AddInfo_CalcParameters, fp)
             pickle.dump(yield_information, fp)
             pickle.dump(population_information, fp)
             pickle.dump(status, fp)
             pickle.dump(all_durations, fp)
+            pickle.dump(exp_incomes, fp)
             pickle.dump(crop_alloc, fp)
+            pickle.dump(crop_allocF, fp)
+            pickle.dump(crop_allocS, fp)
             pickle.dump(crop_alloc_vss, fp)
             pickle.dump(VSS_value, fp)
             pickle.dump(validation_values, fp)
@@ -363,8 +380,9 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
     if logs_on:
         del GS.fn_log
         
-    return(settings, args, AddInfo_CalcParameters, yield_information, \
-           population_information, status, all_durations, crop_alloc, meta_sol, \
+    return(settings, args, yield_information, population_information, \
+           status, all_durations, exp_incomes, crop_alloc, meta_sol, \
+           crop_allocF, meta_solF, crop_allocS, meta_solS, \
            crop_alloc_vss, meta_sol_vss, VSS_value, validation_values)          
 
 
@@ -383,8 +401,6 @@ def LoadModelResults(filename):
         The model input settings that were given by user. 
     args : dict
         Dictionary of arguments needed as direct model input.
-    AddInfo_CalcParameters : dict
-        Additional information from calculating expected income and penalties
         which are not needed as model input.
     yield_information : dict
         Information on the yield distributions for the considered clusters.
@@ -394,14 +410,27 @@ def LoadModelResults(filename):
         status of solver (optimal: 2)
     all_durations :  dict
         Information on the duration of different steps of the model framework.
+    exp_incomes : dict
+        Expected income (on which guaranteed income is based) for the stochastic
+        and the deterministic setting.
     crop_alloc :  np.array
         gives the optimal crop areas for all years, crops, clusters
     meta_sol : dict 
         additional information about the model output ('exp_tot_costs', 
         'fix_costs', 'yearly_fixed_costs', 'fd_penalty', 'avg_fd_penalty', 
-        'sol_penalty', 'shortcomings', 'exp_shortcomings', 'expected_incomes', 
+        'sol_penalty', 'shortcomings', 'exp_shortcomings', 'avg_profits', 
         'profits', 'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
         'probS', 'avg_nec_import', 'avg_nec_debt')
+    crop_allocF : np.array
+        optimal crop allocation for scenario with only food security objective
+    meta_solF : dict
+        additional information on model output for scenario with only food
+        security objective
+    crop_allocS : np.array
+        optimal crop allocation for scenario with only solvency objective
+    meta_solS : dict
+        additional information on model output for scenario with only solvency
+        objective
     crop_alloc_vss : np.array
         deterministic solution for optimal crop areas    
     meta_sol_vss : dict
@@ -423,23 +452,36 @@ def LoadModelResults(filename):
         pickle.load(fp) # info
         settings = pickle.load(fp)
         args = pickle.load(fp)
-        AddInfo_CalcParameters = pickle.load(fp)
         yield_information = pickle.load(fp)
         population_information = pickle.load(fp)
         status = pickle.load(fp)
         all_durations = pickle.load(fp)
+        exp_incomes = pickle.load(fp)
         crop_alloc = pickle.load(fp)
+        crop_allocF = pickle.load(fp)
+        crop_allocS = pickle.load(fp)
         crop_alloc_vss = pickle.load(fp)
         VSS_value = pickle.load(fp)
         validation_values = pickle.load(fp)
             
+
+    # get guaranteed income for deterministic setting
+    args_vss, yield_information, population_information = \
+        SetParameters(settings, exp_incomes["det. setting"], VSS = True, 
+                      console_output = False, logs_on = False)
+    args_VSS_sto = args.copy()
+    args_VSS_sto["guaranteed_income"] = args_vss["guaranteed_income"]
+    
     # calculate meta_sols
     meta_sol = GetMetaInformation(crop_alloc, args, args["rhoF"], args["rhoS"])
-    meta_sol_vss =  GetMetaInformation(crop_alloc_vss, args, args["rhoF"], args["rhoS"])
+    meta_solF = GetMetaInformation(crop_allocF, args, args["rhoF"], 0)
+    meta_solS = GetMetaInformation(crop_allocS, args, 0, args["rhoS"])
+    meta_sol_vss =  GetMetaInformation(crop_alloc_vss, args_VSS_sto, args["rhoF"], args["rhoS"])
     
-    return(settings, args, AddInfo_CalcParameters, yield_information, \
-           population_information, status, all_durations, crop_alloc, meta_sol, \
-           crop_alloc_vss, meta_sol_vss, VSS_value, validation_values) 
+    return(settings, args, yield_information, population_information, \
+           status, all_durations, exp_incomes, crop_alloc, meta_sol, \
+           crop_allocF, meta_solF, crop_allocS, meta_solS, \
+           crop_alloc_vss, meta_sol_vss, VSS_value, validation_values)      
         
         
 def _PlotCropAlloc(crop_alloc, k, k_using, max_areas, cols = None, cols_b = None, \

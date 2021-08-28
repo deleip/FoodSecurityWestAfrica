@@ -121,8 +121,8 @@ def _ObjectiveFunction(x, num_clusters, num_crops, N, \
     P =  prod*prices - fixed_costs          # still per crop and cluster, 
                                             # nan for years after catastrophe
     P = np.sum(P, axis = 2)                 # now per cluster
-    # calculate expected income
-    exp_income = np.nanmean(P, axis = 0) # per year and cluster
+    # calculate average profits
+    avg_profits = np.nanmean(P, axis = 0) # per year and cluster
     # P[P < 0] = 0   # we removed the max(0, P) and min(I_gov, I_gov-P) for
                      # linearization prurposes
  
@@ -152,7 +152,7 @@ def _ObjectiveFunction(x, num_clusters, num_crops, N, \
     return(exp_tot_costs, 
         np.nansum(fixed_costs, axis = (1,2,3)), #  fixcosts (N)
         S, # shortcomings per realization and year
-        exp_income, # expected income (T, k)
+        avg_profits, # average profits (T, k)
         P, # profits
         np.nanmean(S, axis = 0), # yearly avg shortcoming (T)
         rhoF * S, # yearly food demand penalty (N x T)
@@ -201,7 +201,7 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
           sample.
         - exp_shortcomings: Average shortcoming of the food demand in 
           10^12kcal in each year.
-        - expected_incomes: Average profits of farmers in 10^9$ for each cluster in
+        - avg_profits: Average profits of farmers in 10^9$ for each cluster in
           each year.
         - food_supply: Food supply (production plust import if there is any) 
           in 10^12kcal for each year in each sample
@@ -217,13 +217,13 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
         - probS: Probability for solvency of the government fund
           after payouts.
         - avg_nec_import: Average import needed to cover full food demand
-        - necessary_debt: Average debt needed to cover full government payouts
+        - avg_nec_debt: Average debt needed to cover full government payouts
         - guaranteed_income: guaranteed_income as given in args
     """
     
     # running the objective function with option to get 
     # intermediate results of the calculation
-    exp_tot_costs, fix_costs, shortcomings, exp_incomes, profits, \
+    exp_tot_costs, fix_costs, shortcomings, avg_profits, profits, \
     exp_shortcomings,  fd_penalty, avg_fd_penalty, sol_penalty, final_fund, \
     payouts, yearly_fixed_costs, food_supply = _ObjectiveFunction(crop_alloc, 
                                                                 args["k"], 
@@ -275,7 +275,7 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
                 "sol_penalty": sol_penalty,
                 "shortcomings": shortcomings,
                 "exp_shortcomings": exp_shortcomings, # per year
-                "expected_incomes": exp_incomes,
+                "avg_profits": avg_profits,
                 "food_supply": food_supply,
                 "profits": profits,
                 "num_years_with_losses": num_years_with_losses,
