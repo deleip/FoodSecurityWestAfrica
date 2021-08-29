@@ -26,6 +26,9 @@ import openpyxl as xl
 
 import ModelCode.DataPreparation as DP
 
+if not os.path.isdir("InputData/Visualization"):
+    os.mkdir("InputData/Visualization")
+
 # %% General Definition
 
 # define region corresponding to West Africa
@@ -60,6 +63,7 @@ lat_max = 18.5
 # Data is presented in thousands
   
 DP.ReadAndSave_UNWPP(WhichRegion = "Western Africa", WhichValues = "PopTotal")
+# creates InputData/Population/UN_PopTotal_Prospects_WestAfrica.txt
 
 # %% Gridded Populaion of the World (SEDAC)
     
@@ -68,6 +72,9 @@ DP.ReadAndSave_UNWPP(WhichRegion = "Western Africa", WhichValues = "PopTotal")
 # Accessed Juune 4th 2020
 # Documentation: https://sedac.ciesin.columbia.edu/downloads/docs/
 #                                       gpw-v4/gpw-v4-documentation-rev11.pdf
+# License: The GPW data collection is licensed under the Creative Commons 
+#          Attribution 4.0 International License 
+#          http://creativecommons.org/licenses/by/4.0
 
 # Gridded data on population in 0.5 degree resolution, provides "estimates of 
 # population count for the years 2000, 2005, 2010, 2015, and 2020, consistent 
@@ -75,6 +82,56 @@ DP.ReadAndSave_UNWPP(WhichRegion = "Western Africa", WhichValues = "PopTotal")
 # spatial distribution, but adjusted to match United Nations country totals.
     
 DP.ReadAndReduce_GPW(lat_min, lon_min, lat_max, lon_max)    
+# creates InputData/Population/GPW_WA.txt
+#         InputData/Population/land_area.txt  
+#         InputData/Prices/CountryCodesGridded.txt
+
+# Mapping of SEDAC cuntry codes to country names:
+country_codes = {"Code": np.array([204,854,120,384,226,270,288,324,
+                                   624,430,466,478,562,566,686,694,768]),
+                 "CountryName" : np.array(["Benin","Burkina Faso",
+                                          "Cameroon","Cote d'Ivoire",
+                                          "Equatorial Guinea","Gambia",
+                                          "Ghana","Guinea","Guinea-Bissau",
+                                          "Liberia","Mali","Mauritania",
+                                          "Niger","Nigeria","Senegal",
+                                          "Sierra Leone","Togo"])}
+country_codes = pd.DataFrame(country_codes)
+country_codes.to_csv("InputData/Prices/CountryCodes.csv", index = False)
+# creates InputData/Prices/CountryCodes.csv
+
+# %% Preparing GDHY yield data    
+
+# Data downloaded from https://doi.pangaea.de/10.1594/PANGAEA.909132
+# Annual time series data of 0.5-degree grid-cell yield estimates of major 
+# crops (maize, rice, wheat, soybean) worldwide for the period 1981-2016 in 
+# tonnes per hectare. Growing season categories are based on Sacks et al. 2010.
+# Iizumi, Toshichika (2019): Global dataset of historical yields v1.2 and v1.3
+# aligned version. PANGAEA, https://doi.org/10.1594/PANGAEA.909132, 
+# Supplement to: Iizumi, Toshichika; Sakai, T (2020): The global dataset of 
+# historical yields for major crops 1981–2016. Scientific Data, 7(1), 
+# https://doi.org/10.1038
+# Accessed April 26th 2020
+
+DP.ReadAndSave_GDHY("maize_major", lon_min, lon_max, lat_min, lat_max)
+# creates RawData/ProcessedData/maize_yld.txt
+# creates RawData/ProcessedData/maize_mask.txt
+DP.ReadAndSave_GDHY("rice_major", lon_min, lon_max, lat_min, lat_max)
+# creates RawData/ProcessedData/rice_mask.txt
+# creates RawData/ProcessedData/rice_mask.txt
+
+# combine masks to get mask describing where both crops have data
+with open("RawData/ProcessedData/rice_mask.txt", "rb") as fp:    
+    rice_mask = pickle.load(fp)
+with open("RawData/ProcessedData/maize_mask.txt", "rb") as fp:    
+    maize_mask = pickle.load(fp)
+
+yld_mask = rice_mask + maize_mask
+yld_mask[yld_mask == 1] = 0
+yld_mask[yld_mask == 2] = 1
+
+with open("RawData/ProcessedData/yld_mask.txt", "wb") as fp:    
+    pickle.dump(yld_mask, fp)
 
 # %% Farm gate prices for countries in West Africa
 
@@ -96,25 +153,84 @@ DP.ReadAndReduce_GPW(lat_min, lon_min, lat_max, lon_max)
 # areas as weight.
 
 DP.VisualizeAndPrepare_ProducerPrices()
+# creates InputData/Prices/CountryAvgFarmGatePrices.txt
+#         InputData/Visualization/ProducerPrices_CountryAvg.png
+#         InputData/Visualization/ProducerPrices.png  
 
-# %% Preparing GDHY yield data    
+# %% MaskProfitableArea: Only including cells, where either maize or
+# rice has profitable average yields (based on linear regression evaluated 
+# for baseyear 2016)
 
-# Data downloaded from https://doi.pangaea.de/10.1594/PANGAEA.909132
-# Annual time series data of 0.5-degree grid-cell yield estimates of major 
-# crops (maize, rice, wheat, soybean) worldwide for the period 1981-2016 in 
-# tonnes per hectare. Growing season categories are based on Sacks et al. 2010.
-# Iizumi, Toshichika (2019): Global dataset of historical yields v1.2 and v1.3
-# aligned version. PANGAEA, https://doi.org/10.1594/PANGAEA.909132, 
-# Supplement to: Iizumi, Toshichika; Sakai, T (2020): The global dataset of 
-# historical yields for major crops 1981–2016. Scientific Data, 7(1), 
-# https://doi.org/10.1038
-# Accessed April 26th 2020
+DP.ProfitableAreas()
+# creates MaskProfitableArea.txt
+# TODO visualizations
 
-DP.ReadAndSave_GDHY("maize_major", lat_min, lon_min, lat_max, lon_max)
-DP.ReadAndSave_GDHY("rice_major", lat_min, lon_min, lat_max, lon_max)
+# %% Average farm gate prices, based on prepared price dataset and mask
 
-# TODO make mask: combine profitable area masks with spei mask (BadCluster.py)
-# -> MaskProfitableArea (?)
+with open("InputData/Other/MaskProfitableArea_test.txt", "rb") as fp:    
+    mask_profitable = pickle.load(fp)
+    
+prices = DP.CalcAvgProducerPrices(rice_mask = mask_profitable, maize_mask = mask_profitable)
+
+with open("InputData/Other/FarmGatePrices.txt", "wb") as fp:    
+    pickle.load(prices, fp)
+
+# %% Crop Cultivation Costs
+# RICE:
+# Liberia: "The cost of production of swampland Nerica rice (farming 
+# and processing of the paddy) is $308 per metric tons [...]. 
+# Swampland Nerica rice has a yield of 2.8 metric tons per hectare in 
+# Liberia."  
+# https://ekmsliberia.info/document/liberia-invest-agriculture/
+# => 862.4USD/ha (2015)
+# Nigeria: "COST AND RETURNS OF PADDY RICE PRODUCTION IN KADUNA STATE"
+# (Online ISSN: ISSN 2054-6327(online)) 
+# 1002USD/ha 
+# Benin: 
+# 105 FCFA/kg, 3t/ha =>  315000 FCFA/ha => 695.13USD/ha (2011)
+# Burkina-Faso: 
+# Rainfed: 50 FCFA/kg, 1t/ha => 50000 FCFA/ha => 104.62USD/ha (2011)
+# Lowland (bas-fonds): 55 FCFA/kg, 2t/ha => 110000 FCFA/ha 
+#                                               => 230.17 USD/ha
+# (I exclude the value for irrigated areas, as in West Africa 
+# agriculture is mainly rainfed)
+# Mali:
+# 108FCFA/kg, 2.7 t/ha => 291600 FCFA/ha => 589.27 USD/ha
+# Senegal: 
+# 101FCFA/kg, 5 t/ha => 505000 FCFA/ha => 1020.51 USD/ha
+# For Benin, Burkina-Faso, Mali, Senegal:
+# http://www.roppa-afrique.org/IMG/pdf/
+#                       rapport_final_synthese_regionale_riz_finale.pdf
+# in 2011 average exchange rate to USD 477.90 FCFA for 1 USD 
+# in 2014 average exchange rate to USD 494.85 FCFA for 1 USD
+# (https://www.exchangerates.org.uk/
+#                   USD-XOF-spot-exchange-rates-history-2011.html)
+# On average: 
+# (862.4+1002+695.13+104.62+230.17+589.27+1020.51)/7 = 643.44
+# MAIZE
+# "Competiveness of Maize Value Chains for Smallholders in West Africa"
+# DOI: 10.4236/as.2017.812099
+# Benin: 304.6 USD/ha (p. 1384, rainfed)
+# Ivory Coast: 305 USD/ha (p. 1384)
+# Ghana: 301.4 USD/ha (p. 1392) 
+# Nigeria: Field surey 2010 (e-ISSN: 2278-4861)
+# 32079.00 ₦/ha => 213.86 USD/ha
+# (https://www.exchangerates.org.uk/USD-NGN-spot-exchange-rates-
+# history-2010.html)
+# On average: (304.6 + 305 + 301.4 + 213.86)/4 = 281.22 
+costs = np.array([643.44, 281.22])
+
+# in 10^9$/10^6ha
+costs = 1e-3 * costs 
+
+with open("InputData/Other/CultivationCosts.txt", "wb") as fp:
+    pickle.dump(costs, fp)
+
+# %% Get mask defining which cells  where at least on crop has profitable
+# yields (according to linear regression per cell evaluate in baseyear 2016) 
+
+DP.ProfitableAreas()
+
 
 # %% SPEI
     
@@ -133,7 +249,9 @@ DP.ReadAndSave_GDHY("rice_major", lat_min, lon_min, lat_max, lon_max)
 # Accessed April 29th 2020
 
 DP.ReadAndSave_SPEI03(lon_min, lon_max, lat_min, lat_max)
-
+# creates RawData/ProcessedData/SPEI03_WA_masked.txt
+#         RawData/ProcessedData/SPEI03_WA_filled.txt
+#         RawData/ProcessedData/mask_SPEI03_WA.txt
 
 # TODO calc distance with reduce area to profitable cells! -> PearsonDistSPEI03.txt
 DP.CalcPearsonDist()

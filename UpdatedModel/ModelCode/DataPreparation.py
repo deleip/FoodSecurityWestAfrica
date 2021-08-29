@@ -156,16 +156,16 @@ def ReadAndReduce_GPW(lat_min, lon_min, lat_max, lon_max):
     country_codes_filled[country_codes_filled == 32767] = np.nan
     
     
-    with open("InputData/Population/GPW_WAtest.txt", "wb") as fp:    
+    with open("InputData/Population/GPW_WA.txt", "wb") as fp:    
         pickle.dump(data_rel_filled, fp)
         pickle.dump(years, fp)
         pickle.dump(lats, fp)
         pickle.dump(lons, fp)
-    with open("InputData/Population/land_areatest.txt", "wb") as fp:    
+    with open("InputData/Population/land_area.txt", "wb") as fp:    
         pickle.dump(land_area_filled, fp)
         pickle.dump(lats, fp)
         pickle.dump(lons, fp)
-    with open("InputData/Prices/CountryCodesGriddedtest.txt", "wb") as fp:    
+    with open("InputData/Prices/CountryCodesGridded.txt", "wb") as fp:    
         pickle.dump(country_codes_filled, fp)
         pickle.dump(lats, fp)
         pickle.dump(lons, fp)
@@ -211,7 +211,8 @@ def VisualizeAndPrepare_ProducerPrices():
                                          " and rice (blue)") 
     fig.savefig("InputData/Visualization/ProducerPrices.png", \
                                 bbox_inches = "tight", pad_inches = 0.5)
-    
+    plt.close()
+     
     prices = np.empty([len(years), len(countries), len(items)])
     prices.fill(np.nan)
     for idx_c, country in enumerate(countries):
@@ -245,6 +246,7 @@ def VisualizeAndPrepare_ProducerPrices():
     plt.show()
     fig.savefig("InputData/Visualization/ProducerPrices_CountryAvg.png", \
                                 bbox_inches = "tight", pad_inches = 0.5)
+    plt.close()
     
     prices = pd.DataFrame(prices)
     prices.insert(0, 'Countries', countries)
@@ -254,6 +256,290 @@ def VisualizeAndPrepare_ProducerPrices():
         pickle.dump(prices, fp)
 
     return(None)
+
+def CalcAvgProducerPrices(rice_mask, maize_mask):
+    
+    ## Country shares of area for price calculation
+    with open("InputData/Prices/CountryCodesGridded.txt", "rb") as fp:    
+        country_codes_gridded = pickle.load(fp)
+    country_codes_gridded_rice = country_codes_gridded.copy()
+    country_codes_gridded_maize = country_codes_gridded.copy()
+    country_codes_gridded_rice[rice_mask == 0] = np.nan
+    country_codes_gridded_maize[maize_mask == 0] = np.nan
+        
+    country_codes = pd.read_csv("InputData/Prices/CountryCodes.csv")    
+    
+    total_land_cells_rice = np.sum(rice_mask == 1)
+    total_land_cells_maize = np.sum(maize_mask == 1)
+    
+     # Liberia has no price data
+    liberia_landcells_rice = np.sum(country_codes_gridded_rice == country_codes.loc \
+                       [(country_codes.CountryName=="Liberia")]["Code"].values)
+    liberia_landcells_maize = np.sum(country_codes_gridded_maize == country_codes.loc \
+                       [(country_codes.CountryName=="Liberia")]["Code"].values)
+    total_cells_for_rice = total_land_cells_rice - liberia_landcells_rice 
+    total_cells_for_maize = total_land_cells_maize - liberia_landcells_maize 
+                    
+    # Mauritania has no rice price data
+    mauritania_landcells = np.sum(country_codes_gridded_rice == country_codes.loc \
+                    [(country_codes.CountryName=="Mauritania")]["Code"].values)
+    total_cells_for_rice = total_cells_for_rice - mauritania_landcells 
+                            
+    country_codes["Shares rice"] = 0
+    country_codes["Shares maize"] = 0
+    
+    # calculate shares for rice
+    country_codes_gridded_rice[country_codes_gridded_rice == country_codes.loc \
+             [(country_codes.CountryName=="Liberia")]["Code"].values] = np.nan
+    country_codes_gridded_rice[country_codes_gridded_rice == country_codes.loc \
+             [(country_codes.CountryName=="Mauritania")]["Code"].values] = np.nan
+    for idx, c in enumerate(country_codes["Code"].values):
+        country_codes.iloc[idx, 2] = \
+                    np.sum(country_codes_gridded_rice == c)/total_cells_for_rice
+    
+    # calculate shares for maize
+    country_codes_gridded_maize[country_codes_gridded_maize == country_codes.loc \
+             [(country_codes.CountryName=="Liberia")]["Code"].values] = np.nan
+    for idx, c in enumerate(country_codes["Code"].values):
+        country_codes.iloc[idx, 3] = \
+            np.sum(country_codes_gridded_maize == c)/total_cells_for_maize
+            
+    # removing countries with no share as they don't show up in prices df below
+    country_codes = country_codes.drop(axis = 0, labels = [4, 5, 9])         
+
+    ## apply shares to farm gat prices
+    with open("InputData/Prices/CountryAvgFarmGatePrices.txt", "rb") as fp:    
+        country_avg_prices = pickle.load(fp)
+        
+    # Gambia is not included in our area
+    country_avg_prices = country_avg_prices.drop(axis = 0, labels = [4])             
+    # weighted average (using area share as weight)    
+    price_maize = np.nansum(country_avg_prices["Maize"].values * \
+                                            country_codes["Shares maize"].values)
+    price_rice = np.nansum(country_avg_prices["Rice"].values * \
+                          country_codes["Shares rice"].values)
+    
+    prices = np.array([price_rice, price_maize])
+    
+    # in 10^9$/10^6t
+    prices = 1e-3 * prices 
+
+    return(prices)
+
+# 4) A function to read GDHY data and change to format useable for the later 
+# following analysis       
+
+
+
+def ReadAndSave_GDHY(v_name, lon_min, lon_max, lat_min, lat_max):
+    
+    def __Read_GDHY(v_name, year, lon_min, lon_max, lat_min, lat_max):
+        f = netCDF4.Dataset("RawData/yields/" + v_name + "/yield_" + str(year) + ".nc4")
+        lats = f.variables['lat'][:]    # degrees north (360)  
+        lons = f.variables['lon'][:]    # degrees east (720)
+        var = f.variables["var"][:]     # yield in t/ha (360,720)     
+        f.close() 
+        
+        # rearrange in right format    
+        var_lonpos = var[:,lons <180]
+        var_lonneg = var[:,lons>180]
+        var_changed = np_ma.column_stack([var_lonneg, var_lonpos])
+        lons = np.arange(-179.75, 180, 0.5) 
+        
+        # define longitudes/latitudes corresponding to West Africa
+        lons_WA = lons[(lons>=lon_min) & (lons<=lon_max)]  
+        lats_WA = lats[(lats>=lat_min) & (lats<=lat_max)]
+        
+        # reduce to region of West Africa and set missing values to NAN
+        # shifted by one cell in both directions
+        var_rel = var_changed[((lats>=(lat_min+0.5)) & (lats<=(lat_max+0.5))),:] \
+                            [:,((lons>=(lon_min+0.5)) & (lons<=(lon_max+0.5)))]
+        var_rel.set_fill_value(value = np.nan)
+        var_rel_filled = var_rel.filled()    
+        mask_rel = var_rel.mask
+        
+        return(var_rel_filled, mask_rel, lats_WA, lons_WA)
+    
+    # yields are saved per year, so we go through all years and save them in 
+    # one array
+    for year in range(1981, 2017):
+        var_year, mask_year, lats_WA, lons_WA = __Read_GDHY(v_name, year, \
+                                            lon_min, lon_max, lat_min, lat_max)
+        if year == 1981:
+            var = var_year
+            mask = mask_year
+        else:
+            var  = np.dstack((var, var_year))
+            mask = np.dstack((mask, mask_year))
+    var_save = np.moveaxis(var, 2,0)
+    mask_save = np.moveaxis(mask, 2, 0)
+    mask_save = np.prod(mask_save, axis = 0)*(-1) +1 # chagne 0 and 1 so it 
+                                                     # fits with other masks    
+                                      
+                                                     
+    with open("RawData/ProcessedData/" + v_name.split("_")[0] + "_yld.txt", "wb") as fp:    
+        pickle.dump(var_save, fp)
+        pickle.dump(lats_WA, fp)
+        pickle.dump(lons_WA, fp)
+    with open("RawData/ProcessedData/" + v_name.split("_")[0] + "_mask.txt", "wb") as fp:    
+        pickle.dump(mask_save, fp)
+        pickle.dump(lats_WA, fp)
+        pickle.dump(lons_WA, fp)
+        
+    return(None)
+
+
+def ProfitableAreas():
+    """
+    Function that creates a mask showing for which cells at least one of the 
+    crops has profitable yields (according to cellwise regression evaluated for
+    the baseyear 2016)
+    """
+    
+    # function for cellwise linear regression
+    def __DetrendDataLinear(data, mask):
+        # initializing arrays
+        data_detrend = data.copy()
+        p_val_slopes = np.zeros(np.shape(mask))
+        slopes = np.zeros(np.shape(mask))
+        intercepts = np.zeros(np.shape(mask))
+        
+        # detrending each cell seperately
+        [num_lat, num_lon] = mask.shape
+        for lat in range(0, num_lat):
+            for lon in range(0, num_lon):    
+                # if data is masked, set NAN as results
+                if mask[lat, lon] == 0:
+                    p_val_slopes[lat, lon] = np.nan
+                    slopes[lat, lon] = np.nan
+                    intercepts[lat, lon] = np.nan
+                    continue     
+                Y = data[:, lat, lon]
+                X = np.arange(0, len(Y)).reshape((-1, 1))
+                X = sm.add_constant(X)
+                model = sm.OLS(Y, X, missing='drop').fit()
+                trend = X.dot(model.params)
+                data_detrend[:, lat, lon] = data_detrend[:, lat, lon] - trend
+                p_val_slopes[lat, lon] = model.pvalues[1]
+                slopes[lat, lon] = model.params[1]
+                intercepts[lat, lon] = model.params[0]
+                
+        return(data_detrend, p_val_slopes, slopes, intercepts)  
+    
+    # inout data
+    with open("RawData/ProcessedData/rice_yld.txt", "rb") as fp:    
+        rice_yld = pickle.load(fp)
+    with open("RawData/ProcessedData/maize_yld.txt", "rb") as fp:    
+        maize_yld = pickle.load(fp)
+    
+    # masks
+    with open("RawData/ProcessedData/rice_mask.txt", "rb") as fp:    
+        rice_mask = pickle.load(fp)
+    with open("RawData/ProcessedData/maize_mask.txt", "rb") as fp:    
+        maize_mask = pickle.load(fp)
+        
+    # with open("IntermediateResults/PreparedData/GDHY/" + \
+    #                                           crops[0] + "_mask.txt", "rb") as fp:    
+    #     rice_mask = (pickle.load(fp)).astype(float)
+    # with open("IntermediateResults/PreparedData/GDHY/" + \
+    #                                           crops[1] + "_mask.txt", "rb") as fp:    
+    #     maize_mask = (pickle.load(fp)).astype(float)
+     
+    # index of year 2016 (as 1981 is the first for which we have yield data)
+    year_rel = (2017 - 1) - 1981
+    
+    # get expected yields per cell for 2016
+    data_detrend, p_val_slopes, slopes, intercepts = __DetrendDataLinear(rice_yld, rice_mask)
+    exp_yld_rice = intercepts + year_rel * slopes
+    data_detrend, p_val_slopes, slopes, intercepts = __DetrendDataLinear(maize_yld, maize_mask)
+    exp_yld_maize = intercepts + year_rel * slopes
+    
+    # fig = plt.figure(figsize = (24, 13.5))
+    # ax = fig.add_subplot(1,2,1)
+    # c = OF2.MapValues(exp_yld_rice, lats_WA, lons_WA, vmin = 0, vmax = 4, ax = ax, title = "rice")
+    # ax = fig.add_subplot(1,2,2)
+    # c = OF2.MapValues(exp_yld_maize, lats_WA, lons_WA, vmin = 0, vmax = 4, ax = ax, title = "maize")
+    # cb_ax = fig.add_axes([0.93, 0.2, 0.02, 0.6])
+    # cbar = fig.colorbar(c, cax = cb_ax)     
+    # fig.savefig("../ForPublication/Clustering/Area/exp_ylds.png", bbox_inches = "tight", pad_inches = 1)
+    
+    
+    # calculate threshold
+    prices = CalcAvgProducerPrices(rice_mask, maize_mask)
+    with open("InputData/Other/CultivationCosts.txt", "rb") as fp:
+        costs = pickle.load(fp)
+    threshold = costs/prices
+    
+    # cells where both crops are not profitable (overage) are excluded
+    rice_expProfitable = exp_yld_rice.copy()
+    maize_expProfitable = exp_yld_maize.copy() 
+    rice_expProfitable[~(exp_yld_rice > threshold[0]) & ~(exp_yld_maize > threshold[1])] = 0
+    rice_expProfitable[rice_expProfitable > 0] = 1
+    rice_expProfitable[np.isnan(rice_expProfitable)] = 0
+    maize_expProfitable[~(exp_yld_maize > threshold[1]) & ~(exp_yld_rice > threshold[0])] = 0
+    maize_expProfitable[maize_expProfitable > 0] = 1
+    maize_expProfitable[np.isnan(maize_expProfitable)] = 0
+    
+    
+    # fig = plt.figure(figsize = figsize)
+    # ax = fig.add_subplot(1,2,1)
+    # c = OF2.MapValues(rice_expProfitable, lats_WA, lons_WA, vmin = 0, vmax = 4, ax = ax, title = "rice")
+    # ax = fig.add_subplot(1,2,2)
+    # c = OF2.MapValues(maize_expProfitable, lats_WA, lons_WA, vmin = 0, vmax = 4, ax = ax, title = "maize")
+    # cb_ax = fig.add_axes([0.93, 0.2, 0.02, 0.6])
+    # cbar = fig.colorbar(c, cax = cb_ax)     
+    # cbar.set_ticks([1.87144197, 1.05603763, 0, 1.5, 3])   
+    # cbar.set_ticklabels(["rice", "maize", str(0), str(1.5), str(3)])
+    # fig.savefig("../ForPublication/Clustering/Area/exp_ylds_profitable.png", bbox_inches = "tight", pad_inches = 1)
+    
+    mask_profitable = rice_expProfitable + maize_expProfitable
+    mask_profitable[mask_profitable > 1] = 1
+    
+    # combine with SPEI mask
+    with open("RawData/ProcessedData/mask_SPEI03_WA.txt", "rb") as fp:    
+        mask_SPEI = pickle.load(fp)
+        
+    mask_profitable = mask_profitable + mask_SPEI
+    mask_profitable[mask_profitable < 2] = 0
+    mask_profitable[mask_profitable == 2] = 1
+    
+    with open("InputData/Other/MaskProfitableArea_test.txt", "wb") as fp:    
+        pickle.dump(mask_profitable, fp)
+
+    return(None)
+    
+# def MapValues(values, lats_rel, lons_rel, \
+#               title = "", vmin = None, vmax = None, ax = None):    
+#     # initialize map
+#     m = Basemap(llcrnrlon=lons_rel[0], llcrnrlat=lats_rel[0], \
+#                 urcrnrlat=lats_rel[-1], urcrnrlon=lons_rel[-1], \
+#                 resolution='l', projection='merc', \
+#                 lat_0=lats_rel.mean(),lon_0=lons_rel.mean(), ax = ax)
+    
+#     lon, lat = np.meshgrid(lons_rel, lats_rel)
+#     xi, yi = m(lon, lat)
+    
+#     # Plot Data
+#     m.drawmapboundary(fill_color='azure')
+#     c = m.pcolormesh(xi,yi,np.squeeze(values), cmap = 'jet_r', \
+#                                           vmin = vmin, vmax = vmax)
+
+#     # Add Grid Lines
+#     m.drawparallels(np.arange(-80., 81., 10.), labels=[0,1,0,0], fontsize=8)
+#     m.drawmeridians(np.arange(-180., 181., 10.), labels=[0,0,0,1], fontsize=8)
+#     # Add Coastlines, States, and Country Boundaries
+#     m.drawcoastlines(linewidth=1.1)
+#     m.drawstates(linewidth=1.1)
+#     m.drawcountries(linewidth=1.1)
+#     m.drawrivers(linewidth=0.5, color='blue')
+#     # Add Title
+#     if ax:
+#         ax.set_title(title)
+#     else:
+#         plt.title(title)
+#     plt.show()
+#     return(c)
+
 
 def ReadAndSave_SPEI03(lon_min, lon_max, lat_min, lat_max):
     """
@@ -301,13 +587,11 @@ def ReadAndSave_SPEI03(lon_min, lon_max, lat_min, lat_max):
     data_WA_filled = data_WA.filled()
     
     # save reduced datasets
-    with open("RawData/ProcessedData/" + 
-                                          "SPEI03_WA_masked.txt", "wb") as fp:    
+    with open("RawData/ProcessedData/SPEI03_WA_masked.txt", "wb") as fp:    
         pickle.dump(data_WA, fp)
         pickle.dump(lats_WA, fp)
         pickle.dump(lons_WA, fp)
-    with open("RawData/ProcessedData/" + \
-                                      "SPEI03_WA_filled.txt", "wb") as fp:    
+    with open("RawData/ProcessedData/SPEI03_WA_filled.txt", "wb") as fp:    
         pickle.dump(data_WA_filled, fp)
         pickle.dump(lats_WA, fp)
         pickle.dump(lons_WA, fp)
@@ -322,8 +606,7 @@ def ReadAndSave_SPEI03(lon_min, lon_max, lat_min, lat_max):
            for j in range(0, len(lons_WA)):        
                if data_WA.mask[t, i, j] == False: 
                    mask_WA[i,j] = 1
-    with open("RawData/ProcessedData/mask_" + \
-                                         "SPEI03_WA.txt", "wb") as fp:    
+    with open("RawData/ProcessedData/mask_SPEI03_WA.txt", "wb") as fp:    
         pickle.dump(mask_WA, fp)    
         pickle.dump(lats_WA, fp)
         pickle.dump(lons_WA, fp)
@@ -395,65 +678,6 @@ def CalcPearsonDist():
         pickle.dump(dist, fp)    
         
     return(None)    
-
-
-# 4) A function to read GDHY data and change to format useable for the later 
-# following analysis    
-def ReadAndSave_GDHY(v_name, lon_min, lon_max, lat_min, lat_max):
-    
-    def _Read_GDHY(v_name, year, lon_min, lon_max, lat_min, lat_max):
-        f = netCDF4.Dataset("RawData/yields/" + v_name + "/yield_" + str(year) + ".nc4")
-        lats = f.variables['lat'][:]    # degrees north (360)  
-        lons = f.variables['lon'][:]    # degrees east (720)
-        var = f.variables["var"][:]     # yield in t/ha (360,720)     
-        f.close()
-        
-        # rearrange in right format    
-        var_lonpos = var[:,lons <180]
-        var_lonneg = var[:,lons>180]
-        var_changed = np_ma.column_stack([var_lonneg, var_lonpos])
-        lons = np.arange(-179.75, 180, 0.5) 
-                
-        # define longitudes/latitudes corresponding to West Africa
-        lons_WA = lons[(lons>=lon_min) & (lons<=lon_max)]      
-        lats_WA = lats[(lats>=lat_min) & (lats<=lat_max)]
-        
-        # reduce to region of West Africa and set missing values to NAN
-        # shifted by one cell in both directions
-        var_rel = var_changed[((lats>=(lat_min+0.5)) & (lats<=(lat_max+0.5))),:] \
-                            [:,((lons>=(lon_min+0.5)) & (lons<=(lon_max+0.5)))]
-        var_rel.set_fill_value(value = np.nan)
-        var_rel_filled = var_rel.filled()    
-        mask_rel = var_rel.mask
-        
-        return(var_rel_filled, mask_rel, lats_WA, lons_WA)
-    
-    # yields are saved per year, so we go through all years and save them in 
-    # one array
-    for year in range(1981, 2017):
-        var_year, mask_year, lats_WA, lons_WA = _Read_GDHY(v_name, year, \
-                                            lon_min, lon_max, lat_min, lat_max)
-        if year == 1981:
-            var = var_year
-            mask = mask_year
-        else:
-            var  = np.dstack((var, var_year))
-            mask = np.dstack((mask, mask_year))
-    var_save = np.moveaxis(var, 2,0)
-    mask_save = np.moveaxis(mask, 2, 0)
-    mask_save = np.prod(mask_save, axis = 0)*(-1) +1 # chagne 0 and 1 so it 
-                                                     # fits with other masks    
-                                                     
-    with open("RawData/ProcessedData/" + v_name.split("_")[0] + "_yld.txt", "wb") as fp:    
-        pickle.dump(var_save, fp)
-        pickle.dump(lats_WA, fp)
-        pickle.dump(lons_WA, fp)
-    with open("RawData/ProcessedData/" + v_name.split("_")[0] + "_mask.txt", "wb") as fp:    
-        pickle.dump(mask_save, fp)
-        pickle.dump(lats_WA, fp)
-        pickle.dump(lons_WA, fp)
-        
-    return(None)
 
 
 

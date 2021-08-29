@@ -417,52 +417,12 @@ def SetParameters(settings,
     ppdemand = np.sum(ppdemand["Demand"] * ppdemand["Shares"])
     
     # 6. cultivation costs of crops
-    # RICE:
-    # Liberia: "The cost of production of swampland Nerica rice (farming 
-    # and processing of the paddy) is $308 per metric tons [...]. 
-    # Swampland Nerica rice has a yield of 2.8 metric tons per hectare in 
-    # Liberia."  
-    # https://ekmsliberia.info/document/liberia-invest-agriculture/
-    # => 862.4USD/ha (2015)
-    # Nigeria: "COST AND RETURNS OF PADDY RICE PRODUCTION IN KADUNA STATE"
-    # (Online ISSN: ISSN 2054-6327(online)) 
-    # 1002USD/ha 
-    # Benin: 
-    # 105 FCFA/kg, 3t/ha =>  315000 FCFA/ha => 695.13USD/ha (2011)
-    # Burkina-Faso: 
-    # Rainfed: 50 FCFA/kg, 1t/ha => 50000 FCFA/ha => 104.62USD/ha (2011)
-    # Lowland (bas-fonds): 55 FCFA/kg, 2t/ha => 110000 FCFA/ha 
-    #                                               => 230.17 USD/ha
-    # (I exclude the value for irrigated areas, as in West Africa 
-    # agriculture is mainly rainfed)
-    # Mali:
-    # 108FCFA/kg, 2.7 t/ha => 291600 FCFA/ha => 589.27 USD/ha
-    # Senegal: 
-    # 101FCFA/kg, 5 t/ha => 505000 FCFA/ha => 1020.51 USD/ha
-    # For Benin, Burkina-Faso, Mali, Senegal:
-    # http://www.roppa-afrique.org/IMG/pdf/
-    #                       rapport_final_synthese_regionale_riz_finale.pdf
-    # in 2011 average exchange rate to USD 477.90 FCFA for 1 USD 
-    # in 2014 average exchange rate to USD 494.85 FCFA for 1 USD
-    # (https://www.exchangerates.org.uk/
-    #                   USD-XOF-spot-exchange-rates-history-2011.html)
-    # On average: 
-    # (862.4+1002+695.13+104.62+230.17+589.27+1020.51)/7 = 643.44
-    # MAIZE
-    # "Competiveness of Maize Value Chains for Smallholders in West Africa"
-    # DOI: 10.4236/as.2017.812099
-    # Benin: 304.6 USD/ha (p. 1384, rainfed)
-    # Ivory Coast: 305 USD/ha (p. 1384)
-    # Ghana: 301.4 USD/ha (p. 1392) 
-    # Nigeria: Field surey 2010 (e-ISSN: 2278-4861)
-    # 32079.00 ₦/ha => 213.86 USD/ha
-    # (https://www.exchangerates.org.uk/USD-NGN-spot-exchange-rates-
-    # history-2010.html)
-    # On average: (304.6 + 305 + 301.4 + 213.86)/4 = 281.22 
-    costs = np.transpose(np.tile(np.array([643.44, 281.22]), \
-                                                     (len(k_using), 1)))
-    # in 10^9$/10^6ha
-    costs = 1e-3 * costs 
+    # average cultivation costs based on literature data for some West
+    # African countries (see DataPreparation_DoNotRun for details and
+    # sources)
+    with open("InputData/Other/CultivationCosts.txt", "rb") as fp:
+        costs = pickle.load(fp)
+    costs = np.transpose(np.tile(costs, (len(k_using), 1)))
         
     # 7. Energy value of crops
     # https://www.ars.usda.gov/northeast-area/beltsville-md-bhnrc/
