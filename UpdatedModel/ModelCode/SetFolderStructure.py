@@ -70,7 +70,7 @@ def CheckFolderStructure():
     if not os.listdir("InputData/Clusters/AdjacencyMatrices"): 
         warn.warn("You don't have any adjacency matrices - you won't be " + \
                   "able to run GroupingClusters(). Adjacency matrices " + \
-                  "currently need to be added by hand")
+                  "currently need to be added manually")
     if not os.path.isdir("InputData/Clusters/ClusterGroups"):
         os.mkdir("InputData/Clusters/ClusterGroups")
     if not os.path.isdir("InputData/Clusters/Clustering"):

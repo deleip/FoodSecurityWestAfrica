@@ -6,6 +6,7 @@ UpdatedModel/ModelOutput/
 UpdatedModel/ModelCode/__pycache__/
 UpdatedModel/ModelLogs/
 UpdatedModel/RawData/
+UpdatedModel/ProcessedData/
 UpdatedModel/FunctionsStoOptAll
 UpdatedModel/AnalyzingResults
 UpdatedModel/FunctionsNetwork.py

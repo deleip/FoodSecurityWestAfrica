@@ -324,7 +324,7 @@ def SetParameters(settings,
     
     # 1. get cluster information (clusters given by k-Medoids on SPEI data) 
     with open("InputData/Clusters/Clustering/kMediods" + \
-                        str(k) + "_PearsonDistSPEI_ProfitableArea.txt", "rb") as fp:  
+                        str(k) + "_PearsonDistSPEI.txt", "rb") as fp:  
         clusters = pickle.load(fp)
         costs = pickle.load(fp)
     
@@ -359,62 +359,12 @@ def SetParameters(settings,
     cluster_pop_ratio_2015 = cluster_pop/total_pop_UN_2015
     total_pop_ratio_2015 = total_pop_GPW/total_pop_UN_2015
     considered_pop_scen = total_pop_scen * total_pop_ratio_2015 # use 2015 ratio to scale down population scneario to considered area
-    
-    # 4. Country shares of area (for price calculation)
-    with open("InputData/Prices/CountryCodesGridded.txt", "rb") as fp:    
-        country_codes_gridded = pickle.load(fp)
-    country_codes = pd.read_csv("InputData/Prices/CountryCodes.csv")
-    with open("InputData/Other/MaskProfitableArea.txt", "rb") as fp:   
-        yld_mask = pickle.load(fp)
-    country_codes_gridded[yld_mask == 0] = np.nan
-    total_land_cells = np.sum(yld_mask == 1)
-    
-    # liberia has no price data
-    liberia_landcells = np.sum(country_codes_gridded == country_codes.loc \
-                       [(country_codes.CountryName=="Liberia")]["Code"].values)
-    total_cells_for_average = total_land_cells - liberia_landcells 
-                    
-    # Mauritania has no rice price data
-    mauritania_landcells = np.sum(country_codes_gridded == country_codes.loc \
-                    [(country_codes.CountryName=="Mauritania")]["Code"].values)
-    total_cells_for_average_excl_mauritania = \
-                            total_cells_for_average - mauritania_landcells 
-                            
-    country_codes["Shares"] = 0
-    country_codes["Shares excl. Mauritania"] = 0
-    
-    country_codes_gridded[country_codes_gridded == country_codes.loc \
-             [(country_codes.CountryName=="Liberia")]["Code"].values] = np.nan
-    for idx, c in enumerate(country_codes["Code"].values):
-        country_codes.iloc[idx, 2] = \
-                    np.sum(country_codes_gridded == c)/total_cells_for_average
-    
-    country_codes_gridded[country_codes_gridded == country_codes.loc \
-           [(country_codes.CountryName=="Mauritania")]["Code"].values] = np.nan
-    for idx, c in enumerate(country_codes["Code"].values):
-        country_codes.iloc[idx, 3] = np.sum(country_codes_gridded == c)/ \
-                                        total_cells_for_average_excl_mauritania
-    
-    # removing countries with no share as they don't show up in prices df below
-    country_codes = country_codes.drop(axis = 0, labels = [4, 5, 9]) 
 
     # 5. Per person/day demand       
-    # we use data from a paper on food waste 
-    # (https://doi.org/10.1371/journal.pone.0228369) 
-    # it includes country specific vlues for daily energy requirement per 
-    # person (covering five of the countries in West Africa), based on data
-    # from 2003. the calculation of the energy requirement depends on 
-    # country specific values on age/gender of the population, body weight, 
-    # and Physical Avticity Level.
-    # Using the area shares as weights, this results in an average demand
-    # per person and day of 2952.48kcal in the area we use.
-    ppdemand = pd.read_csv("InputData/Other/CaloricDemand.csv")                           
-    ppdemand["Shares"] = 0
-    for c in ppdemand["Country"]:
-        ppdemand.loc[ppdemand["Country"] == c, "Shares"] = \
-            country_codes.loc[country_codes["CountryName"] == c, "Shares"].values
-    ppdemand["Shares"] = ppdemand["Shares"] / np.sum(ppdemand["Shares"])        
-    ppdemand = np.sum(ppdemand["Demand"] * ppdemand["Shares"])
+    # based on country specific caloric demand from a paper on food waste, 
+    # averaged based on area. For more detail see DataPreparation_DoNotRun.py    
+    with open("InputData/Other/AvgCaloricaDemand.txt", "rb") as fp:
+        ppdemand = pickle.load(fp)
     
     # 6. cultivation costs of crops
     # average cultivation costs based on literature data for some West
@@ -425,16 +375,8 @@ def SetParameters(settings,
     costs = np.transpose(np.tile(costs, (len(k_using), 1)))
         
     # 7. Energy value of crops
-    # https://www.ars.usda.gov/northeast-area/beltsville-md-bhnrc/
-    # beltsville-human-nutrition-research-center/methods-and-application-
-    # of-food-composition-laboratory/mafcl-site-pages/sr11-sr28/
-    # Rice: NDB_No 20450, "RICE,WHITE,MEDIUM-GRAIN,RAW,UNENR" [kcal/100g]
-    kcal_rice = 360 * 10000             # [kcal/t]
-    # Maize: NDB_No 20014, "CORN GRAIN,YEL" (kcal/100g)
-    kcal_maize = 365 * 10000            # [kcal/t]
-    crop_cal = np.array([kcal_rice, kcal_maize])
-    # in 10^12kcal/10^6t
-    crop_cal = 1e-6 * crop_cal
+    with open("InputData/Other/CalorieContentCrops.txt", "rb") as fp:
+        crop_cal = pickle.load(fp)
     
     # 8. Food demand
     # based on the demand per person and day (ppdemand) and assuming no change
@@ -456,21 +398,10 @@ def SetParameters(settings,
         total_pop_ratios = total_pop_scen / total_pop_year_before
         guaranteed_income = (guaranteed_income.swapaxes(0,1) * total_pop_ratios).swapaxes(0,1)
           
-    # 10. prices for selling crops, per crop and cluster
-    with open("InputData//Prices/CountryAvgFarmGatePrices.txt", "rb") as fp:    
-        country_avg_prices = pickle.load(fp)
-    # Gambia is not included in our area
-    country_avg_prices = country_avg_prices.drop(axis = 0, labels = [4])             
-    # weighted average (using area share as weight)    
-    price_maize = np.nansum(country_avg_prices["Maize"].values * \
-                                            country_codes["Shares"].values)
-    price_rice = np.nansum(country_avg_prices["Rice"].values * \
-                          country_codes["Shares excl. Mauritania"].values)
-    
-    prices = np.transpose(np.tile(np.array([price_rice, \
-                                            price_maize]), (len(k_using), 1)))
-    # in 10^9$/10^6t
-    prices = 1e-3 * prices 
+    # 10. prices for selling crops, per crop and cluster (but same over all clusters)
+    with open("InputData//Prices/RegionFarmGatePrices.txt", "rb") as fp:    
+        prices = pickle.load(fp)
+    prices = np.transpose(np.tile(prices, (len(k_using), 1)))
     
     # 11. thresholds for yields being profitable
     y_profit = costs/prices

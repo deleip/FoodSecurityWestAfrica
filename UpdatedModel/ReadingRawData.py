@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Jun 27 20:05:27 2021
+Created on Mon Aug 30 20:06:26 2021
 
 @author: leip
 """
-
 
 # %% IMPORTING NECESSARY PACKAGES AND SETTING WORKING DIRECTORY
 
@@ -23,13 +22,16 @@ import pickle
 import pandas as pd
 import matplotlib.pyplot as plt
 import openpyxl as xl
+import statsmodels.api as sm
+import seaborn as sns
 
 import ModelCode.DataPreparation as DP
+import ModelCode.GroupingClusters as GC
 
 if not os.path.isdir("InputData/Visualization"):
     os.mkdir("InputData/Visualization")
 
-# %% General Definition
+# %% 1. General Definition
 
 # define region corresponding to West Africa
 lon_min = -19 
@@ -37,7 +39,39 @@ lon_max = 10.5
 lat_min = 3.0
 lat_max = 18.5  
 
-# %% Population data from UN World Population Prospects 
+with open("InputData/Other/AreaExtent", "wb") as fp:
+    pickle.dump([lat_min, lat_max, lon_min, lon_max])
+    pickle.dump(["lat_min", "lat_max", "lon_min", "lon_max"])
+    
+lats_WA = np.arange(lat_min, lat_max, 0.5) + 0.25    
+lons_WA = np.arange(lon_min, lon_max, 0.5) + 0.25    
+
+with open("InputData/Other/LatsLonsArea.txt", "wb") as fp:
+    pickle.dump(lats_WA)
+    pickle.dump(lons_WA)
+
+# %% 2. SPEI
+    
+# The Standardized Precipitation-Evapotranspiration Index (SPEI) was proposed 
+# to overcome problems of the SPI (mainly not considering temperature) and the 
+# sc-PDSI (mainly having only one timescale).
+# The SPEIbase covers the period from January 1901 to December 2018 with 
+# monthly frequency, with global coverage at 0.5° resolution. Values are 
+# typically between -2.5 and 2.5 (exceeding probabilities ca. 0.006 and 0.994 
+# respectively), theoretical limits are ±infinity.
+# Source: Vicente-Serrano, Sergio M., Santiago Beguería, and Juan I. 
+# López-Moreno. "A multiscalar drought index sensitive to global warming: the
+# standardized precipitation evapotranspiration index." 
+# Journal of climate 23.7 (2010): 1696-1718.
+# Data downloaded from: http://hdl.handle.net/10261/202305
+# Accessed April 29th 2020
+
+DP.ReadAndSave_SPEI03(lon_min, lon_max, lat_min, lat_max)
+# creates ProcessedData/SPEI03_WA_masked.txt
+#         ProcessedData/SPEI03_WA_filled.txt
+#         ProcessedData/mask_SPEI03_WA.txt
+
+# %% 3. Population data from UN World Population Prospects 
      
 # Data Download: https://population.un.org/wpp/Download/Files/1_Indicators%20(Standard)/CSV_FILES/WPP2019_TotalPopulationBySex.csv
 # Accessed April 12th 2020
@@ -65,7 +99,7 @@ lat_max = 18.5
 DP.ReadAndSave_UNWPP(WhichRegion = "Western Africa", WhichValues = "PopTotal")
 # creates InputData/Population/UN_PopTotal_Prospects_WestAfrica.txt
 
-# %% Gridded Populaion of the World (SEDAC)
+# %% 4. Gridded Populaion of the World (SEDAC)
     
 # Data download: https://sedac.ciesin.columbia.edu/data/set/gpw-v4-population
 #             -count-adjusted-to-2015-unwpp-country-totals-rev11/data-download    
@@ -100,7 +134,7 @@ country_codes = pd.DataFrame(country_codes)
 country_codes.to_csv("InputData/Prices/CountryCodes.csv", index = False)
 # creates InputData/Prices/CountryCodes.csv
 
-# %% Preparing GDHY yield data    
+# %% 5. Preparing GDHY yield data    
 
 # Data downloaded from https://doi.pangaea.de/10.1594/PANGAEA.909132
 # Annual time series data of 0.5-degree grid-cell yield estimates of major 
@@ -114,26 +148,25 @@ country_codes.to_csv("InputData/Prices/CountryCodes.csv", index = False)
 # Accessed April 26th 2020
 
 DP.ReadAndSave_GDHY("maize_major", lon_min, lon_max, lat_min, lat_max)
-# creates RawData/ProcessedData/maize_yld.txt
-# creates RawData/ProcessedData/maize_mask.txt
+# creates ProcessedData/maize_yld.txt
+# creates ProcessedData/maize_mask.txt
 DP.ReadAndSave_GDHY("rice_major", lon_min, lon_max, lat_min, lat_max)
-# creates RawData/ProcessedData/rice_mask.txt
-# creates RawData/ProcessedData/rice_mask.txt
+# creates ProcessedData/rice_mask.txt
+# creates ProcessedData/rice_mask.txt
 
 # combine masks to get mask describing where both crops have data
-with open("RawData/ProcessedData/rice_mask.txt", "rb") as fp:    
+with open("ProcessedData/rice_mask.txt", "rb") as fp:    
     rice_mask = pickle.load(fp)
-with open("RawData/ProcessedData/maize_mask.txt", "rb") as fp:    
+with open("ProcessedData/maize_mask.txt", "rb") as fp:    
     maize_mask = pickle.load(fp)
 
-yld_mask = rice_mask + maize_mask
-yld_mask[yld_mask == 1] = 0
-yld_mask[yld_mask == 2] = 1
+yld_mask = rice_mask * maize_mask
 
-with open("RawData/ProcessedData/yld_mask.txt", "wb") as fp:    
+with open("ProcessedData/yld_mask.txt", "wb") as fp:    
     pickle.dump(yld_mask, fp)
+# creates ProcessedData/yld_mask.txt
 
-# %% Farm gate prices for countries in West Africa
+# %% 6. Farm gate prices for countries in West Africa
 
 # Data download: http://www.fao.org/faostat/en/#data/PP
 # countries: Benin, Burkina Faso, Cameroon, Cote d'Ivoire, Gambia, Ghana, 
@@ -157,25 +190,7 @@ DP.VisualizeAndPrepare_ProducerPrices()
 #         InputData/Visualization/ProducerPrices_CountryAvg.png
 #         InputData/Visualization/ProducerPrices.png  
 
-# %% MaskProfitableArea: Only including cells, where either maize or
-# rice has profitable average yields (based on linear regression evaluated 
-# for baseyear 2016)
-
-DP.ProfitableAreas()
-# creates MaskProfitableArea.txt
-# TODO visualizations
-
-# %% Average farm gate prices, based on prepared price dataset and mask
-
-with open("InputData/Other/MaskProfitableArea_test.txt", "rb") as fp:    
-    mask_profitable = pickle.load(fp)
-    
-prices = DP.CalcAvgProducerPrices(rice_mask = mask_profitable, maize_mask = mask_profitable)
-
-with open("InputData/Other/FarmGatePrices.txt", "wb") as fp:    
-    pickle.load(prices, fp)
-
-# %% Crop Cultivation Costs
+# %% 7. Crop Cultivation Costs
 # RICE:
 # Liberia: "The cost of production of swampland Nerica rice (farming 
 # and processing of the paddy) is $308 per metric tons [...]. 
@@ -225,40 +240,42 @@ costs = 1e-3 * costs
 
 with open("InputData/Other/CultivationCosts.txt", "wb") as fp:
     pickle.dump(costs, fp)
-
-# %% Get mask defining which cells  where at least on crop has profitable
-# yields (according to linear regression per cell evaluate in baseyear 2016) 
-
-DP.ProfitableAreas()
+# creates InputData/Other/CultivationCosts.txt
 
 
-# %% SPEI
-    
-# The Standardized Precipitation-Evapotranspiration Index (SPEI) was proposed 
-# to overcome problems of the SPI (mainly not considering temperature) and the 
-# sc-PDSI (mainly having only one timescale).
-# The SPEIbase covers the period from January 1901 to December 2018 with 
-# monthly frequency, with global coverage at 0.5° resolution. Values are 
-# typically between -2.5 and 2.5 (exceeding probabilities ca. 0.006 and 0.994 
-# respectively), theoretical limits are ±infinity.
-# Source: Vicente-Serrano, Sergio M., Santiago Beguería, and Juan I. 
-# López-Moreno. "A multiscalar drought index sensitive to global warming: the
-# standardized precipitation evapotranspiration index." 
-# Journal of climate 23.7 (2010): 1696-1718.
-# Data downloaded from: http://hdl.handle.net/10261/202305
-# Accessed April 29th 2020
+# %% 8. Energy value of crops
 
-DP.ReadAndSave_SPEI03(lon_min, lon_max, lat_min, lat_max)
-# creates RawData/ProcessedData/SPEI03_WA_masked.txt
-#         RawData/ProcessedData/SPEI03_WA_filled.txt
-#         RawData/ProcessedData/mask_SPEI03_WA.txt
+# https://www.ars.usda.gov/northeast-area/beltsville-md-bhnrc/
+# beltsville-human-nutrition-research-center/methods-and-application-
+# of-food-composition-laboratory/mafcl-site-pages/sr11-sr28/
+# Rice: NDB_No 20450, "RICE,WHITE,MEDIUM-GRAIN,RAW,UNENR" [kcal/100g]
+kcal_rice = 360 * 10000             # [kcal/t]
+# Maize: NDB_No 20014, "CORN GRAIN,YEL" (kcal/100g)
+kcal_maize = 365 * 10000            # [kcal/t]
 
-# TODO calc distance with reduce area to profitable cells! -> PearsonDistSPEI03.txt
-DP.CalcPearsonDist()
+crop_cal = np.array([kcal_rice, kcal_maize])
+# in 10^12kcal/10^6t
+crop_cal = 1e-6 * crop_cal
 
-# TODO kMedoids (BadCluster.py) -> kMedoidsX_PearsonDistSPEI_ProfitableArea.txt for X num cluster
+with open("InputData/Other/CalorieContentCrops.txt", "wb") as fp:
+    pickle.dump(crop_cal, fp)
 
-# TODO manual set up of adjacency matrix for 9 cluster -> k9AdjacencyMAtrix.txt
+# %% 9. Average calorie demand per person and day
 
-# TODO yield trends (BadCluster.py) -> DetrYieldAvg_kX_ProfitableArea for X in 1, ..., 9
+# we use data from a paper on food waste 
+# (https://doi.org/10.1371/journal.pone.0228369) 
+# it includes country specific vlues for daily energy requirement per 
+# person (covering five of the countries in West Africa), based on data
+# from 2003. the calculation of the energy requirement depends on 
+# country specific values on age/gender of the population, body weight, 
+# and Physical Avticity Level.
+# Using the area shares as weights, this results in an average demand
+# per person and day of 2952.48kcal in the area we use.
 
+CaloricDemand = {"Country": np.array(["Burkina Faso", "Cote d'Ivoire",
+                                      "Ghana", "Mali", "Senegal"]),
+                 "Demand" : np.array([3046.54, 3050.81, 2495.38, 3175.53, 3056.10])}
+CaloricDemand = pd.DataFrame(CaloricDemand)
+CaloricDemand.to_csv("ProcessedData/CountryCaloricDemand.csv", index = False)
+# creates ProcessedData/CountryCaloricDemand.csv
+                
