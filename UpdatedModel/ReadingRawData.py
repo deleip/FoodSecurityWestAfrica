@@ -12,22 +12,15 @@ import os
 dir_path = os.path.dirname(os.path.realpath(__file__))
 os.chdir(dir_path)
 
-# import all project related functions
-import FoodSecurityModule as FS  
-
 # import other modules
 import numpy as np
-from os import chdir
 import pickle
 import pandas as pd
-import matplotlib.pyplot as plt
-import openpyxl as xl
-import statsmodels.api as sm
-import seaborn as sns
 
 import ModelCode.DataPreparation as DP
-import ModelCode.GroupingClusters as GC
 
+if not os.path.isdir("ProcessedData"):
+    os.mkdir("ProcessedData")
 if not os.path.isdir("InputData/Visualization"):
     os.mkdir("InputData/Visualization")
 
@@ -39,16 +32,18 @@ lon_max = 10.5
 lat_min = 3.0
 lat_max = 18.5  
 
-with open("InputData/Other/AreaExtent", "wb") as fp:
-    pickle.dump([lat_min, lat_max, lon_min, lon_max])
-    pickle.dump(["lat_min", "lat_max", "lon_min", "lon_max"])
+with open("InputData/Other/AreaExtent.txt", "wb") as fp:
+    pickle.dump([lat_min, lat_max, lon_min, lon_max], fp)
+    pickle.dump(["lat_min", "lat_max", "lon_min", "lon_max"], fp)
+# creates InputData/Other/AreaExtent.txt
     
 lats_WA = np.arange(lat_min, lat_max, 0.5) + 0.25    
 lons_WA = np.arange(lon_min, lon_max, 0.5) + 0.25    
 
 with open("InputData/Other/LatsLonsArea.txt", "wb") as fp:
-    pickle.dump(lats_WA)
-    pickle.dump(lons_WA)
+    pickle.dump(lats_WA, fp)
+    pickle.dump(lons_WA, fp)
+# creates InputData/Other/LatsLonsArea.txt
 
 # %% 2. SPEI
     
@@ -259,6 +254,7 @@ crop_cal = 1e-6 * crop_cal
 
 with open("InputData/Other/CalorieContentCrops.txt", "wb") as fp:
     pickle.dump(crop_cal, fp)
+# creates InputData/Other/CalorieContentCrops.txt
 
 # %% 9. Average calorie demand per person and day
 

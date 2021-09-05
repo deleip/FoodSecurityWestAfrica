@@ -15,13 +15,86 @@ import netCDF4
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy import stats
-from scipy.spatial import distance
 import random
-import cartopy.crs as ccrs
-import cartopy
-import matplotlib.pyplot as plt
 
-# %% DEFINING FUNCTIONS
+
+# ---------------------- FUNCTIONS FOR ReadingRawData.py ----------------------
+
+# %% 1. SPEI data
+
+def ReadAndSave_SPEI03(lon_min, lon_max, lat_min, lat_max):
+    """
+    Function to read SPEI and save it in a format useable for the
+    later following analysis
+    
+
+    Parameters
+    ----------
+    lat_min : float
+        Latitude defining lower border of area.
+    lon_min : float
+        Latitude defining upper border of area.
+    lat_max : float
+        Longitude defining left border of area.
+    lon_max : float
+        Longitude defining right border of area.
+
+    Returns
+    -------
+    None.
+
+    """
+    
+    # read data
+    f = netCDF4.Dataset('RawData/SPEI03.nc') 
+                  # opening connection to netCDF file [lon, lat, time, spei]
+    time = f.variables['time'][:]   # days since 1900-1-1 (len = 1380)
+    lats = f.variables['lat'][:]    # degrees north (len = 360)
+    lons = f.variables['lon'][:]    # degrees east (len = 720)
+    data = f.variables['spei'][:]   # z-values (shape = [1380, 360, 720]    
+    f.close()                       # closing connection to netCDF file
+    
+    # define longitudes/latitudes corresponding to West Africa
+    lons_WA = lons[(lons>=lon_min) & (lons<=lon_max)]      
+    lats_WA = lats[(lats>=lat_min) & (lats<=lat_max)]
+    
+    # reduce SPEI data to region
+    data_WA = data[:,((lats>=lat_min) & (lats<=lat_max)).data,:] \
+                                 [:,:,((lons>=lon_min) & (lons<=lon_max)).data]
+    data_WA.set_fill_value(value = np.nan)   # to get full matrix, we fill  
+                                             # masked elements with NAN
+                                             # (instead of original filling 
+                                             # value 1e30)
+    data_WA_filled = data_WA.filled()
+    
+    # save reduced datasets
+    with open("ProcessedData/SPEI03_WA_masked.txt", "wb") as fp:    
+        pickle.dump(data_WA, fp)
+        pickle.dump(lats_WA, fp)
+        pickle.dump(lons_WA, fp)
+    with open("ProcessedData/SPEI03_WA_filled.txt", "wb") as fp:    
+        pickle.dump(data_WA_filled, fp)
+        pickle.dump(lats_WA, fp)
+        pickle.dump(lons_WA, fp)
+        
+    # Mask: cells that are masked in every timestep should be excluded in
+    # further analysis, therefore we define an object "mask" with value 1 
+    # for cells with data for at least one timestep and value 0 for the rest 
+    # (ocean)
+    mask_WA = np.zeros([len(lats_WA),len(lons_WA)] )
+    for t in range(0, len(time)):
+       for i in range(0, len(lats_WA)):
+           for j in range(0, len(lons_WA)):        
+               if data_WA.mask[t, i, j] == False: 
+                   mask_WA[i,j] = 1
+    with open("ProcessedData/mask_SPEI03_WA.txt", "wb") as fp:    
+        pickle.dump(mask_WA, fp)    
+        pickle.dump(lats_WA, fp)
+        pickle.dump(lons_WA, fp)
+        
+    return(None)
+
+# %% 2. UN world population prospect (UNWPP) data
 
 def ReadAndSave_UNWPP(WhichRegion = "West Africa",
                       WhichValues = "PopTotal"):
@@ -84,7 +157,8 @@ def ReadAndSave_UNWPP(WhichRegion = "West Africa",
     
     return(None)
 
-# 7) 
+# %% 3. GPW data
+
 def ReadAndReduce_GPW(lat_min, lon_min, lat_max, lon_max):
     """
     Function to read, prepare and save GPW data
@@ -176,6 +250,69 @@ def ReadAndReduce_GPW(lat_min, lon_min, lat_max, lon_max):
         
     return(None)
 
+
+# %% 4. GDHY data
+
+def ReadAndSave_GDHY(v_name, lon_min, lon_max, lat_min, lat_max):
+    
+    def __Read_GDHY(v_name, year, lon_min, lon_max, lat_min, lat_max):
+        f = netCDF4.Dataset("RawData/yields/" + v_name + "/yield_" + str(year) + ".nc4")
+        lats = f.variables['lat'][:]    # degrees north (360)  
+        lons = f.variables['lon'][:]    # degrees east (720)
+        var = f.variables["var"][:]     # yield in t/ha (360,720)     
+        f.close() 
+        
+        # rearrange in right format    
+        var_lonpos = var[:,lons <180]
+        var_lonneg = var[:,lons>180]
+        var_changed = np_ma.column_stack([var_lonneg, var_lonpos])
+        lons = np.arange(-179.75, 180, 0.5) 
+        
+        # define longitudes/latitudes corresponding to West Africa
+        lons_WA = lons[(lons>=lon_min) & (lons<=lon_max)]  
+        lats_WA = lats[(lats>=lat_min) & (lats<=lat_max)]
+        
+        # reduce to region of West Africa and set missing values to NAN
+        # shifted by one cell in both directions
+        var_rel = var_changed[((lats>=(lat_min+0.5)) & (lats<=(lat_max+0.5))),:] \
+                            [:,((lons>=(lon_min+0.5)) & (lons<=(lon_max+0.5)))]
+        var_rel.set_fill_value(value = np.nan)
+        var_rel_filled = var_rel.filled()    
+        mask_rel = var_rel.mask
+        
+        return(var_rel_filled, mask_rel, lats_WA, lons_WA)
+    
+    # yields are saved per year, so we go through all years and save them in 
+    # one array
+    for year in range(1981, 2017):
+        var_year, mask_year, lats_WA, lons_WA = __Read_GDHY(v_name, year, \
+                                            lon_min, lon_max, lat_min, lat_max)
+        if year == 1981:
+            var = var_year
+            mask = mask_year
+        else:
+            var  = np.dstack((var, var_year))
+            mask = np.dstack((mask, mask_year))
+    var_save = np.moveaxis(var, 2,0)
+    mask_save = np.moveaxis(mask, 2, 0)
+    mask_save = np.prod(mask_save, axis = 0)*(-1) +1 # chagne 0 and 1 so it 
+                                                     # fits with other masks    
+                                      
+                                                     
+    with open("ProcessedData/" + v_name.split("_")[0] + "_yld.txt", "wb") as fp:    
+        pickle.dump(var_save, fp)
+        pickle.dump(lats_WA, fp)
+        pickle.dump(lons_WA, fp)
+    with open("ProcessedData/" + v_name.split("_")[0] + "_mask.txt", "wb") as fp:    
+        pickle.dump(mask_save, fp)
+        pickle.dump(lats_WA, fp)
+        pickle.dump(lons_WA, fp)
+        
+    return(None)
+
+
+# %% 5. Producer prices
+
 def VisualizeAndPrepare_ProducerPrices():
     """
     Function reading producer prices for countries in West Africa, viasualizes 
@@ -261,137 +398,10 @@ def VisualizeAndPrepare_ProducerPrices():
 
     return(None)
 
-def CalcAvgProducerPrices(rice_mask, maize_mask):
-    
-    ## Country shares of area for price calculation
-    with open("InputData/Prices/CountryCodesGridded.txt", "rb") as fp:    
-        country_codes_gridded = pickle.load(fp)
-    country_codes_gridded_rice = country_codes_gridded.copy()
-    country_codes_gridded_maize = country_codes_gridded.copy()
-    country_codes_gridded_rice[rice_mask == 0] = np.nan
-    country_codes_gridded_maize[maize_mask == 0] = np.nan
-        
-    country_codes = pd.read_csv("InputData/Prices/CountryCodes.csv")    
-    
-    total_land_cells_rice = np.sum(rice_mask == 1)
-    total_land_cells_maize = np.sum(maize_mask == 1)
-    
-     # Liberia has no price data
-    liberia_landcells_rice = np.sum(country_codes_gridded_rice == country_codes.loc \
-                       [(country_codes.CountryName=="Liberia")]["Code"].values)
-    liberia_landcells_maize = np.sum(country_codes_gridded_maize == country_codes.loc \
-                       [(country_codes.CountryName=="Liberia")]["Code"].values)
-    total_cells_for_rice = total_land_cells_rice - liberia_landcells_rice 
-    total_cells_for_maize = total_land_cells_maize - liberia_landcells_maize 
-                    
-    # Mauritania has no rice price data
-    mauritania_landcells = np.sum(country_codes_gridded_rice == country_codes.loc \
-                    [(country_codes.CountryName=="Mauritania")]["Code"].values)
-    total_cells_for_rice = total_cells_for_rice - mauritania_landcells 
-                            
-    country_codes["Shares rice"] = 0
-    country_codes["Shares maize"] = 0
-    
-    # calculate shares for rice
-    country_codes_gridded_rice[country_codes_gridded_rice == country_codes.loc \
-             [(country_codes.CountryName=="Liberia")]["Code"].values] = np.nan
-    country_codes_gridded_rice[country_codes_gridded_rice == country_codes.loc \
-             [(country_codes.CountryName=="Mauritania")]["Code"].values] = np.nan
-    for idx, c in enumerate(country_codes["Code"].values):
-        country_codes.iloc[idx, 2] = \
-                    np.sum(country_codes_gridded_rice == c)/total_cells_for_rice
-    
-    # calculate shares for maize
-    country_codes_gridded_maize[country_codes_gridded_maize == country_codes.loc \
-             [(country_codes.CountryName=="Liberia")]["Code"].values] = np.nan
-    for idx, c in enumerate(country_codes["Code"].values):
-        country_codes.iloc[idx, 3] = \
-            np.sum(country_codes_gridded_maize == c)/total_cells_for_maize
-            
-    # removing countries with no share as they don't show up in prices df below
-    country_codes = country_codes.drop(axis = 0, labels = [4, 5, 9])         
 
-    ## apply shares to farm gat prices
-    with open("InputData/Prices/CountryAvgFarmGatePrices.txt", "rb") as fp:    
-        country_avg_prices = pickle.load(fp)
-        
-    # Gambia is not included in our area
-    country_avg_prices = country_avg_prices.drop(axis = 0, labels = [4])             
-    # weighted average (using area share as weight)    
-    price_maize = np.nansum(country_avg_prices["Maize"].values * \
-                                            country_codes["Shares maize"].values)
-    price_rice = np.nansum(country_avg_prices["Rice"].values * \
-                          country_codes["Shares rice"].values)
-    
-    prices = np.array([price_rice, price_maize])
-    
-    # in 10^9$/10^6t
-    prices = 1e-3 * prices 
+# ----------------- FUNCTIONS USED IN InputDataCalculations.py ----------------
 
-    return(prices)
-
-# 4) A function to read GDHY data and change to format useable for the later 
-# following analysis       
-
-
-
-def ReadAndSave_GDHY(v_name, lon_min, lon_max, lat_min, lat_max):
-    
-    def __Read_GDHY(v_name, year, lon_min, lon_max, lat_min, lat_max):
-        f = netCDF4.Dataset("RawData/yields/" + v_name + "/yield_" + str(year) + ".nc4")
-        lats = f.variables['lat'][:]    # degrees north (360)  
-        lons = f.variables['lon'][:]    # degrees east (720)
-        var = f.variables["var"][:]     # yield in t/ha (360,720)     
-        f.close() 
-        
-        # rearrange in right format    
-        var_lonpos = var[:,lons <180]
-        var_lonneg = var[:,lons>180]
-        var_changed = np_ma.column_stack([var_lonneg, var_lonpos])
-        lons = np.arange(-179.75, 180, 0.5) 
-        
-        # define longitudes/latitudes corresponding to West Africa
-        lons_WA = lons[(lons>=lon_min) & (lons<=lon_max)]  
-        lats_WA = lats[(lats>=lat_min) & (lats<=lat_max)]
-        
-        # reduce to region of West Africa and set missing values to NAN
-        # shifted by one cell in both directions
-        var_rel = var_changed[((lats>=(lat_min+0.5)) & (lats<=(lat_max+0.5))),:] \
-                            [:,((lons>=(lon_min+0.5)) & (lons<=(lon_max+0.5)))]
-        var_rel.set_fill_value(value = np.nan)
-        var_rel_filled = var_rel.filled()    
-        mask_rel = var_rel.mask
-        
-        return(var_rel_filled, mask_rel, lats_WA, lons_WA)
-    
-    # yields are saved per year, so we go through all years and save them in 
-    # one array
-    for year in range(1981, 2017):
-        var_year, mask_year, lats_WA, lons_WA = __Read_GDHY(v_name, year, \
-                                            lon_min, lon_max, lat_min, lat_max)
-        if year == 1981:
-            var = var_year
-            mask = mask_year
-        else:
-            var  = np.dstack((var, var_year))
-            mask = np.dstack((mask, mask_year))
-    var_save = np.moveaxis(var, 2,0)
-    mask_save = np.moveaxis(mask, 2, 0)
-    mask_save = np.prod(mask_save, axis = 0)*(-1) +1 # chagne 0 and 1 so it 
-                                                     # fits with other masks    
-                                      
-                                                     
-    with open("ProcessedData/" + v_name.split("_")[0] + "_yld.txt", "wb") as fp:    
-        pickle.dump(var_save, fp)
-        pickle.dump(lats_WA, fp)
-        pickle.dump(lons_WA, fp)
-    with open("ProcessedData/" + v_name.split("_")[0] + "_mask.txt", "wb") as fp:    
-        pickle.dump(mask_save, fp)
-        pickle.dump(lats_WA, fp)
-        pickle.dump(lons_WA, fp)
-        
-    return(None)
-
+# %% 1. Calculates profitable areas based on yield data, cultivation costs, prices
 
 def ProfitableAreas():
     """
@@ -503,163 +513,80 @@ def ProfitableAreas():
         pickle.dump(mask_profitable, fp)
 
     return(None)
+
+
+# %% 2. Calculates average producer prices (weighted with land area per country)
+
+def CalcAvgProducerPrices(rice_mask, maize_mask):
     
-
-
-def YldTrendsCluster(k):
-    
-    def __ClusterAverage(data, cl, k):
-        n_t = data.shape[0]
-        res = np.empty([n_t, k])
-        res.fill(np.nan)
-        for t in range(0, n_t):
-            for i in range(0, k):
-                res[t, i] = np.nanmean(data[t, (cl == i + 1)])
-        return(res) 
-
-    def __DetrendClusterAvgYlds(yields_avg, k, crops):
-        len_ts = yields_avg.shape[0]
-        # initializing results 
-        avg_pred = np.empty([len_ts, len(crops), k]); avg_pred.fill(np.nan)
-        residuals = np.empty([len_ts, len(crops), k]); residuals.fill(np.nan)
-        residual_means = np.empty([len(crops), k]); residual_means.fill(np.nan)
-        residual_stds = np.empty([len(crops), k]); residual_stds.fill(np.nan)
-        fstat = np.empty([len(crops), k]); fstat.fill(np.nan)
-        slopes = np.empty([len(crops), k]); slopes.fill(np.nan)
-        constants = np.empty([len(crops), k]); constants.fill(np.nan)
-        # detrending per cluster and crop
-        for cr in range(0, len(crops)):
-            for cl in range(0, k):
-                # timeseries
-                X = np.arange(0, len_ts).reshape((-1, 1))
-                X = sm.add_constant(X)
-                Y = yields_avg[:,cr,cl]
-                if np.sum(~(np.isnan(Y))) > 0:
-                    # regression
-                    model = sm.OLS(Y, X, missing='drop')
-                    result = model.fit()
-                    # saving results
-                    avg_pred[:,cr,cl] = result.predict(X)   
-                    residuals[:,cr,cl] = Y - avg_pred[:,cr,cl]
-                    residual_means[cr, cl] = np.nanmean(residuals[:,cr,cl])
-                    residual_stds[cr, cl] = np.nanstd(residuals[:,cr,cl])
-                    fstat[cr, cl] = result.f_pvalue
-                    constants[cr, cl] = result.params[0]
-                    slopes[cr, cl] = result.params[1] 
-        return(avg_pred, residuals, residual_means, residual_stds, fstat, \
-               constants, slopes)
-
-    with open("InputData/Clusters/Clustering/kMediods" + \
-                 str(k) + "_PearsonDistSPEI_ProfitableArea.txt", "rb") as fp:  
-        clusters = pickle.load(fp)
+    ## Country shares of area for price calculation
+    with open("InputData/Prices/CountryCodesGridded.txt", "rb") as fp:    
+        country_codes_gridded = pickle.load(fp)
+    country_codes_gridded_rice = country_codes_gridded.copy()
+    country_codes_gridded_maize = country_codes_gridded.copy()
+    country_codes_gridded_rice[rice_mask == 0] = np.nan
+    country_codes_gridded_maize[maize_mask == 0] = np.nan
         
-    crops = ["rice", "maize"]
-    yields = []
-    for cr in crops:
-        with open("ProcessedData/" + cr + "_yld.txt", "rb") as fp:    
-            yld_tmp = pickle.load(fp)
-        yields.append(yld_tmp)
-        
-    num_years = yields[0].shape[0]
-    yields_avg = np.empty([num_years, len(crops), k])
-    yields_avg.fill(np.nan)
+    country_codes = pd.read_csv("InputData/Prices/CountryCodes.csv")    
     
-    for cr in range(0, len(crops)):
-        yields_avg[:, cr, :] = __ClusterAverage(yields[cr], clusters, k)
-                                               
-    with open("ProcessedData/YieldAverages_k" + str(k) + ".txt", "wb") as fp:    
-        pickle.dump(yields_avg, fp)
-        pickle.dump(crops, fp)
+    total_land_cells_rice = np.sum(rice_mask == 1)
+    total_land_cells_maize = np.sum(maize_mask == 1)
     
-    avg_pred, residuals, residual_means, residual_stds, fstat, constants,\
-        slopes = __DetrendClusterAvgYlds(yields_avg, k, crops)
-        
-    with open("InputData/YieldTrends/DetrYieldAvg_k" + \
-                              str(k) + ".txt", "wb") as fp:    
-        pickle.dump(yields_avg, fp)
-        pickle.dump(avg_pred, fp)
-        pickle.dump(residuals, fp)
-        pickle.dump(residual_means, fp)
-        pickle.dump(residual_stds, fp)
-        pickle.dump(fstat, fp)
-        pickle.dump(constants, fp)
-        pickle.dump(slopes, fp)
-        pickle.dump(crops, fp)
-         
-    return(None)
+     # Liberia has no price data
+    liberia_landcells_rice = np.sum(country_codes_gridded_rice == country_codes.loc \
+                       [(country_codes.CountryName=="Liberia")]["Code"].values)
+    liberia_landcells_maize = np.sum(country_codes_gridded_maize == country_codes.loc \
+                       [(country_codes.CountryName=="Liberia")]["Code"].values)
+    total_cells_for_rice = total_land_cells_rice - liberia_landcells_rice 
+    total_cells_for_maize = total_land_cells_maize - liberia_landcells_maize 
+                    
+    # Mauritania has no rice price data
+    mauritania_landcells = np.sum(country_codes_gridded_rice == country_codes.loc \
+                    [(country_codes.CountryName=="Mauritania")]["Code"].values)
+    total_cells_for_rice = total_cells_for_rice - mauritania_landcells 
+                            
+    country_codes["Shares rice"] = 0
+    country_codes["Shares maize"] = 0
+    
+    # calculate shares for rice
+    country_codes_gridded_rice[country_codes_gridded_rice == country_codes.loc \
+             [(country_codes.CountryName=="Liberia")]["Code"].values] = np.nan
+    country_codes_gridded_rice[country_codes_gridded_rice == country_codes.loc \
+             [(country_codes.CountryName=="Mauritania")]["Code"].values] = np.nan
+    for idx, c in enumerate(country_codes["Code"].values):
+        country_codes.iloc[idx, 2] = \
+                    np.sum(country_codes_gridded_rice == c)/total_cells_for_rice
+    
+    # calculate shares for maize
+    country_codes_gridded_maize[country_codes_gridded_maize == country_codes.loc \
+             [(country_codes.CountryName=="Liberia")]["Code"].values] = np.nan
+    for idx, c in enumerate(country_codes["Code"].values):
+        country_codes.iloc[idx, 3] = \
+            np.sum(country_codes_gridded_maize == c)/total_cells_for_maize
+            
+    # removing countries with no share as they don't show up in prices df below
+    country_codes = country_codes.drop(axis = 0, labels = [4, 5, 9])         
 
-# def MapValues(values, lat_min, lat_max, lon_min, lon_max, lons_rel, title = "", vmin = None, vmax = None):
-    
-    
-    # extent = [lon_min, lon_max, lat_min, lat_max]
-    # ax = plt.axes(projection=ccrs.PlateCarree())
-    # ax.set_extent(extent)
-
-    # # lons = np.arange(lon_min, lon_max, 0.5)
-    # # lats = np.arange(lat_min, lat_max, 0.5)
-    # # lon2d, lat2d = np.meshgrid(lons, lats)
-    
-    # with open("InputData/Other/LatsLonsArea.txt", "rb") as fp:
-    #     lats_WA = pickle.load(fp)
-    #     lons_WA = pickle.load(fp)
+    ## apply shares to farm gat prices
+    with open("InputData/Prices/CountryAvgFarmGatePrices.txt", "rb") as fp:    
+        country_avg_prices = pickle.load(fp)
         
+    # Gambia is not included in our area
+    country_avg_prices = country_avg_prices.drop(axis = 0, labels = [4])             
+    # weighted average (using area share as weight)    
+    price_maize = np.nansum(country_avg_prices["Maize"].values * \
+                                            country_codes["Shares maize"].values)
+    price_rice = np.nansum(country_avg_prices["Rice"].values * \
+                          country_codes["Shares rice"].values)
     
-    # plt.pcolormesh(lons_WA, lats_WA, clusters, shading='flat', transfoom = ccrs.PlateCarree())
-    # ax.gridlines(draw_labels=True)
+    prices = np.array([price_rice, price_maize])
     
-#     resol = '50m'  # use data at this scale
-#     bodr = cartopy.feature.NaturalEarthFeature(category='cultural', 
-#         name='admin_0_boundary_lines_land', scale=resol, facecolor='none', alpha=0.7)
-#     land = cartopy.feature.NaturalEarthFeature('physical', 'land', \
-#         scale=resol, edgecolor='k', facecolor=cartopy.feature.COLORS['land'])
-#     ocean = cartopy.feature.NaturalEarthFeature('physical', 'ocean', \
-#         scale=resol, edgecolor='none', facecolor=cartopy.feature.COLORS['water'])
-#     lakes = cartopy.feature.NaturalEarthFeature('physical', 'lakes', \
-#         scale=resol, edgecolor='b', facecolor=cartopy.feature.COLORS['water'])
-#     rivers = cartopy.feature.NaturalEarthFeature('physical', 'rivers_lake_centerlines', \
-#         scale=resol, edgecolor='b', facecolor='none')
-    
-#     ax.add_feature(land, facecolor='beige')
-#     ax.add_feature(ocean, linewidth=0.2 )
-#     ax.add_feature(lakes)
-#     ax.add_feature(rivers, linewidth=0.5)
-#     ax.add_feature(bodr, linestyle='--', edgecolor='k', alpha=1)
-    
-    
-#     plt.show()
-        
+    # in 10^9$/10^6t
+    prices = 1e-3 * prices 
 
-# def MapValues(values, lats_rel, lons_rel, \
-#               title = "", vmin = None, vmax = None, ax = None):    
-#     # initialize map
-#     m = Basemap(llcrnrlon=lons_rel[0], llcrnrlat=lats_rel[0], \
-#                 urcrnrlat=lats_rel[-1], urcrnrlon=lons_rel[-1], \
-#                 resolution='l', projection='merc', \
-#                 lat_0=lats_rel.mean(),lon_0=lons_rel.mean(), ax = ax)
-    
-#     lon, lat = np.meshgrid(lons_rel, lats_rel)
-#     xi, yi = m(lon, lat)
-    
-#     # Plot Data
-#     m.drawmapboundary(fill_color='azure')
-#     c = m.pcolormesh(xi,yi,np.squeeze(values), cmap = 'jet_r', \
-#                                           vmin = vmin, vmax = vmax)
+    return(prices)
 
-#     # Add Grid Lines
-#     m.drawparallels(np.arange(-80., 81., 10.), labels=[0,1,0,0], fontsize=8)
-#     m.drawmeridians(np.arange(-180., 181., 10.), labels=[0,0,0,1], fontsize=8)
-#     # Add Coastlines, States, and Country Boundaries
-#     m.drawcoastlines(linewidth=1.1)
-#     m.drawstates(linewidth=1.1)
-#     m.drawcountries(linewidth=1.1)
-#     m.drawrivers(linewidth=0.5, color='blue')
-#     # Add Title
-#     if ax:
-#         ax.set_title(title)
-#     else:
-#         plt.title(title)
-#     plt.show()
-#     return(c)
+# %% 3. Average caloric demand (with area as weight)
 
 def AvgCaloricDemand():
 
@@ -672,7 +599,7 @@ def AvgCaloricDemand():
         
     country_codes = pd.read_csv("InputData/Prices/CountryCodes.csv")    
     
-    CaloricDemand = pd.read_csv("InputData/Other/CountryCaloricDemand.csv")  
+    CaloricDemand = pd.read_csv("ProcessedData/CountryCaloricDemand.csv")  
 
     CaloricDemand["LandCells"] = 0
     for c in CaloricDemand["Country"]:
@@ -682,83 +609,12 @@ def AvgCaloricDemand():
     CaloricDemand["Shares"] = CaloricDemand["LandCells"] / np.sum(CaloricDemand["LandCells"])        
     avgCaloricDemand = np.sum(CaloricDemand["Demand"] * CaloricDemand["Shares"])
     
-    with open("InputData/Other/AvgCaloricaDemand.txt", "wb") as fp:
+    with open("InputData/Other/AvgCaloricDemand.txt", "wb") as fp:
         pickle.dump(avgCaloricDemand, fp)
     
     return(None)
 
-
-def ReadAndSave_SPEI03(lon_min, lon_max, lat_min, lat_max):
-    """
-    Function to read SPEI and save it in a format useable for the
-    later following analysis
-    
-
-    Parameters
-    ----------
-    lat_min : float
-        Latitude defining lower border of area.
-    lon_min : float
-        Latitude defining upper border of area.
-    lat_max : float
-        Longitude defining left border of area.
-    lon_max : float
-        Longitude defining right border of area.
-
-    Returns
-    -------
-    None.
-
-    """
-    
-    # read data
-    f = netCDF4.Dataset('RawData/SPEI03.nc') 
-                  # opening connection to netCDF file [lon, lat, time, spei]
-    time = f.variables['time'][:]   # days since 1900-1-1 (len = 1380)
-    lats = f.variables['lat'][:]    # degrees north (len = 360)
-    lons = f.variables['lon'][:]    # degrees east (len = 720)
-    data = f.variables['spei'][:]   # z-values (shape = [1380, 360, 720]    
-    f.close()                       # closing connection to netCDF file
-    
-    # define longitudes/latitudes corresponding to West Africa
-    lons_WA = lons[(lons>=lon_min) & (lons<=lon_max)]      
-    lats_WA = lats[(lats>=lat_min) & (lats<=lat_max)]
-    
-    # reduce SPEI data to region
-    data_WA = data[:,((lats>=lat_min) & (lats<=lat_max)).data,:] \
-                                 [:,:,((lons>=lon_min) & (lons<=lon_max)).data]
-    data_WA.set_fill_value(value = np.nan)   # to get full matrix, we fill  
-                                             # masked elements with NAN
-                                             # (instead of original filling 
-                                             # value 1e30)
-    data_WA_filled = data_WA.filled()
-    
-    # save reduced datasets
-    with open("ProcessedData/SPEI03_WA_masked.txt", "wb") as fp:    
-        pickle.dump(data_WA, fp)
-        pickle.dump(lats_WA, fp)
-        pickle.dump(lons_WA, fp)
-    with open("ProcessedData/SPEI03_WA_filled.txt", "wb") as fp:    
-        pickle.dump(data_WA_filled, fp)
-        pickle.dump(lats_WA, fp)
-        pickle.dump(lons_WA, fp)
-        
-    # Mask: cells that are masked in every timestep should be excluded in
-    # further analysis, therefore we define an object "mask" with value 1 
-    # for cells with data for at least one timestep and value 0 for the rest 
-    # (ocean)
-    mask_WA = np.zeros([len(lats_WA),len(lons_WA)] )
-    for t in range(0, len(time)):
-       for i in range(0, len(lats_WA)):
-           for j in range(0, len(lons_WA)):        
-               if data_WA.mask[t, i, j] == False: 
-                   mask_WA[i,j] = 1
-    with open("ProcessedData/mask_SPEI03_WA.txt", "wb") as fp:    
-        pickle.dump(mask_WA, fp)    
-        pickle.dump(lats_WA, fp)
-        pickle.dump(lons_WA, fp)
-        
-    return(None)
+# %% 4. Calculates pearson distance (based on SPEI) between cells
 
 def CalcPearsonDist(mask):
     """
@@ -822,6 +678,122 @@ def CalcPearsonDist(mask):
         pickle.dump(dist, fp)    
         
     return(None)    
+
+# %% 5. Functions to find best number of clusters
+
+def MedoidMedoidDistd(medoids, dist):
+    k = len(medoids)
+    res = np.empty([k,k])
+    res.fill(np.nan)
+    # get distance to all medoids
+    for i in range(0, k):
+        for j in range(0, k):
+            if i == j:
+                continue
+            res[i, j] = dist[medoids[i][0]][medoids[i][1]] \
+                                                [medoids[j][0], medoids[j][1]]
+    res_closest = np.zeros(k)
+    # find closest medoid
+    for i in range(0, k):
+        res_closest[i] = np.nanmin(res[i])
+    return(res, res_closest)
+
+def MetricClustering(dist_within, dist_between, refX = 0, refY = 1):
+    # euclidean distance
+    m = np.sqrt(((np.array(dist_within)-refX)**2) + \
+                ((refY- np.array(dist_between))**2))
+    # orderdifferent K accordin to performance
+    order = np.argsort(m)
+    # as the lowest number of clusters is 2 and ordering gives the index 
+    # (starting with 0) we need to shift values
+    cl_order = order + 2
+    # sort results metric according to performance
+    m = m[order]
+    return(m, cl_order)
+
+# %% 6. Calculate yield trends within clusters
+
+def YldTrendsCluster(k):
+    
+    def __ClusterAverage(data, cl, k):
+        n_t = data.shape[0]
+        res = np.empty([n_t, k])
+        res.fill(np.nan)
+        for t in range(0, n_t):
+            for i in range(0, k):
+                res[t, i] = np.nanmean(data[t, (cl == i + 1)])
+        return(res) 
+
+    def __DetrendClusterAvgYlds(yields_avg, k, crops):
+        len_ts = yields_avg.shape[0]
+        # initializing results 
+        avg_pred = np.empty([len_ts, len(crops), k]); avg_pred.fill(np.nan)
+        residuals = np.empty([len_ts, len(crops), k]); residuals.fill(np.nan)
+        residual_means = np.empty([len(crops), k]); residual_means.fill(np.nan)
+        residual_stds = np.empty([len(crops), k]); residual_stds.fill(np.nan)
+        fstat = np.empty([len(crops), k]); fstat.fill(np.nan)
+        slopes = np.empty([len(crops), k]); slopes.fill(np.nan)
+        constants = np.empty([len(crops), k]); constants.fill(np.nan)
+        # detrending per cluster and crop
+        for cr in range(0, len(crops)):
+            for cl in range(0, k):
+                # timeseries
+                X = np.arange(0, len_ts).reshape((-1, 1))
+                X = sm.add_constant(X)
+                Y = yields_avg[:,cr,cl]
+                if np.sum(~(np.isnan(Y))) > 0:
+                    # regression
+                    model = sm.OLS(Y, X, missing='drop')
+                    result = model.fit()
+                    # saving results
+                    avg_pred[:,cr,cl] = result.predict(X)   
+                    residuals[:,cr,cl] = Y - avg_pred[:,cr,cl]
+                    residual_means[cr, cl] = np.nanmean(residuals[:,cr,cl])
+                    residual_stds[cr, cl] = np.nanstd(residuals[:,cr,cl])
+                    fstat[cr, cl] = result.f_pvalue
+                    constants[cr, cl] = result.params[0]
+                    slopes[cr, cl] = result.params[1] 
+        return(avg_pred, residuals, residual_means, residual_stds, fstat, \
+               constants, slopes)
+
+    with open("InputData/Clusters/Clustering/kMediods" + \
+                 str(k) + "_PearsonDistSPEI.txt", "rb") as fp:  
+        clusters = pickle.load(fp)
+        
+    crops = ["rice", "maize"]
+    yields = []
+    for cr in crops:
+        with open("ProcessedData/" + cr + "_yld.txt", "rb") as fp:    
+            yld_tmp = pickle.load(fp)
+        yields.append(yld_tmp)
+        
+    num_years = yields[0].shape[0]
+    yields_avg = np.empty([num_years, len(crops), k])
+    yields_avg.fill(np.nan)
+    
+    for cr in range(0, len(crops)):
+        yields_avg[:, cr, :] = __ClusterAverage(yields[cr], clusters, k)
+                                               
+    with open("ProcessedData/YieldAverages_k" + str(k) + ".txt", "wb") as fp:    
+        pickle.dump(yields_avg, fp)
+        pickle.dump(crops, fp)
+    
+    avg_pred, residuals, residual_means, residual_stds, fstat, constants,\
+        slopes = __DetrendClusterAvgYlds(yields_avg, k, crops)
+        
+    with open("InputData/YieldTrends/DetrYieldAvg_k" + \
+                              str(k) + ".txt", "wb") as fp:    
+        pickle.dump(yields_avg, fp)
+        pickle.dump(avg_pred, fp)
+        pickle.dump(residuals, fp)
+        pickle.dump(residual_means, fp)
+        pickle.dump(residual_stds, fp)
+        pickle.dump(fstat, fp)
+        pickle.dump(constants, fp)
+        pickle.dump(slopes, fp)
+        pickle.dump(crops, fp)
+         
+    return(None)
 
 # --------------------------- k-Medoids Algorithm -----------------------------
 
@@ -995,283 +967,84 @@ def GetSwitch(k, dist, num_lats, num_lons, medoids, mask):
     return(new_cluster, new_cost, new_medoids)
 
 
-# ----------
-# 3) Distances of one medoid to either all or the closest other medoid    
-    
-def MedoidMedoidDistd(medoids, dist):
-    k = len(medoids)
-    res = np.empty([k,k])
-    res.fill(np.nan)
-    # get distance to all medoids
-    for i in range(0, k):
-        for j in range(0, k):
-            if i == j:
-                continue
-            res[i, j] = dist[medoids[i][0]][medoids[i][1]] \
-                                                [medoids[j][0], medoids[j][1]]
-    res_closest = np.zeros(k)
-    # find closest medoid
-    for i in range(0, k):
-        res_closest[i] = np.nanmin(res[i])
-    return(res, res_closest)
 
-def MetricClustering(dist_within, dist_between, refX = 0, refY = 1):
-    # euclidean distance
-    m = np.sqrt(((np.array(dist_within)-refX)**2) + \
-                ((refY- np.array(dist_between))**2))
-    # orderdifferent K accordin to performance
-    order = np.argsort(m)
-    # as the lowest number of clusters is 2 and ordering gives the index 
-    # (starting with 0) we need to shift values
-    cl_order = order + 2
-    # sort results metric according to performance
-    m = m[order]
-    return(m, cl_order)
 
-# 2) A function subtracting linear trend (using OLS) per cell from gridded data 
-# (using mask to decide which cells to use). Returns gridded detrended data, 
-# p-value of the slopes, and the intercepts and slopes of the linear trend
-# def DetrendDataLinear(data, mask):
-#     # initializing arrays
-#     data_detrend = data.copy()
-#     p_val_slopes = np.zeros(np.shape(mask))
-#     slopes = np.zeros(np.shape(mask))
-#     intercepts = np.zeros(np.shape(mask))
-    
-#     # detrending each cell seperately
-#     [num_lat, num_lon] = mask.shape
-#     for lat in range(0, num_lat):
-#         for lon in range(0, num_lon):    
-#             # if data is masked, set NAN as results
-#             if mask[lat, lon] == 0:
-#                 p_val_slopes[lat, lon] = np.nan
-#                 slopes[lat, lon] = np.nan
-#                 intercepts[lat, lon] = np.nan
-#                 continue     
-#             Y = data[:, lat, lon]
-#             X = np.arange(0, len(Y)).reshape((-1, 1))
-#             X = sm.add_constant(X)
-#             model = sm.OLS(Y, X, missing='drop').fit()
-#             trend = X.dot(model.params)
-#             data_detrend[:, lat, lon] = data_detrend[:, lat, lon] - trend
-#             p_val_slopes[lat, lon] = model.pvalues[1]
-#             slopes[lat, lon] = model.params[1]
-#             intercepts[lat, lon] = model.params[0]
-            
-#     return(data_detrend, p_val_slopes, slopes, intercepts)    
-    
-    
-# 3) A function to read data from AgMIP models and save them in a format 
-# useable for the later following analysis
-# def ReadAndSave_AgMIP(Model, model, climate, harm_scenario, irri_scenario, \
-#                       crop, crop_abbrv, year_start, year_end, var_name, \
-#                       lat_min, lon_min, lat_max, lon_max):
-#     timewindow = str(year_start) + "_" + str(year_end)
-#     filename_yld = "/" + Model + "." + crop + "/" + climate + "/" + model + \
-#                     "_" + climate + "_hist_" + harm_scenario + "_" + \
-#                     irri_scenario + "_" + var_name + "_" + crop_abbrv + \
-#                     "_annual_" + timewindow + ".nc4"
-#     data_type1 = model + "_" + climate + "_" + harm_scenario      
-#     crop_irr =  crop_abbrv + "_" + irri_scenario   
-    
-#     f = netCDF4.Dataset("Data" + filename_yld)
-# #    time = f.variables['time'][:]   # growing seasons since 1980-01-01
-#     lats = f.variables['lat'][:]    # degrees north (360)
-#     lons = f.variables['lon'][:]    # degrees east (720)
-#     var = f.variables[var_name + "_" + crop_abbrv][:] # t per ha and yr     
-#     f.close()         
-    
-#     # turn into form of spei
-#     lats = np.flip(lats)
-#     var = np.flip(var, axis = 1)
+# --------------------------------- deprected --------------------------------
 
-#     # define longitudes/latitudes corresponding to West Africa
-#     lons_WA = lons[(lons>=lon_min) & (lons<=lon_max)]      
-#     lats_WA = lats[(lats>=lat_min) & (lats<=lat_max)]
+
+
+# def MapValues(values, lat_min, lat_max, lon_min, lon_max, lons_rel, title = "", vmin = None, vmax = None):
     
-#     # reduce to region of WA
-#     var_rel = var[:,((lats>=(lat_min)) & (lats<=(lat_max))).data,:] \
-#                               [:,:,((lons>=lon_min) & (lons<=lon_max)).data] 
-                              
-#     # fill masked elements with NAN
-#     var_rel.set_fill_value(value = np.nan)
-#     var_rel_filled = var_rel.filled()
     
-#     # save prepared data
-#     with open("IntermediateResults/PreparedData/AgMIP/" + \
-#             data_type1 + "_" + var_name + "_" + crop_irr + ".txt", "wb") as fp:    
-#         pickle.dump(var_rel_filled, fp) 
-#         pickle.dump(lats_WA, fp)
-#         pickle.dump(lons_WA, fp)
+    # extent = [lon_min, lon_max, lat_min, lat_max]
+    # ax = plt.axes(projection=ccrs.PlateCarree())
+    # ax.set_extent(extent)
+
+    # # lons = np.arange(lon_min, lon_max, 0.5)
+    # # lats = np.arange(lat_min, lat_max, 0.5)
+    # # lon2d, lat2d = np.meshgrid(lons, lats)
+    
+    # with open("InputData/Other/LatsLonsArea.txt", "rb") as fp:
+    #     lats_WA = pickle.load(fp)
+    #     lons_WA = pickle.load(fp)
         
-#     # different AgMIP models have different cells with missing data, so for 
-#     # each we make a new mask
-#     [T, num_lats, num_lons] = var_rel.shape
-#     if (var_name == "yield") & (irri_scenario == "noirr"):
-#         mask = np.zeros([num_lats, num_lons])
-#         for t in range(0, T):
-#            for i in range(0, num_lats):
-#                for j in range(0, num_lons):        
-#                    if var_rel.mask[t, i, j] == False: 
-#                        mask[i,j] = 1
-#         with open("IntermediateResults/PreparedData/AgMIP/" + \
-#                                       data_type1 + "_mask.txt", "wb") as fp:    
-#             pickle.dump(mask, fp)
-#             pickle.dump(lats_WA, fp)
-#             pickle.dump(lons_WA, fp)
-   
-#     return()
     
-
+    # plt.pcolormesh(lons_WA, lats_WA, clusters, shading='flat', transfoom = ccrs.PlateCarree())
+    # ax.gridlines(draw_labels=True)
     
-# 5) A function to read data from crop calender and change to format useable 
-# for the later following analysis     
-# def ReadAndSave_CropCalendar(crop, lon_min, lon_max, lat_min, lat_max):   
- 
-#     f = netCDF4.Dataset("Data/CropCalendar/" + crop + ".crop.calendar.fill.nc")
-#     lats = f.variables['latitude'][:]       # degrees north (31)
-#     lons = f.variables['longitude'][:]      # degrees east (59)
-#     plant = f.variables['plant'][:]         # day of year
-#     harvest = f.variables['harvest'][:]     # day of year     
-
-#     # rearrange in right format
-#     plant_flipped = np.flip(plant, axis = 0)
-#     harvest_flipped = np.flip(harvest, axis = 0)
-#     lats = np.flip(lats)
-
-#     # define longitudes/latitudes corresponding to West Africa
-#     lons_WA = lons[(lons>=lon_min) & (lons<=lon_max)]      
-#     lats_WA = lats[(lats>=lat_min) & (lats<=lat_max)]
+#     resol = '50m'  # use data at this scale
+#     bodr = cartopy.feature.NaturalEarthFeature(category='cultural', 
+#         name='admin_0_boundary_lines_land', scale=resol, facecolor='none', alpha=0.7)
+#     land = cartopy.feature.NaturalEarthFeature('physical', 'land', \
+#         scale=resol, edgecolor='k', facecolor=cartopy.feature.COLORS['land'])
+#     ocean = cartopy.feature.NaturalEarthFeature('physical', 'ocean', \
+#         scale=resol, edgecolor='none', facecolor=cartopy.feature.COLORS['water'])
+#     lakes = cartopy.feature.NaturalEarthFeature('physical', 'lakes', \
+#         scale=resol, edgecolor='b', facecolor=cartopy.feature.COLORS['water'])
+#     rivers = cartopy.feature.NaturalEarthFeature('physical', 'rivers_lake_centerlines', \
+#         scale=resol, edgecolor='b', facecolor='none')
     
-#     # reduce to region of West Africa
-#     plant_rel = plant_flipped[((lats>=(lat_min+0.5)) & (lats<=(lat_max+0.5))).data,:] \
-#                                    [:,((lons>=lon_min+0.5) & (lons<=lon_max+0.5)).data]   
-#     harvest_rel = harvest_flipped[((lats>=(lat_min+0.5)) & (lats<=(lat_max+0.5))).\
-#                             data,:][:,((lons>=lon_min+0.5) & (lons<=lon_max+0.5)).data]   
-#     mask_plant = plant_rel.mask
-#     mask_harvest = harvest_rel.mask
+#     ax.add_feature(land, facecolor='beige')
+#     ax.add_feature(ocean, linewidth=0.2 )
+#     ax.add_feature(lakes)
+#     ax.add_feature(rivers, linewidth=0.5)
+#     ax.add_feature(bodr, linestyle='--', edgecolor='k', alpha=1)
     
     
-#     plant_rel.set_fill_value(value = np.nan)
-#     plant_rel_filled = plant_rel.filled()    
-#     harvest_rel.set_fill_value(value = np.nan)
-#     harvest_rel_filled = harvest_rel.filled()    
-    
-#     # save data
-#     with open("IntermediateResults/PreparedData/CropCalendar/" + \
-#                                       crop + "_plant.txt", "wb") as fp:    
-#         pickle.dump(plant_rel_filled, fp)
-#         pickle.dump(lats_WA, fp)
-#         pickle.dump(lons_WA, fp)
-#     with open("IntermediateResults/PreparedData/CropCalendar/" + \
-#                                       crop + "_harvest.txt", "wb") as fp:    
-#         pickle.dump(harvest_rel_filled, fp)    
-#         pickle.dump(lats_WA, fp)
-#         pickle.dump(lons_WA, fp)
-#     with open("IntermediateResults/PreparedData/CropCalendar/" + \
-#                                       crop + "_plant_mask.txt", "wb") as fp:    
-#         pickle.dump(mask_plant, fp)
-#         pickle.dump(lats_WA, fp)
-#         pickle.dump(lons_WA, fp)
-#     with open("IntermediateResults/PreparedData/CropCalendar/" + \
-#                                       crop + "_harvest_mask.txt", "wb") as fp:    
-#         pickle.dump(mask_harvest, fp)
-#         pickle.dump(lats_WA, fp)
-#         pickle.dump(lons_WA, fp)
+#     plt.show()
         
-#     return()
-    
 
-# TODO doesn't work on my laptop as array is too big... is it necessary (just
-# used for one of the many discarded regression tries)    
-# def ReadAndAgg_AgMERRA(var, year, lon_min, lon_max, lat_min, lat_max):
+# def MapValues(values, lats_rel, lons_rel, \
+#               title = "", vmin = None, vmax = None, ax = None):    
+#     # initialize map
+#     m = Basemap(llcrnrlon=lons_rel[0], llcrnrlat=lats_rel[0], \
+#                 urcrnrlat=lats_rel[-1], urcrnrlon=lons_rel[-1], \
+#                 resolution='l', projection='merc', \
+#                 lat_0=lats_rel.mean(),lon_0=lons_rel.mean(), ax = ax)
+    
+#     lon, lat = np.meshgrid(lons_rel, lats_rel)
+#     xi, yi = m(lon, lat)
+    
+#     # Plot Data
+#     m.drawmapboundary(fill_color='azure')
+#     c = m.pcolormesh(xi,yi,np.squeeze(values), cmap = 'jet_r', \
+#                                           vmin = vmin, vmax = vmax)
 
-#     f = netCDF4.Dataset("Data/AgMERRA/" + var + "/AgMERRA_" + \
-#                                                 str(year) + "_" + var + ".nc4")
-# #    time = f.variables['time'][:]          # days since start of year (366)
-#     lats = f.variables['latitude'][:]       # degrees north (31)
-#     lons = f.variables['longitude'][:]      # degrees east (59)
-#     data = f.variables[var][:]       
-#     f.close()
-    
-#     # reducing to region of West Africa 
-#     data_lonpos = data[:,:,lons <180]
-#     data_lonneg = data[:,:,lons>180]
-#     data_changed = np_ma.dstack([data_lonneg, data_lonpos])
-#     data_changed = np.flip(data_changed, axis = 1)
-#     lons = np.arange(-179.875, 180, 0.25)
-#     lats = np.flip(lats)
-#     data_rel = data_changed[:,((lats>=lat_min) & (lats<=lat_max)),:] \
-#                                     [:,:,((lons>=lon_min) & (lons<=lon_max))]
-    
-#     # aggregating to 0.5 degree resolution
-#     [n_t, n_lat, n_lon] = data_rel.shape
-#     data_rel_agg = np.zeros([n_t,int(n_lat/2), int(n_lon/2)])
-#     for t in range(0, n_t):
-#         for lat in range(0, int(n_lat/2)):
-#             for lon in range(0, int(n_lon/2)):
-#                 x = np.nanmin(data_rel[t, (2*lat):(2*lat+2), \
-#                                                            (2*lon):(2*lon+2)])
-#                 if np.isnan(float(x)):
-#                     data_rel_agg[t, lat, lon] = np.nan
-#                 else:
-#                     data_rel_agg[t, lat, lon] = np.nanmean(data_rel[t, \
-#                                         (2*lat):(2*lat+2), (2*lon):(2*lon+2)])
-                     
-#     return(data_rel_agg)
-    
-# 6) Function to read, prepare and save CRU data    
-# def ReadAndAgg_CRU(var, var_abbrv):
-    
-#     # reading and saving data
-#     f = netCDF4.Dataset("Data/CRU/" + var + ".nc")
-# #    time = f.variables['time'][:]   # days since 1900-1-1 (1416)
-#     lats = f.variables['lat'][:]    # degrees north (31)
-#     lons = f.variables['lon'][:]    # degrees east (59)
-#     data = f.variables[var_abbrv][:]     # (1416, 31, 59)  
-#     f.close()
-#     data.set_fill_value(value = np.nan)
-#     data_filled = data.filled()  
-#     with open("IntermediateResults/PreparedData/CRU/" + \
-#                                           var + "_WA.txt", "wb") as fp:    
-#         pickle.dump(data_filled, fp)
-#         pickle.dump(lats, fp)
-#         pickle.dump(lons, fp)
-    
-#     # creating and savgin mask
-#     mask_data = np.zeros([len(lats),len(lons)])
-#     [n_t, n_lat, n_lon] = data.shape
-#     for t in range(0, n_t):
-#        for i in range(0, n_lat):
-#            for j in range(0, n_lon):        
-#                if data.mask[t, i, j] == False: 
-#                    mask_data[i,j] = 1
-#     with open("IntermediateResults/PreparedData/CRU/mask_" + \
-#                                           var + "_WA.txt", "wb") as fp:    
-#         pickle.dump(mask_data, fp)   
-#         pickle.dump(lats, fp)
-#         pickle.dump(lons, fp)  
-        
-#     # calculating and saving 3 month averages
-#     data03_WA = np.zeros(data_filled.shape)
-#     for i in range(0, len(lats)):
-#         for j in range(0, len(lons)):
-#             if mask_data[i, j] == 0:
-#                 continue     
-#             data03_WA[:, i, j] = np.array(pd.DataFrame(data_filled[:, i, j]).\
-#                             rolling(window=3, center = False).mean()).flatten()
-#     with open("IntermediateResults/PreparedData/CRU/" + \
-#                                           var + "03_WA.txt", "wb") as fp:    
-#         pickle.dump(data03_WA, fp)
-#         pickle.dump(lats, fp)
-#         pickle.dump(lons, fp)
-    
-#     # detrendind 3 month averages
-#     data_detrend, p_val_slopes, slopes, intercepts = \
-#                                         DetrendDataLinear(data03_WA, mask_data)
-#     with open("IntermediateResults/PreparedData/CRU/" + \
-#                                        var + "03_WA_detrend.txt", "wb") as fp:    
-#         pickle.dump(data_detrend, fp)    
-#         pickle.dump((p_val_slopes, slopes, intercepts), fp)  
-#     return()
-    
+#     # Add Grid Lines
+#     m.drawparallels(np.arange(-80., 81., 10.), labels=[0,1,0,0], fontsize=8)
+#     m.drawmeridians(np.arange(-180., 181., 10.), labels=[0,0,0,1], fontsize=8)
+#     # Add Coastlines, States, and Country Boundaries
+#     m.drawcoastlines(linewidth=1.1)
+#     m.drawstates(linewidth=1.1)
+#     m.drawcountries(linewidth=1.1)
+#     m.drawrivers(linewidth=0.5, color='blue')
+#     # Add Title
+#     if ax:
+#         ax.set_title(title)
+#     else:
+#         plt.title(title)
+#     plt.show()
+#     return(c)
+
+
+

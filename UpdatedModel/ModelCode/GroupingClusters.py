@@ -59,7 +59,7 @@ def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True,
 
     # load medoids of clusters for given number of clusters
     with open("InputData/Clusters/Clustering/kMediods" + str(k) + \
-                 "_PearsonDistSPEI_ProfitableArea.txt", "rb") as fp:  
+                 "_PearsonDistSPEI.txt", "rb") as fp:  
         pickle.load(fp) # clusters
         pickle.load(fp) # costs
         medoids = pickle.load(fp)
@@ -315,7 +315,7 @@ def VisualizeClusterGroups(k, size, aim, adjacent, grouping, title, figsize, \
     
     # clusters
     with open("InputData/Clusters/Clustering/kMediods" + str(k) + \
-                 "_PearsonDistSPEI_ProfitableArea.txt", "rb") as fp:  
+                 "_PearsonDistSPEI.txt", "rb") as fp:  
         clusters = pickle.load(fp)
         
     # number of groups

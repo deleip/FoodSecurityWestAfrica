@@ -5,6 +5,7 @@ Created on Mon Aug 30 20:07:00 2021
 @author: leip
 """
 
+
 # %% IMPORTING NECESSARY PACKAGES AND SETTING WORKING DIRECTORY
 
 # set the right directory
@@ -16,6 +17,7 @@ os.chdir(dir_path)
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import seaborn as sns
 
 import ModelCode.DataPreparation as DP
@@ -85,8 +87,6 @@ with open("InputData/Other/PearsonDistSPEI03.txt", "rb") as fp:
     pearsonDist = pickle.load(fp)
     
 for k in range(1, 20):
-    if k in [9]:
-        continue
     print(k, flush = True)
     DP.kMedoids(k, pearsonDist, MaskAreaUsed, "PearsonDistSPEI")
 # creates Inputdata/Clusters/Clustering/kMedoidsX_PearsonDistSPEI.txt    
@@ -149,18 +149,24 @@ for i in range(0,2):
 # Using the average over all clusters, the more clusters the better the result
 # of our metric
 # Using only the closest cluster, the optimum lies at 9 cluster.   
-        
-        
-# %% 7. Cluster groupings
+       
+# %% 7. Adjacency matrix
 
-for aim in ["Similar", "Dissimilar"]:
-    for adj in [True, False]:
-        for s in [1, 2, 3, 5, 9]:
-            ShiftedGrouping, BestCosts, valid = GC.GroupingClusters(k = 9, size = s, aim = aim, adjacent = adj, 
-                                 title = None, figsize = None)
-# creates GroupingSizeX(Dis)Similar(Adj).txt  
+with open("InputData/Clusters/Clustering/kMediods9_PearsonDistSPEI.txt", "rb") as fp:  
+    clusters = pickle.load(fp)
     
-# %% 8. Adjacency matrix
+fig = plt.figure()
+cmap = mpl.cm.plasma
+bounds = np.arange(0.5, 10, 1)
+norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+plt.imshow(np.flip(clusters, axis = 0), cmap = cmap)
+plt.title("Division in 9 cluster")
+plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+             orientation='horizontal',
+             ticks = range(1, 10))
+plt.show()
+fig.savefig("InputData/Visualization/kMediods9.png", bbox_inches = "tight", pad_inches = 0.5)     
+plt.close()
 
 AdjacencyMatrix = np.array([[1, 0, 1, 0, 1, 1, 1, 0, 1],
                             [0, 1, 0, 0, 1, 0, 0, 1, 0],
@@ -175,8 +181,16 @@ AdjacencyMatrix = np.array([[1, 0, 1, 0, 1, 1, 1, 0, 1],
 with open("InputData/Clusters/AdjacencyMatrices/k9AdjacencyMatrix.txt", "wb") as fp:
      pickle.dump(AdjacencyMatrix, fp)
 # creates InputData/Clusters/AdjacencyMatrices/k9AdjacencyMatrix.txt
+        
+# %% 8. Cluster groupings
 
-
+for aim in ["Similar", "Dissimilar"]:
+    for adj in [True, False]:
+        for s in [1, 2, 3, 5, 9]:
+            ShiftedGrouping, BestCosts, valid = GC.GroupingClusters(k = 9, size = s, aim = aim, adjacent = adj, 
+                                 title = None, figsize = None)
+# creates GroupingSizeX(Dis)Similar(Adj).txt  
+ 
 # %% 9. Yield trends
 
 with open("InputData/Other/CultivationCosts.txt", "rb") as fp:
@@ -192,6 +206,8 @@ DP.YldTrendsCluster(k = 9)
 # creates: ProcessedData/YieldAverages_k9.txt
 #          InputData/YieldTrends/DetrYieldAvg_k9.txt
      
+
+# plot yield trends
 k = 9
 with open("ProcessedData/YieldAverages_k" + str(k) + ".txt", "rb") as fp:    
     yields_avg = pickle.load(fp)
@@ -205,10 +221,12 @@ fig = plt.figure(figsize = (24, 13.5))
 fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9,
                 wspace=0.3, hspace=0.3)
 for cl in range(0, k):
-    if k > 1:
-        ax = fig.add_subplot(2, np.ceil(k/2), cl + 1)
+    if k > 6:
+        ax = fig.add_subplot(3, int(np.ceil(k/3)), cl + 1)
+    elif k > 2:
+        ax = fig.add_subplot(2, int(np.ceil(k/2)), cl + 1)
     else:
-        ax = fig.add_subplot(1, 1, 1)
+        ax = fig.add_subplot(1, k, cl + 1)
     dict_labels = {}
     for cr in [0, 1]:
         sns.regplot(x = np.array(range(start_year, \
@@ -231,4 +249,4 @@ plt.suptitle("Cluster average of GDHY " + \
 fig.savefig("InputData/Visualization/k" + str(k) + \
         "AvgYieldTrends.png", bbox_inches = "tight", \
         pad_inches = 0.5)   
-
+plt.close()
