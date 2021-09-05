@@ -363,7 +363,7 @@ def SetParameters(settings,
     # 5. Per person/day demand       
     # based on country specific caloric demand from a paper on food waste, 
     # averaged based on area. For more detail see DataPreparation_DoNotRun.py    
-    with open("InputData/Other/AvgCaloricaDemand.txt", "rb") as fp:
+    with open("InputData/Other/AvgCaloricDemand.txt", "rb") as fp:
         ppdemand = pickle.load(fp)
     
     # 6. cultivation costs of crops
@@ -425,8 +425,7 @@ def SetParameters(settings,
 
     # 13. generating yield samples
     # using historic yield data from GDHY  
-    with open("InputData/YieldTrends/DetrYieldAvg_k" + \
-                              str(k) + "_ProfitableArea.txt", "rb") as fp:   
+    with open("InputData/YieldTrends/DetrYieldAvg_k" + str(k) + ".txt", "rb") as fp:   
          pickle.load(fp) # yields_avg 
          pickle.load(fp) # avg_pred
          pickle.load(fp) # residuals
