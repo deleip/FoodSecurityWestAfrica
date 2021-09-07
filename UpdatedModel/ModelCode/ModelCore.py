@@ -133,8 +133,8 @@ def SolveReducedLinearProblemGurobiPy(args, rhoF = None, rhoS = None, \
                                 x[t, j, k] * args["costs"][j, k]) \
                            for (j, t, k) in it.product(range(0, J), \
                                  range(0, termyear_p1[s]), range(0, K))] + \
-                        [args["cat_clusters"][s, t, k] * Wgov[t, k, s] \
-                           for (t, k) in it.product(range(0, termyear_p1[s]), \
+                [args["cat_clusters"][s, t, k] * (1 - args["tax"]) * Wgov[t, k, s] \
+                     for (t, k) in it.product(range(0, termyear_p1[s]), \
                                 range(0, K))]) \
                  <= args["ini_fund"] for s in range(0, N)), "c_sol")
         

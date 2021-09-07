@@ -87,9 +87,10 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
     meta_sol : dict 
         additional information about the model output ('exp_tot_costs', 
         'fix_costs', 'yearly_fixed_costs', 'fd_penalty', 'avg_fd_penalty', 
-        'sol_penalty', 'shortcomings', 'exp_shortcomings', 'avg_profits', 
-        'profits', 'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
-        'probS', 'avg_nec_import', 'avg_nec_debt')
+        'sol_penalty', 'shortcomings', 'exp_shortcomings', 'avg_profits_preTax', 
+        'avg_profits_afterTax', 'food_supply', 'profits_preTax', 'profits_afterTax', 
+        'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
+        'probS', 'avg_nec_import', 'avg_nec_debt', 'guaranteed_income')
     crop_allocF : np.array
         optimal crop allocation for scenario with only food security objective
     meta_solF : dict
@@ -221,8 +222,9 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
     meta_sol : dict 
         additional information about the model output ('exp_tot_costs', 
         'fix_costs', 'yearly_fixed_costs', 'fd_penalty', 'avg_fd_penalty', 
-        'sol_penalty', 'shortcomings', 'exp_shortcomings', 'avg_profits', 
-        'profits', 'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
+        'sol_penalty', 'shortcomings', 'exp_shortcomings', 'avg_profits_preTax', 
+        'avg_profits_afterTax', 'food_supply', 'profits_preTax', 'profits_afterTax', 
+        'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
         'probS', 'avg_nec_import', 'avg_nec_debt', 'guaranteed_income')
     crop_allocF : np.array
         optimal crop allocation for scenario with only food security objective
@@ -418,9 +420,10 @@ def LoadModelResults(filename):
     meta_sol : dict 
         additional information about the model output ('exp_tot_costs', 
         'fix_costs', 'yearly_fixed_costs', 'fd_penalty', 'avg_fd_penalty', 
-        'sol_penalty', 'shortcomings', 'exp_shortcomings', 'avg_profits', 
-        'profits', 'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
-        'probS', 'avg_nec_import', 'avg_nec_debt')
+        'sol_penalty', 'shortcomings', 'exp_shortcomings', 'avg_profits_preTax', 
+        'avg_profits_afterTax', 'food_supply', 'profits_preTax', 'profits_afterTax', 
+        'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
+        'probS', 'avg_nec_import', 'avg_nec_debt', 'guaranteed_income')
     crop_allocF : np.array
         optimal crop allocation for scenario with only food security objective
     meta_solF : dict

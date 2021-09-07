@@ -65,7 +65,7 @@ def VSS(settings, args):
     # get information of using VSS solution in stochastic setting
     meta_sol_vss_ExpIn = GetMetaInformation(crop_alloc_vss_ExpIn, 
                                args_vss_ExpIn, args["rhoF"], args["rhoS"])
-    expected_incomes = meta_sol_vss_ExpIn["avg_profits"].flatten()
+    expected_incomes = meta_sol_vss_ExpIn["avg_profits_preTax"].flatten()
         
     
     # 2. crop allocation and meta information for deterministic social planner 

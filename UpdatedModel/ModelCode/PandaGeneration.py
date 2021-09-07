@@ -47,8 +47,9 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
     meta_sol : dict 
         additional information about the model output ('exp_tot_costs', 
         'fix_costs', 'yearly_fixed_costs', 'fd_penalty', 'avg_fd_penalty', 
-        'sol_penalty', 'shortcomings', 'exp_shortcomings', 'avg_profits', 
-        'profits', 'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
+        'sol_penalty', 'shortcomings', 'exp_shortcomings', 'avg_profits_preTax', 
+        'avg_profits_afterTax', 'food_supply', 'profits_preTax', 'profits_afterTax', 
+        'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
         'probS', 'avg_nec_import', 'avg_nec_debt', 'guaranteed_income')
     crop_allocF : np.array
         optimal crop allocation for scenario with only food security objective
@@ -193,10 +194,14 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
         
     panda["Number of occurrences per cluster where farmers make losses"] \
         = list(meta_sol["num_years_with_losses"])
-    panda["Average income per cluster in final run (over samples and then years)"] \
-        = list(np.nanmean(np.nanmean(meta_sol["profits"], axis = 0), axis = 0))  # profits include both actual profits and losses
-    panda["Average income per cluster in final run scaled with capita (over samples and then years)"] \
-        = list(np.nanmean(np.nanmean(meta_sol["profits"], axis = 0)/(pop_per_cluster/1e9), axis = 0))
+    panda["Average profits (pre tax) per cluster in final run (over samples and then years)"] \
+        = list(np.nanmean(np.nanmean(meta_sol["profits_preTax"], axis = 0), axis = 0))  # profits include both actual profits and losses
+    panda["Average profits (after tax) per cluster in final run (over samples and then years)"] \
+        = list(np.nanmean(np.nanmean(meta_sol["profits_afterTax"], axis = 0), axis = 0))  # profits include both actual profits and losses
+    panda["Average profits (pre tax) per cluster in final run scaled with capita (over samples and then years)"] \
+        = list(np.nanmean(np.nanmean(meta_sol["profits_preTax"], axis = 0)/(pop_per_cluster/1e9), axis = 0))
+    panda["Average profits (after tax) per cluster in final run scaled with capita (over samples and then years)"] \
+        = list(np.nanmean(np.nanmean(meta_sol["profits_afterTax"], axis = 0)/(pop_per_cluster/1e9), axis = 0))
     panda["Aggregated average government payouts per cluster (over samples)"] \
         = list(np.nansum(np.nanmean(meta_sol["payouts"], axis = 0), axis = 0))
         
@@ -443,8 +448,10 @@ def _SetUpPandaDicts():
         "Expected income (stochastic setting)": "[$10^9\,\$$]",
         "Expected income (deterministic setting)": "[$10^9\,\$$]",
         "Number of occurrences per cluster where farmers make losses": "",
-        "Average income per cluster in final run (over samples and then years)": "[$10^9\,\$$]",
-        "Average income per cluster in final run scaled with capita (over samples and then years)": "[$\$$]",
+        "Average profits (pre tax) per cluster in final run (over samples and then years)": "[$10^9\,\$$]",
+        "Average profits (after tax) per cluster in final run (over samples and then years)": "[$10^9\,\$$]",
+        "Average profits (pre tax) per cluster in final run scaled with capita (over samples and then years)": "[$\$$]",
+        "Average profits (after tax) per cluster in final run scaled with capita (over samples and then years)": "[$\$$]",
         "Aggregated average government payouts per cluster (over samples)": "[$10^9\,\$$]",
         
         "Number of samples with negative final fund": "",
@@ -527,8 +534,10 @@ def _SetUpPandaDicts():
          "Expected income (stochastic setting)": "list of floats",
          "Expected income (deterministic setting)": "list of floats",
          "Number of occurrences per cluster where farmers make losses": "list of ints",
-         "Average income per cluster in final run (over samples and then years)": "list of floats",
-         "Average income per cluster in final run scaled with capita (over samples and then years)": "list of floats",
+         "Average profits (pre tax) per cluster in final run (over samples and then years)": "list of floats",
+         "Average profits (after tax) per cluster in final run (over samples and then years)": "list of floats",
+         "Average profits (pre tax) per cluster in final run scaled with capita (over samples and then years)": "list of floats",
+         "Average profits (after tax) per cluster in final run scaled with capita (over samples and then years)": "list of floats",
          "Aggregated average government payouts per cluster (over samples)": "list of floats",
          
          "Number of samples with negative final fund": "list of ints",
@@ -609,8 +618,10 @@ def _SetUpPandaDicts():
         "Expected income (stochastic setting)",
         "Expected income (deterministic setting)",
         "Number of occurrences per cluster where farmers make losses",
-        "Average income per cluster in final run (over samples and then years)",
-        "Average income per cluster in final run scaled with capita (over samples and then years)",
+        "Average profits (pre tax) per cluster in final run (over samples and then years)",
+        "Average profits (after tax) per cluster in final run (over samples and then years)",
+        "Average profits (pre tax) per cluster in final run scaled with capita (over samples and then years)",
+        "Average profits (after tax) per cluster in final run scaled with capita (over samples and then years)",
         "Aggregated average government payouts per cluster (over samples)",
         
         "Number of samples with negative final fund",

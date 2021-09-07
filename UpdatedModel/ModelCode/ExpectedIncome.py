@@ -151,4 +151,4 @@ def _CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     with open("PenaltiesAndIncome/crop_allocF.txt", "wb") as fp:     
          pickle.dump(dict_crop_allocF, fp)
         
-    return(meta_solF["avg_profits"].flatten())
+    return(meta_solF["avg_profits_preTax"].flatten())

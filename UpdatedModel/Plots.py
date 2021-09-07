@@ -80,9 +80,9 @@ for cl in range(1, 10):
     ax1_tmp = plt.Subplot(fig[1], inner[1][cl - 1])
     ax1_tmp.axvline(meta_sol["guaranteed_income"][0,0], color = "blue", linestyle = "dashed", alpha = 0.6)
     ax1_tmp.axvline(meta_sol_vss["guaranteed_income"][0,0], color = "green", linestyle = "dashed", alpha = 0.6)
-    ax1_tmp.hist(meta_sol_vss["profits"].flatten(), bins = 100, alpha = 0.6) 
-    ax1_tmp.hist(meta_solF["profits"].flatten(), bins = 100, alpha = 0.6)    
-    ax1_tmp.hist(meta_sol["profits"].flatten(), bins = 100, alpha = 0.6)  
+    ax1_tmp.hist(meta_sol_vss["profits_afterTax"].flatten(), bins = 100, alpha = 0.6) 
+    ax1_tmp.hist(meta_solF["profits_afterTax"].flatten(), bins = 100, alpha = 0.6)    
+    ax1_tmp.hist(meta_sol["profits_afterTax"].flatten(), bins = 100, alpha = 0.6)  
     ax1_tmp.set_title("Cluster " + str(cl))
     ax1_tmp.set_yticks([])
     ax1_tmp.text(x = 0.01, y = 0.99, 
@@ -92,13 +92,13 @@ for cl in range(1, 10):
     fig[1].add_subplot(ax1_tmp)
     
     # plot distribution of income (including government payouts)
-    guaranteed = args["cat_clusters"] * meta_sol["guaranteed_income"]
+    guaranteed = (1 - args["tax"]) * args["cat_clusters"] * meta_sol["guaranteed_income"] # final profit including payouts will be guaranteed income minus taxes
     guaranteed[guaranteed == 0] = -np.inf
-    guaranteed_vss = args["cat_clusters"] * meta_sol_vss["guaranteed_income"]
+    guaranteed_vss = (1 - args["tax"]) * args["cat_clusters"] * meta_sol_vss["guaranteed_income"]
     guaranteed_vss[guaranteed_vss == 0] = -np.inf
-    income = np.maximum(meta_sol["profits"], guaranteed)
-    income_vss = np.maximum(meta_sol_vss["profits"], guaranteed_vss)
-    income_F = np.maximum(meta_solF["profits"], guaranteed)
+    income = np.maximum(meta_sol["profits_afterTax"], guaranteed)
+    income_vss = np.maximum(meta_sol_vss["profits_afterTax"], guaranteed_vss)
+    income_F = np.maximum(meta_solF["profits_afterTax"], guaranteed)
     ax2_tmp = plt.Subplot(fig[2], inner[2][cl - 1])
     ax1_tmp.axvline(meta_sol["guaranteed_income"][0,0], color = "blue", linestyle = "dashed", alpha = 0.6)
     ax1_tmp.axvline(meta_sol_vss["guaranteed_income"][0,0], color = "green", linestyle = "dashed", alpha = 0.6)
@@ -130,8 +130,8 @@ for cl in range(1, 10):
     
 # add labels  
 titles = ["Distribution of food production",
-          "Distribution of profits w/o payouts",
-          "Distribution of profits including payouts",
+          "Distribution of profits (after tax payments) w/o payouts",
+          "Distribution of profits (after tax payments) including payouts",
           "Distribution of final fund (after payouts)"]
 xlabels = [r"Food supply in cluster [$10^{12}\,kcal$]",
            r"Aggregated profits of farmers in cluster [$10^9\,\$$]",
@@ -287,9 +287,9 @@ for idx, size in enumerate([1, 2, 3, 5, 9]):
         ax1_tmp = plt.Subplot(fig[1], inner[1][rows, colfirst:collast])
         ax1_tmp.axvline(np.sum(meta_sol["guaranteed_income"], axis = 1)[0], color = "blue", linestyle = "dashed", alpha = 0.6)
         ax1_tmp.axvline(np.sum(meta_sol_vss["guaranteed_income"], axis = 1)[0], color = "green", linestyle = "dashed", alpha = 0.6)
-        ax1_tmp.hist(np.sum(meta_sol_vss["profits"], axis = 2).flatten(), bins = 100, alpha = 0.6)
-        ax1_tmp.hist(np.sum(meta_solF["profits"], axis = 2).flatten(), bins = 100, alpha = 0.6) 
-        ax1_tmp.hist(np.sum(meta_sol["profits"], axis = 2).flatten(), bins = 100, alpha = 0.6) 
+        ax1_tmp.hist(np.sum(meta_sol_vss["profits_afterTax"], axis = 2).flatten(), bins = 100, alpha = 0.6)
+        ax1_tmp.hist(np.sum(meta_solF["profits_afterTax"], axis = 2).flatten(), bins = 100, alpha = 0.6) 
+        ax1_tmp.hist(np.sum(meta_sol["profits_afterTax"], axis = 2).flatten(), bins = 100, alpha = 0.6) 
         if size == 1:
             ax1_tmp.set_title("Cluster " + str(cl[0]))
         ax1_tmp.set_yticks([])
@@ -300,13 +300,13 @@ for idx, size in enumerate([1, 2, 3, 5, 9]):
         fig[1].add_subplot(ax1_tmp)
         
         # plot distribution of profits including government payouts
-        guaranteed = args["cat_clusters"] * meta_sol["guaranteed_income"]
+        guaranteed = (1 - args["tax"]) * args["cat_clusters"] * meta_sol["guaranteed_income"] # final profit including payouts will be guaranteed income minus taxes
         guaranteed[guaranteed == 0] = -np.inf
-        guaranteed_vss = args["cat_clusters"] * meta_sol_vss["guaranteed_income"]
+        guaranteed_vss = (1 - args["tax"]) * args["cat_clusters"] * meta_sol_vss["guaranteed_income"]
         guaranteed_vss[guaranteed_vss == 0] = -np.inf
-        income = np.maximum(meta_sol["profits"], guaranteed)
-        income_F = np.maximum(meta_solF["profits"], guaranteed)
-        income_vss = np.maximum(meta_sol_vss["profits"], guaranteed_vss)
+        income = np.maximum(meta_sol["profits_afterTax"], guaranteed)
+        income_vss = np.maximum(meta_sol_vss["profits_afterTax"], guaranteed_vss)
+        income_F = np.maximum(meta_solF["profits_afterTax"], guaranteed)
         ax2_tmp = plt.Subplot(fig[2], inner[2][rows, colfirst:collast])
         ax1_tmp.axvline(np.sum(meta_sol["guaranteed_income"], axis = 1)[0], color = "blue", linestyle = "dashed", alpha = 0.6)
         ax1_tmp.axvline(np.sum(meta_sol_vss["guaranteed_income"], axis = 1)[0], color = "green", linestyle = "dashed", alpha = 0.6)
@@ -341,8 +341,8 @@ for idx, size in enumerate([1, 2, 3, 5, 9]):
 
 # add labels  
 titles = ["Distribution of food production",
-          "Distribution of profits w/o payouts",
-          "Distribution of profits including payouts",
+          "Distribution of profits (after tax payments) w/o payouts",
+          "Distribution of profits (after tax payments) including payouts",
           "Distribution of final fund (after payouts)"]
 xlabels = [r"Food supply in cluster [$10^{12}\,kcal$]",
            r"Aggregated profits of farmers in cluster [$10^9\,\$$]",

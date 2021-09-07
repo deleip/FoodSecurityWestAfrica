@@ -867,6 +867,6 @@ settings, args, yield_information, population_information, \
 status, durations, exp_incomes, crop_alloc, meta_sol_direct, \
 crop_allocF, meta_solF_direct, crop_allocS, meta_solS_direct, \
 crop_alloc_vs, meta_sol_vss_direct, VSS_value, validation_values, fn = \
-    FS.FoodSecurityProblem(validation_size = 50000,
+    FS.FoodSecurityProblem(validation_size = 5000,
                            k_using = [5], 
-                           N = 5000)
+                           N = 1000)
