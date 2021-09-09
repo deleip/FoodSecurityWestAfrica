@@ -435,6 +435,7 @@ def SetParameters(settings,
          constants = pickle.load(fp)
          slopes = pickle.load(fp)
          pickle.load(fp) # crops
+         pickle.load(fp) # years
     residual_stds = residual_stds[:, [i - 1 for i in k_using]]
     constants = constants[:, [i - 1 for i in k_using]] 
     slopes = slopes[:, [i - 1 for i in k_using]]

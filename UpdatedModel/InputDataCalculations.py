@@ -156,7 +156,7 @@ with open("InputData/Clusters/Clustering/kMediods9_PearsonDistSPEI.txt", "rb") a
     clusters = pickle.load(fp)
     
 fig = plt.figure()
-cmap = mpl.cm.plasma
+cmap = mpl.cm.Paired
 bounds = np.arange(0.5, 10, 1)
 norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 plt.imshow(np.flip(clusters, axis = 0), cmap = cmap)

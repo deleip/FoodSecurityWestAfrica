@@ -781,6 +781,7 @@ def YldTrendsCluster(k):
     avg_pred, residuals, residual_means, residual_stds, fstat, constants,\
         slopes = __DetrendClusterAvgYlds(yields_avg, k, crops)
         
+    years = np.array(range(1981, 2017))
     with open("InputData/YieldTrends/DetrYieldAvg_k" + \
                               str(k) + ".txt", "wb") as fp:    
         pickle.dump(yields_avg, fp)
@@ -792,6 +793,7 @@ def YldTrendsCluster(k):
         pickle.dump(constants, fp)
         pickle.dump(slopes, fp)
         pickle.dump(crops, fp)
+        pickle.dump(years, fp)
          
     return(None)
 

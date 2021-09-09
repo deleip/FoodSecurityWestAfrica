@@ -698,12 +698,27 @@ FS.PandaPlotsCooperation(panda_file = "current_panda",
 
     
 # %%
+print("\nPlotting crop areas", flush = True)
+FS.CropAreasDependingOnColaboration(panda_file = "current_panda", 
+                                    groupAim = "Similar",
+                                    adjacent = True,
+                                    console_output = None,
+                                    yield_projection = "fixed",
+                                    pop_scenario = "fixed")
+
 print("\nPlotting coooperation plots", flush = True)
 FS.PandaPlotsCooperation(panda_file = "current_panda", 
-                        grouping_aim = "Similar",
-                        adjacent = True,
-                        yield_projection = "fixed",
-                        pop_scenario = "fixed")
+                                grouping_aim = "Similar",
+                                adjacent = True,
+                                yield_projection = "fixed",
+                                pop_scenario = "fixed")
+
+print("\n\nPlotting other plots", flush = True)
+FS.OtherPandaPlots(panda_file = "current_panda", 
+                   grouping_aim = "Similar",
+                   adjacent = True,
+                   yield_projection = "fixed",
+                   pop_scenario = "fixed") 
 
 # %% Plotting results for runs without trend, custom grouping (crop production)
 
