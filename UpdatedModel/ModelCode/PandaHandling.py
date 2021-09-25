@@ -91,6 +91,7 @@ def _ReadFromPandaSingleClusterGroup(file = "current_panda",
                                     probS = "default", 
                                     rhoF = "default",
                                     rhoS = "default",
+                                    solv_const = "default",
                                     k = "default",     
                                     k_using = "default",
                                     num_crops = "default",
@@ -129,6 +130,10 @@ def _ReadFromPandaSingleClusterGroup(file = "current_panda",
     rhoS : float or None, optional
         The penalty for insolvency. The default is defined in
         ModelCode/DefaultModelSettings.py.
+    solv_const : "on" or "off", optional
+        Specifies whether the solvency constraint should be included in the 
+        model. If "off", probS and rhoS are ignored, and the penalty for 
+        insolvency is set to zero instead.
     k : int, optional
         Number of clusters in which the area is devided. 
         The default is defined in ModelCode/DefaultModelSettings.py.
@@ -188,25 +193,36 @@ def _ReadFromPandaSingleClusterGroup(file = "current_panda",
         sys.exit("Please provide an output variable.")
         
     # fill up missing settings with defaults
-    PenMet, probF, probS, rhoF, rhoS, k, k_using, \
+    PenMet, probF, probS, rhoF, rhoS, solv_const, k, k_using, \
     num_crops, yield_projection, sim_start, pop_scenario, \
     risk, N, validation_size, T, seed, tax, perc_guaranteed, \
-    ini_fund, food_import = _GetDefaults(None, probF, probS, rhoF, rhoS, k, k_using,
-                num_crops, yield_projection, sim_start, pop_scenario,
-                risk, N, validation_size, T, seed, tax, perc_guaranteed,
-                ini_fund, food_import)
+    ini_fund, food_import = _GetDefaults(None, probF, probS, rhoF, rhoS, 
+                solv_const, k, k_using, num_crops, yield_projection, 
+                sim_start, pop_scenario, risk, N, validation_size, 
+                T, seed, tax, perc_guaranteed,  ini_fund, food_import)
     
     
     # open data frame
     panda = OpenPanda(file = file)
     
     # either settings sepcify the probabilites or the penalties
-    if (probF is not None) and (probS is not None):
-        panda = panda[:][list((panda.loc[:, "Input probability food security"] == probF) & \
-                     (panda.loc[:, "Input probability solvency"] == probS))]
-    elif (rhoF is not None) and (rhoS is not None):
-        panda = panda[:][list((panda.loc[:, "Penalty for food shortage"] == rhoF) & \
-                     (panda.loc[:, "Penalty for insolvency"] == rhoS))]
+    if solv_const == "on":
+        if (probF is not None) and (probS is not None):
+            panda = panda[:][list((panda.loc[:, "Input probability food security"] == probF) & \
+                         (panda.loc[:, "Input probability solvency"] == probS) & \
+                         (panda.loc[:, "Including solvency constraint"] == "on"))]
+        elif (rhoF is not None) and (rhoS is not None):
+            panda = panda[:][list((panda.loc[:, "Penalty for food shortage"] == rhoF) & \
+                         (panda.loc[:, "Penalty for insolvency"] == rhoS) & \
+                         (panda.loc[:, "Including solvency constraint"] == "on"))]
+    elif solv_const == "off":
+        if probF is not None:
+            panda = panda[:][list((panda.loc[:, "Input probability food security"] == probF) & \
+                         (panda.loc[:, "Including solvency constraint"] == "off"))]
+        elif rhoF is not None:
+            panda = panda[:][list((panda.loc[:, "Penalty for food shortage"] == rhoF) & \
+                         (panda.loc[:, "Including solvency constraint"] == "off"))]
+            
         
     # cannot compare with list over full column -> as string
     panda["Used clusters"] = panda["Used clusters"].apply(str)

@@ -9,7 +9,6 @@ import numpy as np
 from scipy.special import comb
 import scipy.stats as stats
 import pickle
-import pandas as pd
 import sys
 
 from ModelCode.Auxiliary import _printing
@@ -22,6 +21,7 @@ def DefaultSettingsExcept(PenMet = "default",
                           probS = "default", 
                           rhoF = "default",
                           rhoS = "default",
+                          solv_const = "default",
                           k = "default",     
                           k_using = "default",
                           num_crops = "default",
@@ -67,6 +67,10 @@ def DefaultSettingsExcept(PenMet = "default",
         be calculated in GetPenalties, else this will be used as initial guess 
         for the penalty which will give the correct probability for solvency.
         The default is defined in ModelCode/DefaultModelSettings.py.
+    solv_const : "on" or "off", optional
+        Specifies whether the solvency constraint should be included in the 
+        model. If "off", probS and rhoS are ignored, and the penalty for 
+        insolvency is set to zero instead.
     k : int, optional
         Number of clusters in which the area is to be devided. 
         The default is defined in ModelCode/DefaultModelSettings.py.
@@ -133,13 +137,13 @@ def DefaultSettingsExcept(PenMet = "default",
     """
     
     # getting defaults for the not-specified settings
-    PenMet, probF, probS, rhoF, rhoS, k, k_using, \
+    PenMet, probF, probS, rhoF, rhoS, solv_const, k, k_using, \
     num_crops, yield_projection, sim_start, pop_scenario, \
     risk, N, validation_size, T, seed, tax, perc_guaranteed, \
-    ini_fund, food_import = _GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
-                num_crops, yield_projection, sim_start, pop_scenario,
-                risk, N, validation_size, T, seed, tax, perc_guaranteed,
-                ini_fund, food_import)
+    ini_fund, food_import = _GetDefaults(PenMet, probF, probS, rhoF, rhoS,
+                solv_const, k, k_using, num_crops, yield_projection, 
+                sim_start, pop_scenario, risk, N, validation_size, T, 
+                seed, tax, perc_guaranteed, ini_fund, food_import)
 
     # making sure the current clusters are given as a list
     if type(k_using) is int:
@@ -173,6 +177,7 @@ def DefaultSettingsExcept(PenMet = "default",
                  "probS": probS,
                  "rhoF": rhoF,
                  "rhoS": rhoS,
+                 "solv_const": solv_const,
                  "k": k,
                  "k_using": k_using_tmp,
                  "num_crops": num_crops,

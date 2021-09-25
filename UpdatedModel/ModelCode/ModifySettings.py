@@ -290,6 +290,7 @@ def ReturnDefaultModelSettings():
     from ModelCode.DefaultModelSettings import probS
     from ModelCode.DefaultModelSettings import rhoF
     from ModelCode.DefaultModelSettings import rhoS
+    from ModelCode.DefaultModelSettings import solv_const
     from ModelCode.DefaultModelSettings import k
     from ModelCode.DefaultModelSettings import k_using
     from ModelCode.DefaultModelSettings import num_crops
@@ -314,6 +315,7 @@ def ReturnDefaultModelSettings():
     print("  - probS: " + str(probS), flush = True)
     print("  - rhoF: " + str(rhoF), flush = True)
     print("  - rhoS: " + str(rhoS), flush = True)
+    print("  - solv_const: " + str(solv_const), flush = True)
     print("  - k: " + str(k), flush = True)
     print("  - k_using: " + str(k_using), flush = True)
     print("  - num_crops: " + str(num_crops), flush = True)
@@ -337,6 +339,7 @@ def ModifyDefaultModelSettings(PenMet = None, \
                           probS = None, \
                           rhoF = None, \
                           rhoS = None, \
+                          solv_const = None, \
                           k = None, \
                           k_using = None, \
                           num_crops = None, \
@@ -375,6 +378,10 @@ def ModifyDefaultModelSettings(PenMet = None, \
         The initial value for rhoF. The default is None.
     rhoS : float or None, optional 
         The initial value for rhoS. The default is None.
+    solv_const : "on" or "off" or None, optional
+        Specifies whether the solvency constraint should be included in the 
+        model. If "off", probS and rhoS are ignored, and the penalty for 
+        insolvency is set to zero instead.
     k : int, optional
         Number of clusters in which the area is to be devided. 
         The default is None.
@@ -427,6 +434,7 @@ def ModifyDefaultModelSettings(PenMet = None, \
     from ModelCode.DefaultModelSettings import probS as probSbefore
     from ModelCode.DefaultModelSettings import rhoF as rhoFbefore
     from ModelCode.DefaultModelSettings import rhoS as rhoSbefore
+    from ModelCode.DefaultModelSettings import solv_const as solv_constbefore
     from ModelCode.DefaultModelSettings import k as kbefore
     from ModelCode.DefaultModelSettings import k_using as k_usingbefore
     from ModelCode.DefaultModelSettings import num_crops as num_cropsbefore
@@ -489,6 +497,14 @@ def ModifyDefaultModelSettings(PenMet = None, \
         settings.write("rhoS = " + str(rhoS) + "\n\n")
         if rhoS != rhoSbefore:
             report += "rhoS, " 
+            
+    settings.write("# specification whether solvency constraint should be included in model \n")
+    if solv_const is None:
+        settings.write("solv_const = " + str(solv_constbefore) + "\n")
+    else:
+        settings.write("solv_const = " + str(solv_const) + "\n")
+        if solv_const != solv_constbefore:
+            report += "solv_const, "   
             
     settings.write("# number of clusters in which the area is devided \n")
     if k is None:
@@ -651,7 +667,10 @@ def ResetDefaultModelSettings():
     settings.write("# correct penalties) \n")
     settings.write("rhoF = None \n")
     settings.write("rhoS = None \n\n")
-            
+
+    settings.write("# specification whether solvency constraint should be included in model \n")
+    settings.write("solv_const = \"off\" \n")        
+    
     settings.write("# number of clusters in which the area is devided \n")
     settings.write("k = 9 \n\n")
 

@@ -16,6 +16,9 @@ probS = 0.95
 rhoF = None 
 rhoS = None 
 
+# specification whether solvency constraint should be included in model
+solv_const = "off"
+
 # number of clusters in which the area is devided 
 k = 9 
 

@@ -110,9 +110,12 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
         with open("PenaltiesAndIncome/crop_allocF.txt", "wb") as fp:     
              pickle.dump(dict_crop_allocF, fp)
             
-  
-    if probS == 0:
+            
+            
+    if (settings["solv_const"] == "off" or probS == 0):
         rhoS = 0
+        meta_solS = None
+        crop_allocS = None
     else:         
         # all settings that affect the calculation of rhoS
         SettingsBasics = "k" + str(settings["k"]) + \

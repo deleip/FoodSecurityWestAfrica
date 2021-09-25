@@ -121,21 +121,27 @@ def GetFilename(settings, groupSize = "", groupAim = "", \
             probFTmp = [settings["probF"]]
         else:
             probFTmp = settings["probF"]
-        if type(settings["probS"]) is not list:
-            probSTmp = [settings["probS"]]
+        fn = "pF" + '_'.join(str(n) for n in probFTmp) 
+        if settings["solv_const"] == "on":
+            if type(settings["probS"]) is not list:
+                probSTmp = [settings["probS"]]
+            else:
+                probSTmp = settings["probS"]
+            fn = fn + "pS" + '_'.join(str(n) for n in probSTmp)
         else:
-            probSTmp = settings["probS"]
-        fn = "pF" + '_'.join(str(n) for n in probFTmp) + \
-             "pS" + '_'.join(str(n) for n in probSTmp)
+            fn = fn + "pSoff"
     else:
         rhoFTmp = settings["rhoF"].copy()
-        rhoSTmp = settings["rhoS"].copy()
         if type(rhoFTmp) is not list:
             rhoFTmp = [rhoFTmp]
-        if type(rhoSTmp) is not list:
-            rhoSTmp = [rhoSTmp]
-        fn = "rF" + '_'.join(str(n) for n in rhoFTmp) + \
-             "rS" + '_'.join(str(n) for n in rhoSTmp)
+        fn = "rF" + '_'.join(str(n) for n in rhoFTmp)
+        if settings["solv_const"] == "on":
+            rhoSTmp = settings["rhoS"].copy()
+            if type(rhoSTmp) is not list:
+                rhoSTmp = [rhoSTmp]
+            fn = fn + "rS" + '_'.join(str(n) for n in rhoSTmp)
+        else:
+            fn = fn + "rSoff"
      
     if groupSize != "":    
         groupSize = "GS" + str(groupSize)
@@ -207,7 +213,7 @@ def GetFilename(settings, groupSize = "", groupAim = "", \
     return(fn)
 
 
-def _GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
+def _GetDefaults(PenMet, probF, probS, rhoF, rhoS, solv_const, k, k_using,
                 num_crops, yield_projection, sim_start, pop_scenario,
                 risk, N, validation_size, T, seed, tax, perc_guaranteed,
                 ini_fund, food_import):
@@ -240,6 +246,10 @@ def _GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
         be calculated in GetPenalties, else this will be used as initial guess 
         for the penalty which will give the correct probability for solvency.
         The default is defined in ModelCode/DefaultModelSettings.py.
+    solv_const : "on", "off", or "default"
+        Specifies whether the solvency constraint should be included in the 
+        model. If "off", probS and rhoS are ignored, and the penalty for 
+        insolvency is set to zero instead.
     k : int, or "default"
         Number of clusters in which the area is to be devided. 
         The default is defined in ModelCode/DefaultModelSettings.py.
@@ -319,6 +329,10 @@ def _GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
         if PenMet == "prob" and rhoS is None, a initial guess for rhoS will 
         be calculated in GetPenalties, else this will be used as initial guess 
         for the penalty which will give the correct probability for solvency.
+    solv_const : "on" or "off"
+        Specifies whether the solvency constraint should be included in the 
+        model. If "off", probS and rhoS are ignored, and the penalty for 
+        insolvency is set to zero instead.
     k : int
         Number of clusters in which the area is to be devided. 
     k_using : "all" or a list of int i\in{1,...,k}
@@ -374,6 +388,8 @@ def _GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
         from ModelCode.DefaultModelSettings import rhoF
     if rhoS == "default":
         from ModelCode.DefaultModelSettings import rhoS
+    if solv_const == "default":
+        from ModelCode.DefaultModelSettings import solv_const
     if k == "default":
         from ModelCode.DefaultModelSettings import k
     if k_using == "default":
@@ -405,7 +421,7 @@ def _GetDefaults(PenMet, probF, probS, rhoF, rhoS, k, k_using,
     if food_import == "default":
         from ModelCode.DefaultModelSettings import food_import
         
-    return(PenMet, probF, probS, rhoF, rhoS, k, k_using,
+    return(PenMet, probF, probS, rhoF, rhoS, solv_const, k, k_using,
           num_crops, yield_projection, sim_start, pop_scenario,
           risk, N, validation_size, T, seed, tax, perc_guaranteed,
           ini_fund, food_import)

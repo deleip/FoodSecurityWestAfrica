@@ -301,7 +301,14 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
         args["rhoS"] = rhoS
     else:
         args["rhoF"] = settings["rhoF"]
-        args["rhoS"] = settings["rhoS"]
+        if settings["solv_const"] == "on":
+            args["rhoS"] = settings["rhoS"]
+        elif settings["solv_const"] == "off":
+            args["rhoS"] = 0
+        meta_solF = None
+        meta_solS = None
+        crop_allocF = None
+        crop_allocS = None
         
     penalties_end  = tm.time()
     all_durations["GetPenalties"] = penalties_end - penalties_start
@@ -340,7 +347,6 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
     all_durations["Validation"] = validation_end - validation_start
 
     # add results to pandas overview
-    fn = GetFilename(settings)
     if panda_file is not None:
         _WriteToPandas(settings, args, yield_information, population_information, \
                        status, all_durations, exp_incomes, crop_alloc, meta_sol, \
@@ -477,9 +483,16 @@ def LoadModelResults(filename):
     
     # calculate meta_sols
     meta_sol = GetMetaInformation(crop_alloc, args, args["rhoF"], args["rhoS"])
-    meta_solF = GetMetaInformation(crop_allocF, args, args["rhoF"], 0)
-    meta_solS = GetMetaInformation(crop_allocS, args, 0, args["rhoS"])
     meta_sol_vss =  GetMetaInformation(crop_alloc_vss, args_VSS_sto, args["rhoF"], args["rhoS"])
+    if settings["PenMet"] == "prob":
+        meta_solF = GetMetaInformation(crop_allocF, args, args["rhoF"], 0)
+        if settings["solv_const"] == "on":
+            meta_solS = GetMetaInformation(crop_allocS, args, 0, args["rhoS"])
+        else:
+            meta_solS = None
+    else:
+        meta_solF = None
+        meta_solS = None
     
     return(settings, args, yield_information, population_information, \
            status, all_durations, exp_incomes, crop_alloc, meta_sol, \

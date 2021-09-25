@@ -123,6 +123,7 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
     panda = {"Penalty method":                     settings["PenMet"],
              "Input probability food security":    settings["probF"],
              "Input probability solvency":         settings["probS"],
+             "Including solvency constraint":      settings["solv_const"],
              "Number of crops":                    settings["num_crops"],
              "Number of clusters":                 settings["k"],
              "Used clusters":                      settings["k_using"],
@@ -142,10 +143,19 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
     panda["Penalty for insolvency"]                  = args["rhoS"]
     panda["Resulting probability for food security"] = meta_sol["probF"]
     panda["Resulting probability for solvency"]      = meta_sol["probS"]
-    panda["Max. possible probability for food security (excluding solvency constraint)"] \
-        = meta_solF["probF"]
-    panda["Max. possible probability for solvency (excluding food security constraint)"] \
-        = meta_solS["probS"]
+    if meta_solF is not None:
+        panda["Max. possible probability for food security (excluding solvency constraint)"] \
+            = meta_solF["probF"]
+    else:
+        panda["Max. possible probability for food security (excluding solvency constraint)"] \
+            = np.nan
+    if meta_solS is not None:
+        panda["Max. possible probability for solvency (excluding food security constraint)"] \
+            = meta_solS["probS"]
+    else:
+        panda["Max. possible probability for solvency (excluding food security constraint)"] \
+            = np.nan
+        
     
     # 3 yield information
     panda["Probability for a catastrophic year"]                    = yield_information["prob_cat_year"]
@@ -173,8 +183,12 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
         = args["import"] + meta_sol["avg_nec_import"]
     panda["Average aggregate food shortage"] \
         = meta_sol["avg_nec_import"] # includes also caes that don't need import as zero
-    panda["Average aggregate food shortage excluding solvency constraint"] \
-        = meta_solF["avg_nec_import"]
+    if meta_solF is not None:
+        panda["Average aggregate food shortage excluding solvency constraint"] \
+            = meta_solF["avg_nec_import"]
+    else:
+        panda["Average aggregate food shortage excluding solvency constraint"] \
+            = np.nan
     panda["Average aggregate food shortage per capita"] \
         = np.nanmean(np.nanmean(food_shortage_capita, axis = 0))*1e9
     panda["Average aggregate food shortage per capita (including only samples that have shortage)"] \
@@ -212,8 +226,12 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
         = np.nanmean(meta_sol["final_fund"])
         # TODO maybe don't include cases that don't have a catastrohpe in average?
         
-    panda["Average aggregate debt after payout (excluding food security constraint)"] \
-        = meta_solS["avg_nec_debt"]
+    if meta_solS is not None:
+        panda["Average aggregate debt after payout (excluding food security constraint)"] \
+            = meta_solS["avg_nec_debt"]
+    else:
+        panda["Average aggregate debt after payout (excluding food security constraint)"] \
+            = np.nan
     panda["Average aggregate debt after payout"] \
         = meta_sol["avg_nec_debt"] # includes cases that don't need debt as zero
     panda["Average aggregate debt after payout (including only samples with negative final fund)"] \
@@ -403,6 +421,7 @@ def _SetUpPandaDicts():
     units = {"Penalty method": "",
         "Input probability food security": "",
         "Input probability solvency": "",
+        "Including solvency constraint": "",
         "Number of crops": "",
         "Number of clusters": "",
         "Used clusters": "",
@@ -489,6 +508,7 @@ def _SetUpPandaDicts():
     convert =  {"Penalty method": str,
          "Input probability food security": float,
          "Input probability solvency": float,
+         "Including solvency constraint": str,
          "Number of crops": int,
          "Number of clusters": int,
          "Used clusters": "list of ints",
@@ -573,6 +593,7 @@ def _SetUpPandaDicts():
     colnames = ["Penalty method",
         "Input probability food security",
         "Input probability solvency",
+        "Including solvency constraint",
         "Number of crops",
         "Number of clusters",
         "Used clusters",
