@@ -884,4 +884,6 @@ crop_allocF, meta_solF_direct, crop_allocS, meta_solS_direct, \
 crop_alloc_vs, meta_sol_vss_direct, VSS_value, validation_values, fn = \
     FS.FoodSecurityProblem(validation_size = 5000,
                            k_using = [5], 
-                           N = 1000)
+                           N = 1000,
+                           plotTitle = "cluster 5 w/ slvency constraint",
+                           solv_const = "off")

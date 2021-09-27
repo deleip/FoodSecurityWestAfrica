@@ -382,5 +382,192 @@ for i in range(0, 4):
     
     
     
+# %% #########################################################################
+
+# M.
+# In order to visualize tradeoffs between costs and reliability, I was thinking
+# about a kind of scatter plot, where we have on the horizontal axis the food
+# security probability (or solvency probability), and on the vertical axis the
+# cultivation cost; we can then plot the resulting cost and probabilities for
+# all regions in the deterministic and stochastic scenario. In this plot, we 
+# also have a utopian point and the distance to this point can be a different
+# metric to assess improvements due to the inclusion of uncertainty.
+
+aim = "Similar"
+adj = "Adj"
 
 
+# det_costs = []
+# sto_costs = []
+# sto_probF = []
+# det_probF = []
+# sto_probS = []
+# det_probS = []
+
+# plot for all cluster groups of all sizes
+# for idx, size in enumerate([1, 2, 3, 5, 9]):
+#     # get grouping for that size
+#     with open("InputData/Clusters/ClusterGroups/GroupingSize" \
+#                   + str(size) + aim + adj + ".txt", "rb") as fp:
+#             BestGrouping = pickle.load(fp)
+#     for cl in BestGrouping:
+#         tmp = FS.ReadFromPanda(file = "current_panda", 
+#                                output_var = ["Total cultivation costs (sto. solution)",
+#                                              "Total cultivation costs (det. solution)",
+#                                              "Resulting probability for food security",
+#                                              "Resulting probability for food security for VSS",
+#                                              "Resulting probability for solvency",
+#                                              "Resulting probability for solvency for VSS"],
+#                                k_using = cl)
+#         sto_costs.append(tmp["Total cultivation costs (sto. solution)"].values[0])
+#         det_costs.append(tmp["Total cultivation costs (det. solution)"].values[0])
+#         sto_probF.append(tmp["Resulting probability for food security"].values[0])
+#         det_probF.append(tmp["Resulting probability for food security for VSS"].values[0])
+#         sto_probS.append(tmp["Resulting probability for solvency"].values[0])
+#         det_probS.append(tmp["Resulting probability for solvency for VSS"].values[0])
+        
+aim = "Similar"
+adj = "Adj"        
+        
+res_probF = FS.Panda_GetResults(file = "current_panda", 
+                          output_var = ['Resulting probability for food security', \
+                                        'Resulting probability for food security for VSS'],
+                          out_type = "agg_avgweight", 
+                          var_weight = "Share of West Africa's population that is living in total considered region (2015)",
+                          grouping_aim = aim, 
+                          adjacent = adj)[0]
+
+res_probS = FS.Panda_GetResults(file = "current_panda", 
+                          output_var = ['Resulting probability for solvency', \
+                                        'Resulting probability for solvency for VSS'],
+                          out_type = "agg_avgweight", 
+                          var_weight = "Share of West Africa's population that is living in total considered region (2015)",
+                          grouping_aim = aim, 
+                          adjacent = adj)[0]  
+    
+res_costs = FS.Panda_GetResults(file = "current_panda", 
+                          output_var = ["Total cultivation costs (sto. solution)",
+                                        "Total cultivation costs (det. solution)"],
+                          out_type = "agg_sum", 
+                          var_weight = None,
+                          grouping_aim = aim, 
+                          adjacent = adj)[0]     
+
+
+alphas = np.linspace(0.3, 1, 5)
+col_red = np.zeros((5,4))
+col_red[:,0] = 158/255
+col_red[:,1] = 40/255
+col_red[:,2] = 18/255
+col_red[:, 3] = alphas
+col_blue = np.zeros((5,4))
+col_blue[:,0] = 31/255
+col_blue[:,1] = 70/255
+col_blue[:,2] = 230/255
+col_blue[:, 3] = alphas
+
+fig = plt.figure(figsize = figsize)
+fig.add_subplot(1, 2, 1)
+
+plt.scatter(res_probF['Resulting probability for food security - Aggregated over all groups'].values, 
+            res_costs["Total cultivation costs (sto. solution) - Aggregated over all groups"].values,
+            color = col_red, label = "stochastic solution")
+
+plt.scatter(res_probF['Resulting probability for food security for VSS - Aggregated over all groups'].values, 
+            res_costs["Total cultivation costs (det. solution) - Aggregated over all groups"].values,
+            color = col_blue, label = "deterministic solution")
+
+plt.xlabel("Average probability for food security")
+plt.ylabel(r"Aggregated cultivation costs [$10^9\,\$$]")
+plt.xlim((0,1))
+plt.legend()
+
+fig.add_subplot(1, 2, 2)
+
+plt.scatter(res_probS['Resulting probability for solvency - Aggregated over all groups'].values, 
+            res_costs["Total cultivation costs (sto. solution) - Aggregated over all groups"].values,
+            color = col_red, label = "stochastic solution")
+
+plt.scatter(res_probS['Resulting probability for solvency for VSS - Aggregated over all groups'].values, 
+            res_costs["Total cultivation costs (det. solution) - Aggregated over all groups"].values,
+            color = col_blue, label = "deterministic solution")
+
+plt.xlabel("Average probability for solvency")
+plt.ylabel(r"Aggregated cultivation costs [$10^9\,\$$]")
+plt.legend()
+plt.xlim((0,1))
+
+plt.suptitle("Trade-off between probabilities and cultivation costs")
+
+fig.savefig("Figures/PublicationPlots/TradeOffProbCosts_SolvConstOffDefault.jpg", bbox_inches = "tight", pad_inches = 1)
+plt.close()
+
+###
+
+        
+aim = "Similar"
+adj = "Adj"        
+        
+res_probF = FS.Panda_GetResults(file = "current_panda", 
+                          output_var = ['Resulting probability for food security', \
+                                        'Resulting probability for food security for VSS'],
+                          out_type = "agg_avgweight", 
+                          var_weight = "Share of West Africa's population that is living in total considered region (2015)",
+                          grouping_aim = aim, 
+                          adjacent = adj,
+                          solv_const = "on")[0]
+
+res_probS = FS.Panda_GetResults(file = "current_panda", 
+                          output_var = ['Resulting probability for solvency', \
+                                        'Resulting probability for solvency for VSS'],
+                          out_type = "agg_avgweight", 
+                          var_weight = "Share of West Africa's population that is living in total considered region (2015)",
+                          grouping_aim = aim, 
+                          adjacent = adj,
+                          solv_const = "on")[0]  
+    
+res_costs = FS.Panda_GetResults(file = "current_panda", 
+                          output_var = ["Total cultivation costs (sto. solution)",
+                                        "Total cultivation costs (det. solution)"],
+                          out_type = "agg_sum", 
+                          var_weight = None,
+                          grouping_aim = aim, 
+                          adjacent = adj,
+                          solv_const = "on")[0]     
+
+
+fig = plt.figure(figsize = figsize)
+fig.add_subplot(1, 2, 1)
+
+plt.scatter(res_probF['Resulting probability for food security - Aggregated over all groups'].values, 
+            res_costs["Total cultivation costs (sto. solution) - Aggregated over all groups"].values,
+            color = col_red, label = "stochastic solution")
+
+plt.scatter(res_probF['Resulting probability for food security for VSS - Aggregated over all groups'].values, 
+            res_costs["Total cultivation costs (det. solution) - Aggregated over all groups"].values,
+            color = col_blue, label = "deterministic solution")
+
+plt.xlabel("Average probability for food security")
+plt.ylabel(r"Aggregated cultivation costs [$10^9\,\$$]")
+plt.xlim((0,1))
+plt.legend()
+
+fig.add_subplot(1, 2, 2)
+
+plt.scatter(res_probS['Resulting probability for solvency - Aggregated over all groups'].values, 
+            res_costs["Total cultivation costs (sto. solution) - Aggregated over all groups"].values,
+            color = col_red, label = "stochastic solution")
+
+plt.scatter(res_probS['Resulting probability for solvency for VSS - Aggregated over all groups'].values, 
+            res_costs["Total cultivation costs (det. solution) - Aggregated over all groups"].values,
+            color = col_blue, label = "deterministic solution")
+
+plt.xlabel("Average probability for solvency")
+plt.ylabel(r"Aggregated cultivation costs [$10^9\,\$$]")
+plt.legend()
+plt.xlim((0,1))
+
+plt.suptitle("Trade-off between probabilities and cultivation costs")
+
+fig.savefig("Figures/PublicationPlots/TradeOffProbCosts_SolvConstOnDefault.jpg", bbox_inches = "tight", pad_inches = 1)
+plt.close()

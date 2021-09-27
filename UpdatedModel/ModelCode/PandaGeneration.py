@@ -117,6 +117,10 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
     yearly_fixed_costs[yearly_fixed_costs == 0] = np.nan
     cultivation_costs = np.sum(np.nanmean(yearly_fixed_costs, axis = 0))
     
+    yearly_fixed_costs_det = np.nansum(meta_sol_vss["yearly_fixed_costs"], axis = 2)
+    yearly_fixed_costs_det[yearly_fixed_costs_det == 0] = np.nan
+    cultivation_costs_det = np.sum(np.nanmean(yearly_fixed_costs_det, axis = 0))
+    
     # setting up dictionary of parameters to add to the panda object as new row:
         
     # 1 settings
@@ -170,9 +174,9 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
             = list(population_information["pop_cluster_ratio2015"])
          
     # 5 crop areas
-    panda["On average cultivated area per cluster"] = list(np.nanmean(crop_alloc, axis = (0,1)))
-    panda["Average yearly total cultivated area"]   = np.nanmean(np.nansum(crop_alloc, axis = (1,2)))
-    panda["Total cultivation costs"]                = cultivation_costs
+    panda["On average cultivated area per cluster"]  = list(np.nanmean(crop_alloc, axis = (0,1)))
+    panda["Average yearly total cultivated area"]    = np.nanmean(np.nansum(crop_alloc, axis = (1,2)))
+    panda["Total cultivation costs (sto. solution)"] = cultivation_costs
         
     # 6 food demand and needed import
     panda["Import (given as model input)"] = args["import"]
@@ -255,6 +259,7 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
         
     # 10 VSS
     panda["Value of stochastic solution"]                    = VSS_value      # diff of total costs using det. solution and using 
+    panda["Total cultivation costs (det. solution)"]         = cultivation_costs_det
     panda["VSS as share of total costs (sto. solution)"]     = VSS_value/meta_sol["exp_tot_costs"]
     panda["VSS as share of total costs (det. solution)"]     = VSS_value/meta_sol_vss["exp_tot_costs"]
     panda["VSS in terms of avg. nec. debt"] \
@@ -361,6 +366,12 @@ def OpenPanda(file = "current_panda"):
             res.append(float(arg[j]))
         return(res)
     
+    def _ConvertFloat(arg):
+        if arg == "":
+            arg = np.NaN
+        arg = float(arg)
+        return(arg)
+    
     # open panda without conversion
     panda = pd.read_csv("ModelOutput/Pandas/" + file + ".csv")
     
@@ -377,6 +388,8 @@ def OpenPanda(file = "current_panda"):
             dict_convert[key] = _ConvertListsFloats
         elif dict_convert[key] == "list of ints":
             dict_convert[key] = _ConvertListsInts
+        elif dict_convert[key] == float:
+            dict_convert[key] = _ConvertFloat
             
     # print(dict_convert.keys(), flush = True)
     # for key in dict_convert.keys():
@@ -453,7 +466,7 @@ def _SetUpPandaDicts():
         
         "On average cultivated area per cluster": "[$10^9\,$ha]",
         "Average yearly total cultivated area": "[$10^9\,$ha]",
-        "Total cultivation costs": "[$10^9\,\$$]",
+        "Total cultivation costs (sto. solution)": "[$10^9\,\$$]",
         
         "Import (given as model input)": "[$10^{12}\,$kcal]",
         "Average food demand": "[$10^{12}\,$kcal]",
@@ -488,6 +501,7 @@ def _SetUpPandaDicts():
         "Expected total costs": "[$10^9\,\$$]",
         
         "Value of stochastic solution": "[$10^9\,\$$]",
+        "Total cultivation costs (det. solution)": "[$10^9\,\$$]",
         "VSS as share of total costs (sto. solution)": "",
         "VSS as share of total costs (det. solution)": "",
         "VSS in terms of avg. nec. debt": "[$10^9\,\$$]",
@@ -540,7 +554,7 @@ def _SetUpPandaDicts():
         
          "On average cultivated area per cluster": "list of floats",
          "Average yearly total cultivated area": float,
-         "Total cultivation costs": float,
+         "Total cultivation costs (sto. solution)": float,
          
          "Import (given as model input)": float,
          "Average food demand": float,
@@ -575,6 +589,7 @@ def _SetUpPandaDicts():
          "Expected total costs": float,
         
          "Value of stochastic solution": float,
+         "Total cultivation costs (det. solution)": float, 
          "VSS as share of total costs (sto. solution)": float,
          "VSS as share of total costs (det. solution)": float,
          "VSS in terms of avg. nec. debt": float,
@@ -625,7 +640,7 @@ def _SetUpPandaDicts():
         
         "On average cultivated area per cluster",
         "Average yearly total cultivated area",
-        "Total cultivation costs",
+        "Total cultivation costs (sto. solution)",
         
         "Import (given as model input)",
         "Average food demand",
@@ -660,6 +675,7 @@ def _SetUpPandaDicts():
         "Expected total costs",
         
         "Value of stochastic solution",
+        "Total cultivation costs (det. solution)",
         "VSS as share of total costs (sto. solution)",
         "VSS as share of total costs (det. solution)",
         "VSS in terms of avg. nec. debt",

@@ -571,7 +571,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
     PlotPandaAggregate(panda_file = panda_file,
                        agg_type = "agg_sum",
                        output_var=['Average yearly total cultivated area', \
-                                   'Total cultivation costs'],
+                                   'Total cultivation costs (sto. solution)'],
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
                        adjacent = adjacent,

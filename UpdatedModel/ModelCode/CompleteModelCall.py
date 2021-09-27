@@ -473,6 +473,8 @@ def LoadModelResults(filename):
         VSS_value = pickle.load(fp)
         validation_values = pickle.load(fp)
             
+    if "solv_const" not in settings.keys():
+        settings["solv_const"] = "on"
 
     # get guaranteed income for deterministic setting
     args_vss, yield_information, population_information = \
