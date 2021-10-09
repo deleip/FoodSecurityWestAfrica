@@ -255,12 +255,17 @@ def _costsGroupingEquality(grouping, expected_surplus):
         groups in this grouping
     """
     
-    costs = []
+    surplus = []
     for gr in grouping:
         gr = list(gr)
         tmp = np.sum(expected_surplus[gr])
-        costs.append(tmp)
-    costs = max(costs) - min(costs)
+        surplus.append(tmp)
+       
+    costs = 0
+    for s1 in surplus:
+        for s2 in surplus:
+            costs += abs(s1 - s2)
+            
     return(costs)
 
 def _UpdateGrouping(BestCosts, TmpCosts, BestGrouping, grouping, aim):

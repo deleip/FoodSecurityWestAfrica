@@ -172,7 +172,7 @@ def Panda_GetResultsSingScen(file = "current_panda",
     
     # get results for each cluster grouping size
     for size in sizes:
-        with open("InputData/Clusters/ClusterGroups/Grouping" + grouping_metric + 
+        with open("InputData/Clusters/ClusterGroups/Grouping" + grouping_metric.capitalize() + 
                   "Size"  + str(size) + grouping_aim + add + ".txt", "rb") as fp:
                 BestGrouping = pickle.load(fp)
     
@@ -350,7 +350,7 @@ def PlotPenaltyVsProb(panda_file = "current_panda",
     ax1 = fig.add_subplot(1, 2, 1)
     ax2 = fig.add_subplot(1, 2, 2)
     for idx, size in enumerate([1, 2, 3, 5, 9]):
-        with open("InputData/Clusters/ClusterGroups/Grouping" + grouping_metric + 
+        with open("InputData/Clusters/ClusterGroups/Grouping" + grouping_metric.capitalize() + 
                   "Size"  + str(size) + grouping_aim + add + ".txt", "rb") as fp:
                 BestGrouping = pickle.load(fp)
     
@@ -461,7 +461,7 @@ def PlotProbDetVsSto(panda_file = "current_panda",
     ax1 = fig.add_subplot(1, 2, 1)
     ax2 = fig.add_subplot(1, 2, 2)
     for idx, size in enumerate([1, 2, 3, 5, 9]):
-        with open("InputData/Clusters/ClusterGroups/Grouping" + grouping_metric + 
+        with open("InputData/Clusters/ClusterGroups/Grouping" + grouping_metric.capitalize() + 
                   "Size"  + str(size) + grouping_aim + add + ".txt", "rb") as fp:
                 BestGrouping = pickle.load(fp)
     

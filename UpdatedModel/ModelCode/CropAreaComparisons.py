@@ -591,7 +591,7 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
         
     # get cluster grouping for size 1 (i.e. all independent)
     _printing("\nGroup size " + str(1), console_output = console_output, logs_on = False)
-    with open("InputData/Clusters/ClusterGroups/Grouping" + groupMetric + 
+    with open("InputData/Clusters/ClusterGroups/Grouping" + groupMetric.capitalize() + 
               "Size"  + str(1) + groupAim + add + ".txt", "rb") as fp:
             BestGrouping = pickle.load(fp)
                 
@@ -629,7 +629,7 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
     for size in [2,3,5,9]:
         # get cluster grouping for given group size
         _printing("\nGroup size " + str(size), console_output = console_output, logs_on = False)
-        with open("InputData/Clusters/ClusterGroups/Grouping" + groupMetric + 
+        with open("InputData/Clusters/ClusterGroups/Grouping" + groupMetric.capitalize() + 
                   "Size"  + str(size) + groupAim + add + ".txt", "rb") as fp:
                 BestGrouping = pickle.load(fp)
          
