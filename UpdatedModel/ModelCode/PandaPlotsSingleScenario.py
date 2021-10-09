@@ -113,12 +113,13 @@ def _ExtractResPanda(sub_panda, out_type, output_var, size, weight = None, var_w
     return(res)
     
 
-def _Panda_GetResultsSingScen(file = "current_panda", 
+def Panda_GetResultsSingScen(file = "current_panda", 
                            output_var = None,
                            out_type = "agg_sum", # or agg_avgweight, or median, or all
                            var_weight = None,
                            grouping_aim = "Dissimilar",
                            adjacent = False,
+                           sizes = [1, 2, 3, 5, 9],
                            **kwargs):
     """
     For given grouping type and model settings, this subsets the results and 
@@ -144,6 +145,8 @@ def _Panda_GetResultsSingScen(file = "current_panda",
         The default is "Dissimilar".
     adjacent : boolean, optional
         Whether clusters in a cluster group need to be adjacent. The default is False.
+    sizes: list, optional
+        List of group sizes for which results should be loaded.
     **kwargs : 
         Settings specifiying for which model run results shall be returned, 
         passed to ReadFromPandaSingleClusterGroup.
@@ -161,9 +164,11 @@ def _Panda_GetResultsSingScen(file = "current_panda",
        
     res = pd.DataFrame()
     
+    if type(sizes) is not list:
+        sizes = [sizes]
     
     # get results for each cluster grouping size
-    for size in [1,2,3,5,9]:
+    for size in sizes:
         with open("InputData/Clusters/ClusterGroups/GroupingSize" \
                       + str(size) + grouping_aim + add + ".txt", "rb") as fp:
                 BestGrouping = pickle.load(fp)
@@ -936,7 +941,7 @@ def Panda_GetResults(file = "current_panda",
      
     # run _Panda_GetResultsSingScen for each setting combination
     if len(l) == 0:
-        res = [_Panda_GetResultsSingScen(output_var = output_var, **fulldict)]
+        res = [Panda_GetResultsSingScen(output_var = output_var, **fulldict)]
     else:
         res = []
         for idx in range(0, l[0]):
@@ -944,7 +949,7 @@ def Panda_GetResults(file = "current_panda",
             for key in keys_list:
                 fulldict_tmp[key] = fulldict[key][idx]
             try:
-                res.append(_Panda_GetResultsSingScen(output_var = output_var, **fulldict_tmp))
+                res.append(Panda_GetResultsSingScen(output_var = output_var, **fulldict_tmp))
             except SystemExit:
                 print("The " + str(idx + 1) + ". scenario is not available", flush = True)
                 res.append(None)

@@ -358,7 +358,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, file, accuracy_
              str(round(accuracy*100,1)) + "% of target - min probability", \
              console_output = console_output, logs_on = logs_on)
     _printing("     accuracy that we demand for rho" + objective + ": " + \
-             str(round(accuracy_rho*100,1)) + " of final rho" + objective + "\n", \
+             str(round(accuracy_rho*100,1)) + "% of final rho" + objective + "\n", \
              console_output = console_output, logs_on = logs_on)
     
     # check if rho from run with smaller N works here as well:
@@ -578,7 +578,7 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
              console_output = console_output, logs_on = logs_on)
     _printing("     accuracy that we demand for rho" + objective + ": " + 
               str(round(accuracy_rho * 100, 1)) + \
-             " of final rho" + objective + "\n", \
+             "% of final rho" + objective + "\n", \
              console_output = console_output, logs_on = logs_on)
         
     # internal functions

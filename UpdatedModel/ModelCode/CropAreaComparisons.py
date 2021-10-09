@@ -20,7 +20,7 @@ from ModelCode.SettingsParameters import RiskForCatastrophe
 
 # %% ##################### PLOT FUNCTIONS FOR CROP AREAS ###########################
 
-def _CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title, 
+def _CompareCropAllocs(CropAllocs, MaxAreas, labels, title, plt_title, 
                       comparing = "clusters", cols = None, cols_b = None, 
                       filename = None, foldername = None, figsize = None,
                       close_plots = None, fig = None, ax = None, 

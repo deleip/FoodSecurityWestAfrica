@@ -39,6 +39,7 @@ from ModelCode.PandaGeneration import OverViewCurrentPandaVariables
 from ModelCode.PandaHandling import UpdatePandaWithAddInfo
 from ModelCode.PandaHandling import ReadFromPanda
 from ModelCode.PandaHandling import LoadFullResults
+from ModelCode.PandaHandling import RemoveRun
 
 from ModelCode.PandaPlotsSingleScenario import PlotPandaSingle
 from ModelCode.PandaPlotsSingleScenario import PlotPenaltyVsProb
@@ -46,6 +47,7 @@ from ModelCode.PandaPlotsSingleScenario import PlotProbDetVsSto
 from ModelCode.PandaPlotsSingleScenario import PandaPlotsCooperation
 from ModelCode.PandaPlotsSingleScenario import OtherPandaPlots
 from ModelCode.PandaPlotsSingleScenario import Panda_GetResults
+from ModelCode.PandaPlotsSingleScenario import Panda_GetResultsSingScen
 from ModelCode.PandaPlotsSingleScenario import PlotPandaMedian
 from ModelCode.PandaPlotsSingleScenario import PlotPandaAll
 from ModelCode.PandaPlotsSingleScenario import PlotPandaAggregate

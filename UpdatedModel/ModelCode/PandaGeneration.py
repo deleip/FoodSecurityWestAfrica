@@ -113,13 +113,10 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
     ff_debt_all[ff_debt_all < 0] = 0
     ter_years_all = args["terminal_years"].astype(int)
     
-    yearly_fixed_costs = np.nansum(meta_sol["yearly_fixed_costs"], axis = 2)
-    yearly_fixed_costs[yearly_fixed_costs == 0] = np.nan
-    cultivation_costs = np.sum(np.nanmean(yearly_fixed_costs, axis = 0))
-    
-    yearly_fixed_costs_det = np.nansum(meta_sol_vss["yearly_fixed_costs"], axis = 2)
-    yearly_fixed_costs_det[yearly_fixed_costs_det == 0] = np.nan
-    cultivation_costs_det = np.sum(np.nanmean(yearly_fixed_costs_det, axis = 0))
+    # finding cultivation costs by taking a sample w/o catastrophic yields
+    sample_no_cat = np.where(args["terminal_years"] == -1)[0][0]
+    cultivation_costs = np.sum(meta_sol["yearly_fixed_costs"][sample_no_cat, :, :])
+    cultivation_costs_det = np.sum(meta_sol_vss["yearly_fixed_costs"][sample_no_cat, :, :])
     
     # setting up dictionary of parameters to add to the panda object as new row:
         

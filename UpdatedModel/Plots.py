@@ -53,7 +53,7 @@ for cl in range(1, 10):
     settings, args, yield_information, population_information, \
     status, all_durations, exp_incomes, crop_alloc, meta_sol, \
     crop_allocF, meta_solF, crop_allocS, meta_solS, \
-    crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \
+    crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
                 FS.LoadFullResults(k_using = [cl])
                 
     # increase in cultivation costs for sto. solution
@@ -259,7 +259,7 @@ for idx, size in enumerate([1, 2, 3, 5, 9]):
         settings, args, yield_information, population_information, \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
-        crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \
+        crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
                     FS.LoadFullResults(k_using = [cl])
                     
         # increase in cultivation costs for sto. solution

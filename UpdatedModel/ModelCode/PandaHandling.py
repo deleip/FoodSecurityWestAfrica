@@ -6,6 +6,8 @@ Created on Sat Jan 23 16:15:20 2021
 import pandas as pd
 import os
 import sys
+import pickle
+
 
 from ModelCode.CompleteModelCall import LoadModelResults
 from ModelCode.PandaGeneration import OpenPanda
@@ -13,6 +15,8 @@ from ModelCode.PandaGeneration import CreateEmptyPanda
 from ModelCode.PandaGeneration import _WriteToPandas
 from ModelCode.PandaGeneration import _SetUpPandaDicts
 from ModelCode.Auxiliary import _GetDefaults
+from ModelCode.SettingsParameters import DefaultSettingsExcept
+from ModelCode.Auxiliary import GetFilename
 
 # %% ####### FUNCTIONS UPDATING AND ACCESSING THE RESULTS PANDA OBJECT #########
 
@@ -236,8 +240,10 @@ def _ReadFromPandaSingleClusterGroup(file = "current_panda",
     output_var_fct = output_var.copy()
     output_var_fct.insert(0, "Used clusters")
     tmp = output_var_fct.copy()
-    tmp.append("Sample size")
-    tmp.append("Sample size for validation")
+    if "Sample size" not in tmp:
+        tmp.append("Sample size")
+    if "Sample size for validation" not in tmp:
+        tmp.append("Sample size for validation")
     sub_panda = panda[tmp]\
                     [list((panda.loc[:, "Number of clusters"] == k) & \
                      (panda.loc[:, "Used clusters"] == str(k_using)) & \
@@ -377,4 +383,85 @@ def LoadFullResults(file = "current_panda", **kwargs):
     return(settings, args, yield_information, population_information, \
            status, all_durations, exp_incomes, crop_alloc, meta_sol, \
            crop_allocF, meta_solF, crop_allocS, meta_solS, \
-           crop_alloc_vss, meta_sol_vss, VSS_value, validation_values)
+           crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn)
+        
+def RemoveRun(file = "current_panda", **kwargs):
+    """
+    Removes results of a specific model run (specified by **kwargs) from all
+    output files (panda csv, penaltiy dicts, guaranteed income, direct model 
+    output).
+
+    Parameters
+    ----------
+    file : str, optional
+        Name of the panda file from which the results should be removed.
+        The default is "current_panda".
+    **kwargs :
+        Settings specifiying for which model run results shall be removed.
+
+    Returns
+    -------
+    None.
+
+    """
+    # get full settings
+    settings = DefaultSettingsExcept(**kwargs)
+    
+    # get filename and name for dicts
+    fn, SettingsMaxProbF, SettingsAffectingRhoF, SettingsMaxProbS, \
+        SettingsAffectingRhoS = GetFilename(settings, allNames = True)
+        
+    # remove line from panda
+    current_panda = pd.read_csv("ModelOutput/Pandas/" + file + ".csv")
+    current_panda = current_panda[current_panda["Filename for full results"] != fn]
+    current_panda.to_csv("ModelOutput/Pandas/" + file + ".csv", index = False)
+    
+    # remove from food demand penalty dicts
+    with open("PenaltiesAndIncome/RhoFs.txt", "rb") as fp:    
+        dict_rhoFs = pickle.load(fp)
+    with open("PenaltiesAndIncome/crop_allocF.txt", "rb") as fp:    
+        dict_crop_allocF = pickle.load(fp)
+    
+    dict_rhoFs.pop(SettingsAffectingRhoF, None)
+    dict_crop_allocF.pop(SettingsAffectingRhoF, None)
+    
+    with open("PenaltiesAndIncome/RhoFs.txt", "wb") as fp:    
+         pickle.dump(dict_rhoFs, fp)
+    with open("PenaltiesAndIncome/crop_allocF.txt", "wb") as fp:     
+         pickle.dump(dict_crop_allocF, fp)
+        
+    # remove from solvency penalty dicts
+    with open("PenaltiesAndIncome/RhoSs.txt", "rb") as fp:    
+        dict_rhoSs = pickle.load(fp)
+    with open("PenaltiesAndIncome/crop_allocS.txt", "rb") as fp:    
+        dict_crop_allocS = pickle.load(fp)
+    
+    dict_rhoSs.pop(SettingsAffectingRhoS, None)
+    dict_crop_allocS.pop(SettingsAffectingRhoS, None)
+    
+    with open("PenaltiesAndIncome/RhoSs.txt", "wb") as fp:    
+         pickle.dump(dict_rhoSs, fp)
+    with open("PenaltiesAndIncome/crop_allocS.txt", "wb") as fp:     
+         pickle.dump(dict_crop_allocS, fp)
+    
+    # remove from income dict
+    SettingsAffectingGuaranteedIncome = "k" + str(settings["k"]) + \
+                "Using" +  '_'.join(str(n) for n in settings["k_using"]) + \
+                "Crops" + str(settings["num_crops"]) + \
+                "Start" + str(settings["sim_start"]) + \
+                "N" + str(settings["N"])
+        
+    with open("PenaltiesAndIncome/ExpectedIncomes.txt", "rb") as fp:    
+        dict_incomes = pickle.load(fp)
+    
+    dict_incomes.pop(SettingsAffectingGuaranteedIncome, None)
+    
+    with open("PenaltiesAndIncome/ExpectedIncomes.txt", "wb") as fp:    
+         pickle.dump(dict_incomes, fp)
+         
+    # remove model outputs
+    if os.path.isfile("ModelOutput/SavedRuns/" + fn + ".txt"):
+        os.remove("ModelOutput/SavedRuns/" + fn + ".txt")
+    
+    return(None)
+    
