@@ -12,10 +12,13 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as col
 
+from ModelCode.SettingsParameters import DefaultSettingsExcept
+from ModelCode.SettingsParameters import SetParameters
+
 # %% ######################### GROUPING CLUSTERS ############################## 
 
 def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True, 
-                     title = None, figsize = None):
+                     metric = "medoids", title = None, figsize = None):
     """
     Group the given clusters to groups of given size, according to the 
     medoid-to-medoid distances, either with the aim to group the most similar
@@ -33,6 +36,9 @@ def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True,
         Either "Dissimilar" or "Similar". The default is "Similar".
     adjacent : boolean, optional
         Whether clusters within a group need to be adjacent. The default is True.
+    metric: str, optional
+        Which metric should be used to rank the groupings. The default is 
+        "medoids".
     title : str, optional
         Plot title to use. If None, clusters will not be plotted. The default is None.
     figsize : tuple, optional
@@ -50,20 +56,41 @@ def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True,
 
     """
     
+    
     if figsize is None:
         from ModelCode.GeneralSettings import figsize
         
-    # distances between all grid cells
-    with open("InputData/Other/PearsonDistSPEI03.txt", "rb") as fp:    
-        distance = pickle.load(fp)  
-
-    # load medoids of clusters for given number of clusters
-    with open("InputData/Clusters/Clustering/kMediods" + str(k) + \
-                 "_PearsonDistSPEI.txt", "rb") as fp:  
-        pickle.load(fp) # clusters
-        pickle.load(fp) # costs
-        medoids = pickle.load(fp)
-    DistMedoids = _MedoidMedoidDist(medoids, distance)
+    if metric == "medoids":
+        # distances between all grid cells
+        with open("InputData/Other/PearsonDistSPEI03.txt", "rb") as fp:    
+            distance = pickle.load(fp)  
+    
+        # load medoids of clusters for given number of clusters
+        with open("InputData/Clusters/Clustering/kMediods" + str(k) + \
+                     "_PearsonDistSPEI.txt", "rb") as fp:  
+            pickle.load(fp) # clusters
+            pickle.load(fp) # costs
+            medoids = pickle.load(fp)
+        DistMedoids = _MedoidMedoidDist(medoids, distance)
+        
+    if metric == "equality":
+        expected_surplus = []
+        for cl in range(1, k + 1):
+            settings = DefaultSettingsExcept(k_using = cl)
+            args, yield_information, population_information = \
+                SetParameters(settings, expected_incomes = None, VSS = True, 
+                              console_output = False, logs_on = False)
+            
+            exp_yields = args["ylds"][0, 0, :, :] # t / ha
+            exp_yields = np.transpose(exp_yields) * args["crop_cal"] # kcal / ha
+            exp_yields = np.transpose(exp_yields) * args["max_areas"] # kcal / cluster
+            exp_yields = np.max(exp_yields)        
+            
+            demand = args["demand"][0]
+            
+            expected_surplus.append(exp_yields - demand)
+        expected_surplus = np.array(expected_surplus)
+            
     
     # get adjacency matrix for given number of clusters
     with open("InputData/Clusters/AdjacencyMatrices/k" + str(k) + "AdjacencyMatrix.txt", "rb") as fp:
@@ -82,7 +109,10 @@ def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True,
             continue
         # ... and if valid check if the grouping is better than the current best
         valid += 1
-        TmpCosts = _CostsGrouping(grouping, DistMedoids)
+        if metric == "medoids":
+            TmpCosts = _CostsGroupingMedoids(grouping, DistMedoids)
+        elif metric == "equality":
+            TmpCosts = _costsGroupingEquality(grouping, expected_surplus)
         BestGrouping, BestCosts = \
            _UpdateGrouping(BestCosts, TmpCosts, BestGrouping, grouping, aim)
     
@@ -101,7 +131,8 @@ def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True,
     else:
         ad = ""
             
-    with open("InputData/Clusters/ClusterGroups/GroupingSize" + \
+    with open("InputData/Clusters/ClusterGroups/Grouping" + 
+              metric.capitalize() + "Size" + \
                               str(size) + aim + ad + ".txt", "wb") as fp:
         pickle.dump(ShiftedGrouping, fp)
                
@@ -179,7 +210,7 @@ def _CheckAdjacency(clusters, grouping, AdjacencyMatrix):
             return(False)
     return(True)
 
-def _CostsGrouping(grouping, dist):
+def _CostsGroupingMedoids(grouping, dist):
     """
     Calculates the cost (sum of medoid to medoid distances within cluster groups)
     of given grouping
@@ -203,6 +234,33 @@ def _CostsGrouping(grouping, dist):
             continue
         for i in it.combinations(list(gr), 2):
             costs = costs + dist[i[0], i[1]]
+    return(costs)
+
+def _costsGroupingEquality(grouping, expected_surplus):
+    """
+    Calculates the cost (based on difference between expected surplus of 
+    different groups) of given grouping
+
+    Parameters
+    ----------
+    grouping : list
+        given cluster grouping.
+    expected_surplus : np.array
+        expected surplus in each cluster separately.
+
+    Returns
+    -------
+    costs : float
+        maximum difference between the aggregated surplus of two different 
+        groups in this grouping
+    """
+    
+    costs = []
+    for gr in grouping:
+        gr = list(gr)
+        tmp = np.sum(expected_surplus[gr])
+        costs.append(tmp)
+    costs = max(costs) - min(costs)
     return(costs)
 
 def _UpdateGrouping(BestCosts, TmpCosts, BestGrouping, grouping, aim):

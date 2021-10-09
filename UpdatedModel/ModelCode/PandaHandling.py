@@ -17,6 +17,7 @@ from ModelCode.PandaGeneration import _SetUpPandaDicts
 from ModelCode.Auxiliary import _GetDefaults
 from ModelCode.SettingsParameters import DefaultSettingsExcept
 from ModelCode.Auxiliary import GetFilename
+from ModelCode.Auxiliary import _printing
 
 # %% ####### FUNCTIONS UPDATING AND ACCESSING THE RESULTS PANDA OBJECT #########
 
@@ -412,11 +413,13 @@ def RemoveRun(file = "current_panda", **kwargs):
         SettingsAffectingRhoS = GetFilename(settings, allNames = True)
         
     # remove line from panda
+    _printing("Removing from panda", logs_on = False)
     current_panda = pd.read_csv("ModelOutput/Pandas/" + file + ".csv")
     current_panda = current_panda[current_panda["Filename for full results"] != fn]
     current_panda.to_csv("ModelOutput/Pandas/" + file + ".csv", index = False)
     
     # remove from food demand penalty dicts
+    _printing("Removing from food security penalty dicts", logs_on = False)
     with open("PenaltiesAndIncome/RhoFs.txt", "rb") as fp:    
         dict_rhoFs = pickle.load(fp)
     with open("PenaltiesAndIncome/crop_allocF.txt", "rb") as fp:    
@@ -431,6 +434,7 @@ def RemoveRun(file = "current_panda", **kwargs):
          pickle.dump(dict_crop_allocF, fp)
         
     # remove from solvency penalty dicts
+    _printing("Removing from solvency penalty dicts", logs_on = False)
     with open("PenaltiesAndIncome/RhoSs.txt", "rb") as fp:    
         dict_rhoSs = pickle.load(fp)
     with open("PenaltiesAndIncome/crop_allocS.txt", "rb") as fp:    
@@ -445,6 +449,7 @@ def RemoveRun(file = "current_panda", **kwargs):
          pickle.dump(dict_crop_allocS, fp)
     
     # remove from income dict
+    _printing("Removing from income dict", logs_on = False)
     SettingsAffectingGuaranteedIncome = "k" + str(settings["k"]) + \
                 "Using" +  '_'.join(str(n) for n in settings["k_using"]) + \
                 "Crops" + str(settings["num_crops"]) + \
@@ -460,6 +465,7 @@ def RemoveRun(file = "current_panda", **kwargs):
          pickle.dump(dict_incomes, fp)
          
     # remove model outputs
+    _printing("Removing direct model outputs", logs_on = False)
     if os.path.isfile("ModelOutput/SavedRuns/" + fn + ".txt"):
         os.remove("ModelOutput/SavedRuns/" + fn + ".txt")
     

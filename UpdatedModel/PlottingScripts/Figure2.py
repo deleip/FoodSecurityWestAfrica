@@ -63,7 +63,7 @@ for cl in range(1, 10):
 risk = 0.05
 tax = 0.01
 
-alpha = 0.99
+alpha = 0.995
 
 y = "trend"
 p = "fixed"
@@ -109,8 +109,19 @@ for cl in range(1, 10):
     crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
         FS.FoodSecurityProblem(validation_size =   5000,
                                # plotTitle = "Food security probability " + str(alpha * 100) + "%",
-                               k_using = cl,
-                               N = 50000,
-                               probF = 0.995,
+                               k_using = 9,
+                               N = 10000,
+                               probF = 0.99,
                                yield_projection = "trend",
                                pop_scenario = "fixed")
+
+
+
+FS.RemoveRun(k_using = cl,
+            risk = risk,
+            tax = tax,
+            probF = alpha,
+            yield_projection = "trend",
+            pop_scenario = "fixed",
+            N = 10000,
+            validation_size = 5000)
