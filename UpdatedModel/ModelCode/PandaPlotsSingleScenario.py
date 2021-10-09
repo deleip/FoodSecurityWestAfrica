@@ -118,6 +118,7 @@ def Panda_GetResultsSingScen(file = "current_panda",
                            out_type = "agg_sum", # or agg_avgweight, or median, or all
                            var_weight = None,
                            grouping_aim = "Dissimilar",
+                           grouping_metric = "medoids",
                            adjacent = False,
                            sizes = [1, 2, 3, 5, 9],
                            **kwargs):
@@ -143,6 +144,8 @@ def Panda_GetResultsSingScen(file = "current_panda",
     grouping_aim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
         The default is "Dissimilar".
+    grouping_metric : str, optional
+        The metric on which the grouping is based. The default is "medoids".
     adjacent : boolean, optional
         Whether clusters in a cluster group need to be adjacent. The default is False.
     sizes: list, optional
@@ -169,8 +172,8 @@ def Panda_GetResultsSingScen(file = "current_panda",
     
     # get results for each cluster grouping size
     for size in sizes:
-        with open("InputData/Clusters/ClusterGroups/GroupingSize" \
-                      + str(size) + grouping_aim + add + ".txt", "rb") as fp:
+        with open("InputData/Clusters/ClusterGroups/Grouping" + grouping_metric + 
+                  "Size"  + str(size) + grouping_aim + add + ".txt", "rb") as fp:
                 BestGrouping = pickle.load(fp)
     
         panda_tmp = ReadFromPanda(file = file, \
@@ -201,6 +204,7 @@ def PlotPandaSingle(panda_file = "current_panda",
                     output_var = None,
                     scenarionames = None,
                     grouping_aim = "Dissimilar",
+                    grouping_metric = "medoids",
                     adjacent = False,
                     figsize = None,
                     subplots = True,
@@ -221,6 +225,8 @@ def PlotPandaSingle(panda_file = "current_panda",
     grouping_aim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
         The default is "Dissimilar".
+    grouping_metric : str, optional
+        The metric on which the grouping is based. The default is "medoids".
     adjacent : boolean, optional
         Whether clusters in a cluster group need to be adjacent. The default is False.
     figsize : tuple, optional
@@ -250,6 +256,7 @@ def PlotPandaSingle(panda_file = "current_panda",
                     output_var = output_var,
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
+                    grouping_metric = grouping_metric,
                     adjacent = adjacent,
                     figsize = figsize,
                     subplots = subplots,
@@ -262,6 +269,7 @@ def PlotPandaSingle(panda_file = "current_panda",
                     output_var = output_var,
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
+                    grouping_metric = grouping_metric,
                     adjacent = adjacent,
                     figsize = figsize,
                     subplots = subplots,
@@ -274,6 +282,7 @@ def PlotPandaSingle(panda_file = "current_panda",
 
 def PlotPenaltyVsProb(panda_file = "current_panda", 
                       grouping_aim = "Dissimilar",
+                      grouping_metric = "medoids",
                       adjacent = False,
                       figsize = None,
                       close_plots = None,
@@ -291,6 +300,8 @@ def PlotPenaltyVsProb(panda_file = "current_panda",
     grouping_aim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
         The default is "Dissimilar".
+    grouping_metric : str, optional
+        The metric on which the grouping is based. The default is "medoids".
     adjacent : boolean, optional
         Whether clusters in a cluster group need to be adjacent. The default is False.
     figsize : tuple, optional
@@ -339,9 +350,9 @@ def PlotPenaltyVsProb(panda_file = "current_panda",
     ax1 = fig.add_subplot(1, 2, 1)
     ax2 = fig.add_subplot(1, 2, 2)
     for idx, size in enumerate([1, 2, 3, 5, 9]):
-        with open("InputData/Clusters/ClusterGroups/GroupingSize" \
-                          + str(size) + grouping_aim + add + ".txt", "rb") as fp:
-                    BestGrouping = pickle.load(fp)
+        with open("InputData/Clusters/ClusterGroups/Grouping" + grouping_metric + 
+                  "Size"  + str(size) + grouping_aim + add + ".txt", "rb") as fp:
+                BestGrouping = pickle.load(fp)
     
         panda_tmp = ReadFromPanda(file = panda_file, \
                                   output_var = ['Penalty for food shortage', 
@@ -382,6 +393,7 @@ def PlotPenaltyVsProb(panda_file = "current_panda",
 
 def PlotProbDetVsSto(panda_file = "current_panda", 
                      grouping_aim = "Dissimilar",
+                     grouping_metric = "medoids",
                      adjacent = False,
                      figsize = None,
                      close_plots = None,
@@ -399,6 +411,8 @@ def PlotProbDetVsSto(panda_file = "current_panda",
     grouping_aim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
         The default is "Dissimilar".
+    grouping_metric : str, optional
+        The metric on which the grouping is based. The default is "medoids".
     adjacent : boolean, optional
         Whether clusters in a cluster group need to be adjacent. The default is False.
     figsize : tuple, optional
@@ -447,9 +461,9 @@ def PlotProbDetVsSto(panda_file = "current_panda",
     ax1 = fig.add_subplot(1, 2, 1)
     ax2 = fig.add_subplot(1, 2, 2)
     for idx, size in enumerate([1, 2, 3, 5, 9]):
-        with open("InputData/Clusters/ClusterGroups/GroupingSize" \
-                          + str(size) + grouping_aim + add + ".txt", "rb") as fp:
-                    BestGrouping = pickle.load(fp)
+        with open("InputData/Clusters/ClusterGroups/Grouping" + grouping_metric + 
+                  "Size"  + str(size) + grouping_aim + add + ".txt", "rb") as fp:
+                BestGrouping = pickle.load(fp)
     
         panda_tmp = ReadFromPanda(file = panda_file, \
                                   output_var = ['Resulting probability for food security for VSS', 
@@ -497,6 +511,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                           folder_comparisons = "unnamed",
                           fn_suffix = None,
                           grouping_aim = "Dissimilar",
+                          grouping_metric = "medoids",
                           adjacent = False,
                           close_plots = None,
                           console_output = None,
@@ -525,6 +540,8 @@ def PandaPlotsCooperation(panda_file = "current_panda",
     grouping_aim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
         The default is "Dissimilar".
+    grouping_metric : str, optional
+        The metric on which the grouping is based. The default is "medoids".
     adjacent : boolean, optional
         Whether clusters in a cluster group need to be adjacent. The default is False.
     close_plots : boolean or None
@@ -579,6 +596,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                                    'Total cultivation costs (sto. solution)'],
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
+                       grouping_metric = grouping_metric,
                        adjacent = adjacent,
                        plt_file = "TotalAllocArea_TotalCultCosts" + fn_suffix,
                        foldername = foldername,
@@ -593,6 +611,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                                    "Average solvency penalty (over samples)"],
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
+                       grouping_metric = grouping_metric,
                        adjacent = adjacent,
                        plt_file = "CultivationAndSocialCosts" + fn_suffix,
                        foldername = foldername,
@@ -606,6 +625,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                                    'Average aggregate debt after payout (excluding food security constraint)'],
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
+                       grouping_metric = grouping_metric,
                        adjacent = adjacent,
                        plt_file = "NecImportsPen_NecDebtPen" + fn_suffix,
                        foldername = foldername,
@@ -619,6 +639,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                                    'Average aggregate debt after payout'],
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
+                       grouping_metric = grouping_metric,
                        adjacent = adjacent,
                        plt_file = "NecImports_NecDebt" + fn_suffix,
                        foldername = foldername,
@@ -631,6 +652,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                                 'Penalty for insolvency'],
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
+                    grouping_metric = grouping_metric,
                     adjacent = adjacent,
                     plt_file = "Penalties" + fn_suffix,
                     foldername = foldername,
@@ -643,6 +665,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                                 'Resulting probability for solvency'],
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
+                    grouping_metric = grouping_metric,
                     adjacent = adjacent,
                     plt_file = "ResProbabilities" + fn_suffix,
                     foldername = foldername,
@@ -658,6 +681,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                                    'Resulting probability for solvency'],
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
+                       grouping_metric = grouping_metric,
                        adjacent = adjacent,
                        plt_file = "ResProbabilities" + fn_suffix,
                        foldername = foldername,
@@ -670,6 +694,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                                 'Average aggregate debt after payout per capita'],
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
+                    grouping_metric = grouping_metric,
                     adjacent = adjacent,
                     plt_file = "ShortcomingsCapita" + fn_suffix,
                     foldername = foldername,
@@ -682,6 +707,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                                 'Average aggregate debt after payout per capita (including only samples with negative final fund)'],
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
+                    grouping_metric = grouping_metric,
                     adjacent = adjacent,
                     plt_file = "ShortcomingsOnlyWhenNeededCapita" + fn_suffix,
                     foldername = foldername,
@@ -694,6 +720,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                                 'Average aggregate debt after payout'],
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
+                    grouping_metric = grouping_metric,
                     adjacent = adjacent,
                     plt_file = "Shortcomings" + fn_suffix,
                     foldername = foldername,
@@ -709,6 +736,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                                    'Average aggregate debt after payout per capita'],
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
+                       grouping_metric = grouping_metric,
                        adjacent = adjacent,
                        plt_file = "ShortcomingsCapita" + fn_suffix,
                        foldername = foldername,
@@ -722,6 +750,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                                    'Average solvency penalty (over samples)'],
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
+                       grouping_metric = grouping_metric,
                        adjacent = adjacent,
                        plt_file = "PenaltiesPaied" + fn_suffix,
                        foldername = foldername,
@@ -735,6 +764,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                                 'VSS as share of total costs (det. solution)'],
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
+                    grouping_metric = grouping_metric,
                     adjacent = adjacent,
                     plt_file = "VSScosts" + fn_suffix,
                     foldername = foldername,
@@ -748,6 +778,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                                 'VSS in terms of avg. nec. debt as share of avg. nec. debt of sto. solution'],
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
+                    grouping_metric = grouping_metric,
                     adjacent = adjacent,
                     plt_file = "VSSdebt" + fn_suffix,
                     foldername = foldername,
@@ -761,6 +792,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                                 'VSS in terms of avg. nec. import as share of avg. nec. import of sto. solution'],
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
+                    grouping_metric = grouping_metric,
                     adjacent = adjacent,
                     plt_file = "VSSimport" + fn_suffix,
                     foldername = foldername,
@@ -776,6 +808,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                                    'VSS in terms of avg. nec. import'],
                        scenarionames = scenarionames,
                        grouping_aim = grouping_aim,
+                       grouping_metric = grouping_metric,
                        adjacent = adjacent,
                        plt_file = "VSSagg" + fn_suffix,
                        foldername = foldername,
@@ -788,6 +821,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                                 'Resulting probability for solvency for VSS'],
                     scenarionames = scenarionames,
                     grouping_aim = grouping_aim,
+                    grouping_metric = grouping_metric,
                     adjacent = adjacent,
                     plt_file = "VSSprobabilities" + fn_suffix,
                     foldername = foldername,
@@ -800,6 +834,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
 
 def OtherPandaPlots(panda_file = "current_panda", 
                     grouping_aim = "Dissimilar",
+                    grouping_metric = "medoids",
                     adjacent = False,
                     close_plots = None,
                     console_output = None,
@@ -816,6 +851,8 @@ def OtherPandaPlots(panda_file = "current_panda",
     grouping_aim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
         The default is "Dissimilar".
+    grouping_metric : str, optional
+        The metric on which the grouping is based. The default is "medoids".
     adjacent : boolean, optional
         Whether clusters in a cluster group need to be adjacent. The default is False.
     close_plots : boolean or None
@@ -859,6 +896,7 @@ def OtherPandaPlots(panda_file = "current_panda",
     # plot penalties vs. probabilities
     PlotPenaltyVsProb(panda_file = panda_file, 
                   grouping_aim = grouping_aim,
+                  grouping_metric = grouping_metric,
                   adjacent = adjacent,
                   close_plots = close_plots,
                   fn_suffix = fn_suffix, 
@@ -867,6 +905,7 @@ def OtherPandaPlots(panda_file = "current_panda",
     # plot sto. probabilities vs. det. probabilities
     PlotProbDetVsSto(panda_file = panda_file, 
                      grouping_aim = grouping_aim,
+                     grouping_metric = grouping_metric,
                      adjacent = adjacent,
                      close_plots = close_plots,
                      fn_suffix = fn_suffix, 
@@ -878,6 +917,7 @@ def Panda_GetResults(file = "current_panda",
                      out_type = "agg_sum", # or agg_avgweight, or median, or all
                      var_weight = None,
                      grouping_aim = "Dissimilar",
+                     grouping_metric = "medoids",
                      adjacent = False,
                      **kwargs):
     """
@@ -907,6 +947,8 @@ def Panda_GetResults(file = "current_panda",
     grouping_aim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
         The default is "Dissimilar".
+    grouping_metric : str, optional
+        The metric on which the grouping is based. The default is "medoids".
     adjacent : boolean, optional
         Whether clusters in a cluster group need to be adjacent. The default is False.
     **kwargs :
@@ -924,6 +966,7 @@ def Panda_GetResults(file = "current_panda",
     fulldict["out_type"] = out_type
     fulldict["var_weight"] = var_weight
     fulldict["grouping_aim"] = grouping_aim
+    fulldict["grouping_metric"] = grouping_metric
     fulldict["adjacent"] = adjacent
 
     # checking which of the settings are lists
@@ -960,6 +1003,7 @@ def PlotPandaMedian(panda_file = "current_panda",
                     output_var = None,
                     scenarionames = None,
                     grouping_aim = "Dissimilar",
+                    grouping_metric = "medoids",
                     adjacent = False,
                     figsize = None,
                     subplots = True,
@@ -983,6 +1027,8 @@ def PlotPandaMedian(panda_file = "current_panda",
     grouping_aim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
         The default is "Dissimilar".
+    grouping_metric : str, optional
+        The metric on which the grouping is based. The default is "medoids".
     adjacent : boolean, optional
         Whether clusters in a cluster group need to be adjacent. The default is False.
     figsize : tuple, optional
@@ -1027,6 +1073,7 @@ def PlotPandaMedian(panda_file = "current_panda",
                            output_var = output_var,
                            out_type = "median", 
                            grouping_aim = grouping_aim, 
+                           grouping_metric = grouping_metric,
                            adjacent = adjacent, 
                            **kwargs)
     
@@ -1090,6 +1137,7 @@ def PlotPandaAll(panda_file = "current_panda",
                  output_var = None,
                  scenarionames = None,
                  grouping_aim = "Dissimilar",
+                 grouping_metric = "medoids",
                  adjacent = False,
                  figsize = None,
                  subplots = True,
@@ -1112,6 +1160,8 @@ def PlotPandaAll(panda_file = "current_panda",
     grouping_aim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
         The default is "Dissimilar".
+    grouping_metric : str, optional
+        The metric on which the grouping is based. The default is "medoids".
     adjacent : boolean, optional
         Whether clusters in a cluster group need to be adjacent. The default is False.
     figsize : tuple, optional
@@ -1155,6 +1205,7 @@ def PlotPandaAll(panda_file = "current_panda",
                            output_var = output_var,
                            out_type = "all", 
                            grouping_aim = grouping_aim, 
+                           grounping_metric = grouping_metric,
                            adjacent = adjacent, 
                            **kwargs)
     
@@ -1217,6 +1268,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
                     output_var = None,
                     scenarionames = None,
                     grouping_aim = "Dissimilar",
+                    grouping_metric = "medoids",
                     adjacent = False,
                     figsize = None,
                     subplots = True,
@@ -1248,6 +1300,8 @@ def PlotPandaAggregate(panda_file = "current_panda",
     grouping_aim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
         The default is "Dissimilar".
+    grouping_metric : str, optional
+        The metric on which the grouping is based. The default is "medoids".
     adjacent : boolean, optional
         Whether clusters in a cluster group need to be adjacent. The default is False.
     figsize : tuple, optional
@@ -1302,6 +1356,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
                            out_type = agg_type, 
                            var_weight = var_weight,
                            grouping_aim = grouping_aim, 
+                           grouping_metric = grouping_metric,
                            adjacent = adjacent, 
                            **kwargs)
     

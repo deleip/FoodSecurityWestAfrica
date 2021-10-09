@@ -20,7 +20,7 @@ from ModelCode.SettingsParameters import RiskForCatastrophe
 
 # %% ##################### PLOT FUNCTIONS FOR CROP AREAS ###########################
 
-def _CompareCropAllocs(CropAllocs, MaxAreas, labels, title, plt_title, 
+def _CompareCropAllocs(CropAllocs, MaxAreas, labels, title, legend_title, 
                       comparing = "clusters", cols = None, cols_b = None, 
                       filename = None, foldername = None, figsize = None,
                       close_plots = None, fig = None, ax = None, 
@@ -525,6 +525,7 @@ def _PlotTotalAreas(total_areas, groupAim, adjacent, fnPlot = None,
 
 def CropAreasDependingOnColaboration(panda_file = "current_panda", 
                                      groupAim = "Dissimilar",
+                                     groupMetric = "medoids",
                                      adjacent = False,
                                      figsize = None,
                                      cols = None,
@@ -540,8 +541,10 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
     ----------
     panda_file : str, optional
         Filename of panda csv to use for results.
-    grouping_aim : str, optional
+    groupAim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
+    groupMetric : str, optional
+        The metric on which the grouping is based. The default is "medoids".
     adjacent : boolean, optional
         Whether clusters in a cluster group need to be adjacent. The default is False.
     figsize : tuple, optional
@@ -588,9 +591,9 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
         
     # get cluster grouping for size 1 (i.e. all independent)
     _printing("\nGroup size " + str(1), console_output = console_output, logs_on = False)
-    with open("InputData/Clusters/ClusterGroups/GroupingSize" \
-                  + str(1) + groupAim + add + ".txt", "rb") as fp:
-                BestGrouping = pickle.load(fp)    
+    with open("InputData/Clusters/ClusterGroups/Grouping" + groupMetric + 
+              "Size"  + str(1) + groupAim + add + ".txt", "rb") as fp:
+            BestGrouping = pickle.load(fp)
                 
     # get results for the different cluster groups in this grouping
     CropAllocs, MaxAreas, labels, Ns, Ms = _GetResultsToCompare(ResType="k_using",\
@@ -626,9 +629,9 @@ def CropAreasDependingOnColaboration(panda_file = "current_panda",
     for size in [2,3,5,9]:
         # get cluster grouping for given group size
         _printing("\nGroup size " + str(size), console_output = console_output, logs_on = False)
-        with open("InputData/Clusters/ClusterGroups/GroupingSize" \
-                      + str(size) + groupAim + add + ".txt", "rb") as fp:
-                    BestGrouping = pickle.load(fp)
+        with open("InputData/Clusters/ClusterGroups/Grouping" + groupMetric + 
+                  "Size"  + str(size) + groupAim + add + ".txt", "rb") as fp:
+                BestGrouping = pickle.load(fp)
          
         # settings
         settingsIterate = DefaultSettingsExcept(k_using = BestGrouping, **kwargs)
