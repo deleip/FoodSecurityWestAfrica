@@ -44,7 +44,8 @@ from ModelCode.PandaHandling import RemoveRun
 from ModelCode.PandaPlotsSingleScenario import PlotPandaSingle
 from ModelCode.PandaPlotsSingleScenario import PlotPenaltyVsProb
 from ModelCode.PandaPlotsSingleScenario import PlotProbDetVsSto
-from ModelCode.PandaPlotsSingleScenario import PandaPlotsCooperation
+from ModelCode.PandaPlotsSingleScenario import CollectionPlotsCooperationSingle
+from ModelCode.PandaPlotsSingleScenario import CollectionPlotsCooperationAgg
 from ModelCode.PandaPlotsSingleScenario import OtherPandaPlots
 from ModelCode.PandaPlotsSingleScenario import Panda_GetResults
 from ModelCode.PandaPlotsSingleScenario import Panda_GetResultsSingScen

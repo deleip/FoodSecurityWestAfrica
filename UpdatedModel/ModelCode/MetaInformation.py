@@ -74,25 +74,34 @@ def _ObjectiveFunction(x, num_clusters, num_crops, N, \
     shortcomings : np.array of size (N, T)
         Shortcoming of the food demand in 10^12kcal for each year in each 
         sample.
-    exp_income : np.array of size (T, len(k_using))
-        Average profits of farmers in 10^9$ for each cluster in each year.
+    avg_profits : np.array of size (T, len(k_using))
+        Average Profits of farmers in 10^9$ per cluster and year.
+    avg_profits_afterTax : np.array of size (T, len(k_using))
+        AverageProfits of farmers in 10^9$ after subtracting tax payments per
+        cluster and year.
     profits : np.array of size (N, T, len(k_using))
         Profits of farmers in 10^9$ per cluster and year for each sample.
+    profits_afterTax : np.array of size (N, T, len(k_using))
+        Profits of farmers in 10^9$ after subtracting tax payments per cluster 
+        and year for each sample.
     avg_shortcomings : np.array of size (T,)
         Average shortcoming of the food demand in 10^12kcal in each year.
-    fp_penalties : np.array of size (N, T) 
+    fd_penalties : np.array of size (N, T) 
         Penalty payed because of food shortages in each year for each sample.
-    avg_fp_penalties : np.array of size (T,)
+    avg_fd_penalties : np.array of size (T,)
         Average penalty payed because of food shortages in each year.
     sol_penalties : np.array of size (N,)
         Penalty payed because of insolvency in each sample.
     final_fund : np.array of size (N,)
         The fund size after payouts in the catastrophic year for each sample.
     payouts : np.array of size (N, T, len(k_using))
-        Payouts from the government to farmers in case of catastrope per year
+        Payouts from the government to farmers in case of catastrophe per year
         and cluster for each sample. 
     yearly_fixed_costs : np.array of size (N, T, len(k_using)) 
-        Total cultivation costs per cluster in each year for each sample.     
+        Total cultivation costs per cluster in each year for each sample.   
+    food_supply : np.array of size (N, T)
+        Food supply in kcal (production plus import if any), for each sample
+        and year.
     """
 
     # preparing x for all realizations
@@ -184,7 +193,7 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
         The penalty for shortcomings of the food demand.
     rhoS : float
         The penalty for insolvency.
- 
+   
     Returns
     -------
     meta_sol : dict 
@@ -196,21 +205,25 @@ def GetMetaInformation(crop_alloc, args, rhoF, rhoS):
           only on the final year of simulation for each sample).
         - yearly_fixed_costs: Total cultivation costs per cluster in each 
           year for each sample.   
-        - fp_penalty: Penalty payed because of food shortages in each year 
+        - fd_penalty: Penalty payed because of food shortages in each year 
           for each sample.
-        - avg_fp_penalties: Average penalty payed because of food shortages in 
+        - avg_fd_penalties: Average penalty payed because of food shortages in 
           each year.
         - sol_penalty: Penalty payed because of insolvency in each sample.
         - shortcomings: Shortcoming of the food demand in 10^12kcal for each year in each 
           sample.
         - exp_shortcomings: Average shortcoming of the food demand in 
           10^12kcal in each year.
-        - avg_profits: Average profits of farmers in 10^9$ for each cluster in
-          each year.
+        - avg_profits_preTax: Average profits of farmers in 10^9$ before paying
+          taxes for each cluster in each year.
+        - avg_profits_afterTax: Average profits of farmers in 10^9$ after 
+          subtracting tax payments for each cluster in each year.
         - food_supply: Food supply (production plust import if there is any) 
           in 10^12kcal for each year in each sample
-        - profits: Profits of farmers in 10^9$ per cluster and year for each
-          sample.
+        - profits_preTax: Profits of farmers in 10^9$ before paying taxes
+          per cluster and year for each sample.
+        - profits_afterTax: Profits of farmers in 10^9$ after tax paxments
+          per cluster and year for each sample.
         - num_years_with_losses: Number of occurences where farmers of a 
           cluster have negative profits.
         - payouts: Payouts from the government to farmers in case of catastrope 

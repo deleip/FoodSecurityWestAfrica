@@ -88,9 +88,9 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
         additional information about the model output ('exp_tot_costs', 
         'fix_costs', 'yearly_fixed_costs', 'fd_penalty', 'avg_fd_penalty', 
         'sol_penalty', 'shortcomings', 'exp_shortcomings', 'avg_profits_preTax', 
-        'avg_profits_afterTax', 'food_supply', 'profits_preTax', 'profits_afterTax', 
-        'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
-        'probS', 'avg_nec_import', 'avg_nec_debt', 'guaranteed_income')
+        'avg_profits_afterTax', 'food_supply', 'profits_preTax', 
+        'profits_afterTax', 'num_years_with_losses', 'payouts', 'final_fund',
+        'probF', 'probS', 'avg_nec_import', 'avg_nec_debt', 'guaranteed_income')
     crop_allocF : np.array
         optimal crop allocation for scenario with only food security objective
     meta_solF : dict
@@ -163,9 +163,9 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
         
     # if a plottitle is provided, crop allocations over time are plotted
     if plotTitle is not None:        
-        _PlotCropAlloc(crop_alloc = crop_alloc, k = settings["k"], k_using = settings["k_using"], 
-                      max_areas = args["max_areas"], close_plots = close_plots,
-                      title = plotTitle, file = fn)
+        _PlotCropAlloc(crop_alloc = crop_alloc, k = settings["k"], \
+                       k_using = settings["k_using"],  max_areas = args["max_areas"], \
+                       close_plots = close_plots, title = plotTitle, file = fn)
     
     return(settings, args, yield_information, population_information, \
            status, all_durations, exp_incomes, crop_alloc, meta_sol, \
@@ -199,7 +199,7 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
     plotTitle : str or None
         If not None, a plot of the resulting crop allocations will be made 
         with that title and saved to Figures/CropAllocs.
-
+        
     Returns
     -------
     settings : dict
@@ -223,9 +223,9 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
         additional information about the model output ('exp_tot_costs', 
         'fix_costs', 'yearly_fixed_costs', 'fd_penalty', 'avg_fd_penalty', 
         'sol_penalty', 'shortcomings', 'exp_shortcomings', 'avg_profits_preTax', 
-        'avg_profits_afterTax', 'food_supply', 'profits_preTax', 'profits_afterTax', 
-        'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
-        'probS', 'avg_nec_import', 'avg_nec_debt', 'guaranteed_income')
+        'avg_profits_afterTax', 'food_supply', 'profits_preTax', 
+        'profits_afterTax', 'num_years_with_losses', 'payouts', 'final_fund',
+        'probF', 'probS', 'avg_nec_import', 'avg_nec_debt', 'guaranteed_income')
     crop_allocF : np.array
         optimal crop allocation for scenario with only food security objective
     meta_solF : dict
@@ -284,11 +284,13 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
     
     # get parameters for the given settings
     ex_income_start  = tm.time()
-    exp_incomes = GetExpectedIncome(settings, console_output = console_output, logs_on = logs_on)
+    exp_incomes = GetExpectedIncome(settings, console_output = console_output, \
+                                    logs_on = logs_on)
     exp_incomes = {"sto. setting" : exp_incomes}
     ex_income_end  = tm.time()
     all_durations["GetExpectedIncome"] = ex_income_end - ex_income_start
-    _printing("\nGetting parameters", console_output = console_output, logs_on = logs_on)
+    _printing("\nGetting parameters", console_output = console_output, \
+              logs_on = logs_on)
     args, yield_information, population_information = \
                     SetParameters(settings, exp_incomes["sto. setting"])
     
@@ -296,7 +298,8 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
     penalties_start  = tm.time()
     if settings["PenMet"] == "prob":
         rhoF, rhoS, meta_solF, meta_solS, crop_allocF, crop_allocS = \
-            GetPenalties(settings, args, console_output = console_output, logs_on = logs_on)
+            GetPenalties(settings, args, console_output = console_output, \
+                         logs_on = logs_on)
         args["rhoF"] = rhoF
         args["rhoS"] = rhoS
     else:
@@ -317,8 +320,8 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
     # run the optimization
     status, crop_alloc, meta_sol, prob, durations = \
         SolveReducedLinearProblemGurobiPy(args, \
-                                           console_output = console_output, \
-                                           logs_on = logs_on)
+                                        console_output = console_output, \
+                                        logs_on = logs_on)
     all_durations["MainModelRun"] = durations[2]
         
     _printing("\nResulting probabilities:\n" + \
@@ -329,7 +332,8 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
         
     # VSS
     vss_start  = tm.time()
-    _printing("\nCalculating VSS", console_output = console_output, logs_on = logs_on)
+    _printing("\nCalculating VSS", console_output = console_output, \
+              logs_on = logs_on)
     crop_alloc_vss, expected_incomes_vss, meta_sol_vss = VSS(settings, args)
     exp_incomes["det. setting"] = expected_incomes_vss
     VSS_value = meta_sol_vss["exp_tot_costs"] - meta_sol["exp_tot_costs"]
@@ -339,7 +343,8 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
     # out of sample validation
     validation_start  = tm.time()
     if settings["validation_size"] is not None:
-        _printing("\nOut of sample validation", console_output = console_output, logs_on = logs_on)
+        _printing("\nOut of sample validation", console_output = console_output, \
+                  logs_on = logs_on)
         validation_values = OutOfSampleVal(crop_alloc, settings, 
                     exp_incomes["sto. setting"], args["rhoF"], args["rhoS"], \
                     meta_sol, console_output, logs_on = logs_on)
@@ -427,9 +432,9 @@ def LoadModelResults(filename):
         additional information about the model output ('exp_tot_costs', 
         'fix_costs', 'yearly_fixed_costs', 'fd_penalty', 'avg_fd_penalty', 
         'sol_penalty', 'shortcomings', 'exp_shortcomings', 'avg_profits_preTax', 
-        'avg_profits_afterTax', 'food_supply', 'profits_preTax', 'profits_afterTax', 
-        'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
-        'probS', 'avg_nec_import', 'avg_nec_debt', 'guaranteed_income')
+        'avg_profits_afterTax', 'food_supply', 'profits_preTax',
+        'profits_afterTax', 'num_years_with_losses', 'payouts', 'final_fund', 
+        'probF', 'probS', 'avg_nec_import', 'avg_nec_debt', 'guaranteed_income')
     crop_allocF : np.array
         optimal crop allocation for scenario with only food security objective
     meta_solF : dict
@@ -485,7 +490,8 @@ def LoadModelResults(filename):
     
     # calculate meta_sols
     meta_sol = GetMetaInformation(crop_alloc, args, args["rhoF"], args["rhoS"])
-    meta_sol_vss =  GetMetaInformation(crop_alloc_vss, args_VSS_sto, args["rhoF"], args["rhoS"])
+    meta_sol_vss =  GetMetaInformation(crop_alloc_vss, args_VSS_sto, \
+                                       args["rhoF"], args["rhoS"])
     if settings["PenMet"] == "prob":
         meta_solF = GetMetaInformation(crop_allocF, args, args["rhoF"], 0)
         if settings["solv_const"] == "on":
@@ -502,8 +508,9 @@ def LoadModelResults(filename):
            crop_alloc_vss, meta_sol_vss, VSS_value, validation_values)      
         
         
-def _PlotCropAlloc(crop_alloc, k, k_using, max_areas, cols = None, cols_b = None, \
-                  figsize = None, close_plots = None, title = None, file = None, sim_start = 2017):
+def _PlotCropAlloc(crop_alloc, k, k_using, max_areas, cols = None,\
+                   cols_b = None,  figsize = None, close_plots = None, \
+                   title = None, file = None, sim_start = 2017):
     """
     Plots crop area allocations over the years for all given clusters.
 
@@ -637,7 +644,8 @@ def _PlotCropAlloc(crop_alloc, k, k_using, max_areas, cols = None, cols_b = None
     if file is not None:
         if not os.path.isdir("Figures/CropAllocs/" + str(K) + "clusters"):
             os.mkdir("Figures/CropAllocs/" + str(K) + "clusters") 
-        fig.savefig("Figures/CropAllocs/" + str(K) + "clusters/CropAlloc_" + file + ".jpg", bbox_inches = "tight", pad_inches = 1)
+        fig.savefig("Figures/CropAllocs/" + str(K) + "clusters/CropAlloc_" + \
+                    file + ".jpg", bbox_inches = "tight", pad_inches = 1)
     
     if close_plots:
         plt.close()

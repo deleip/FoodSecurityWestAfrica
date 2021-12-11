@@ -14,7 +14,6 @@ from ModelCode.Auxiliary import _printing
 
 # %% ########## FUNCTIONS TO CREATE AND FILL THE RESULTS PANDA OBJECT ###########
 
-# TODO! 
 
 def _WriteToPandas(settings, args, yield_information, population_information, \
                 status, all_durations, exp_incomes, crop_alloc, \
@@ -48,9 +47,9 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
         additional information about the model output ('exp_tot_costs', 
         'fix_costs', 'yearly_fixed_costs', 'fd_penalty', 'avg_fd_penalty', 
         'sol_penalty', 'shortcomings', 'exp_shortcomings', 'avg_profits_preTax', 
-        'avg_profits_afterTax', 'food_supply', 'profits_preTax', 'profits_afterTax', 
-        'num_years_with_losses', 'payouts', 'final_fund', 'probF', 
-        'probS', 'avg_nec_import', 'avg_nec_debt', 'guaranteed_income')
+        'avg_profits_afterTax', 'food_supply', 'profits_preTax', 
+        'profits_afterTax', 'num_years_with_losses', 'payouts', 'final_fund', 
+        'probF', 'probS', 'avg_nec_import', 'avg_nec_debt', 'guaranteed_income')
     crop_allocF : np.array
         optimal crop allocation for scenario with only food security objective
     meta_solF : dict
@@ -84,7 +83,8 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
         Specifying whether the progress should be documented in a log file.
         The default is defined in ModelCode/GeneralSettings.
     file : str
-        filename of panda csv to which the information is to be added.
+        filename of panda csv to which the information is to be added. The
+        default is "current_panda".
     Returns
     -------
     None.
@@ -106,8 +106,13 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
     
     
     wh_neg_fund = np.where(meta_sol["final_fund"] < 0)[0]
-    ff_debt = -meta_sol["final_fund"][wh_neg_fund]
-    ter_years = args["terminal_years"][wh_neg_fund].astype(int)
+    ff_debt_neg = -meta_sol["final_fund"][wh_neg_fund]
+    ter_years_neg = args["terminal_years"][wh_neg_fund].astype(int)
+    
+    wh_catastrophe = np.where(args["terminal_years"] != -1)[0]
+    ff_debt_cat = -meta_sol["final_fund"][wh_catastrophe]
+    ff_debt_cat[ff_debt_cat < 0] = 0
+    ter_years_cat = args["terminal_years"][wh_catastrophe].astype(int)
     
     ff_debt_all = -meta_sol["final_fund"].copy()
     ff_debt_all[ff_debt_all < 0] = 0
@@ -171,6 +176,7 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
             = list(population_information["pop_cluster_ratio2015"])
          
     # 5 crop areas
+    panda["Available arable area"]  = np.sum(args["max_areas"])
     panda["On average cultivated area per cluster"]  = list(np.nanmean(crop_alloc, axis = (0,1)))
     panda["Average yearly total cultivated area"]    = np.nanmean(np.nansum(crop_alloc, axis = (1,2)))
     panda["Total cultivation costs (sto. solution)"] = cultivation_costs
@@ -194,12 +200,6 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
         = np.nanmean(np.nanmean(food_shortage_capita, axis = 0))*1e9
     panda["Average aggregate food shortage per capita (including only samples that have shortage)"] \
         = np.nanmean(np.nanmean(food_shortage_capita_only_shortage, axis = 0))*1e9 
-        # TODO: Befroe I only had "Average necessary add. import per capita
-        # (over samples and then years)", which was actually directly taking the
-        # average over samples and years in one step, and which excluded cases
-        # that don't need import (instead of including them as zero).
-        # Another option would be to take the average over the surplus or 
-        # food shortage 
         
     # 7 a priori expected income, resulting average income
     panda["Expected income (stochastic setting)"] \
@@ -225,8 +225,10 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
         = np.nansum(meta_sol["final_fund"] < 0)
     panda["Average final fund (over all samples)"] \
         = np.nanmean(meta_sol["final_fund"])
-        # TODO maybe don't include cases that don't have a catastrohpe in average?
-        
+    panda["Average final fund (over samples with catastrophe)"] \
+        = np.nanmean(meta_sol["final_fund"][args["terminal_years"] != -1])
+    
+    
     if meta_solS is not None:
         panda["Average aggregate debt after payout (excluding food security constraint)"] \
             = meta_solS["avg_nec_debt"]
@@ -236,9 +238,13 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
     panda["Average aggregate debt after payout"] \
         = meta_sol["avg_nec_debt"] # includes cases that don't need debt as zero
     panda["Average aggregate debt after payout (including only samples with negative final fund)"] \
-        = np.nanmean(ff_debt)
+        = np.nanmean(ff_debt_neg)
+    panda["Average aggregate debt after payout (including only samples with catastrophe)"] \
+        = np.nanmean(ff_debt_cat)
+    panda["Average aggregate debt after payout per capita (including only samples with catastrophe)"] \
+        = np.nanmean(ff_debt_cat / (pop_of_area[ter_years_cat]/1e9))
     panda["Average aggregate debt after payout per capita (including only samples with negative final fund)"] \
-        = np.nanmean(ff_debt / (pop_of_area[ter_years]/1e9))
+        = np.nanmean(ff_debt_neg / (pop_of_area[ter_years_neg]/1e9))
     panda["Average aggregate debt after payout per capita"] \
         = np.nanmean(ff_debt_all / (pop_of_area[ter_years_all]/1e9)) # negative debt set to zero
     
@@ -257,7 +263,10 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
     # 10 VSS
     panda["Value of stochastic solution"]                    = VSS_value      # diff of total costs using det. solution and using 
     panda["Total cultivation costs (det. solution)"]         = cultivation_costs_det
-    panda["VSS as share of total costs (sto. solution)"]     = VSS_value/meta_sol["exp_tot_costs"]
+    if meta_sol["exp_tot_costs"] == 0:
+        panda["VSS as share of total costs (sto. solution)"] = 0
+    else:
+        panda["VSS as share of total costs (sto. solution)"] = VSS_value/meta_sol["exp_tot_costs"]
     panda["VSS as share of total costs (det. solution)"]     = VSS_value/meta_sol_vss["exp_tot_costs"]
     panda["VSS in terms of avg. nec. debt"] \
             = meta_sol_vss["avg_nec_debt"] - meta_sol["avg_nec_debt"]
@@ -269,7 +278,11 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
             = meta_sol_vss["avg_nec_import"] - meta_sol["avg_nec_import"]
     panda["VSS in terms of avg. nec. import as share of avg. nec. import of det. solution"] \
             = (meta_sol_vss["avg_nec_import"] - meta_sol["avg_nec_import"])/meta_sol_vss["avg_nec_import"]
-    panda["VSS in terms of avg. nec. import as share of avg. nec. import of sto. solution"] \
+    if meta_sol["avg_nec_import"] == 0:
+        panda["VSS in terms of avg. nec. import as share of avg. nec. import of sto. solution"] \
+            = 0
+    else:
+        panda["VSS in terms of avg. nec. import as share of avg. nec. import of sto. solution"] \
             = (meta_sol_vss["avg_nec_import"] - meta_sol["avg_nec_import"])/meta_sol["avg_nec_import"]
     
     panda["Resulting probability for food security for VSS"] = meta_sol_vss["probF"]
@@ -282,12 +295,6 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
     panda["Filename for full results"]                           = fn_fullresults
        
        
-            
-    # if np.isnan(panda["Average aggregate food shortage per capita"]):
-    #     panda["Average aggregate food shortage per capita"] = 0
-    # if np.isnan(dict_for_pandas["Average food shortcomings per capita (over all years and samples with shortcomings)"]):
-    #     dict_for_pandas["Average food shortcomings per capita (over all years and samples with shortcomings)"] = 0
-     
     # load panda object
     if not os.path.exists("ModelOutput/Pandas/" + file + ".csv"):
         CreateEmptyPanda(file)
@@ -388,6 +395,10 @@ def OpenPanda(file = "current_panda"):
         elif dict_convert[key] == float:
             dict_convert[key] = _ConvertFloat
             
+    # sometimes after changes laoding the file doesn't work anymore if something
+    # is missinterpreted - than this code chunk helps figuring out where exactly 
+    # someting is going wrong:
+        
     # print(dict_convert.keys(), flush = True)
     # for key in dict_convert.keys():
     #     print(key, flush = True)
@@ -461,6 +472,7 @@ def _SetUpPandaDicts():
         "Share of West Africa's population that is living in total considered region (2015)": "",
         "Share of West Africa's population that is living in considered clusters (2015)": "",
         
+        "Available arable area": "[$10^9\,$ha]",
         "On average cultivated area per cluster": "[$10^9\,$ha]",
         "Average yearly total cultivated area": "[$10^9\,$ha]",
         "Total cultivation costs (sto. solution)": "[$10^9\,\$$]",
@@ -485,9 +497,12 @@ def _SetUpPandaDicts():
         
         "Number of samples with negative final fund": "",
         "Average final fund (over all samples)": "[$10^9\,\$$]",
+        "Average final fund (over samples with catastrophe)": "[$10^9\,\$$]",
         "Average aggregate debt after payout (excluding food security constraint)": "[$10^9\,\$$]",
         "Average aggregate debt after payout": "[$10^9\,\$$]",
         "Average aggregate debt after payout (including only samples with negative final fund)": "[$10^9\,\$$]",
+        "Average aggregate debt after payout (including only samples with catastrophe)": "[$10^9\,\$$]",
+        "Average aggregate debt after payout per capita (including only samples with catastrophe)": "[$10^9\,\$$]",
         "Average aggregate debt after payout per capita (including only samples with negative final fund)": "[$\$$]",
         "Average aggregate debt after payout per capita": "[$\$$]",
         
@@ -549,6 +564,7 @@ def _SetUpPandaDicts():
          "Share of West Africa's population that is living in total considered region (2015)": float,
          "Share of West Africa's population that is living in considered clusters (2015)": "list of floats",
         
+         "Available arable area": float,
          "On average cultivated area per cluster": "list of floats",
          "Average yearly total cultivated area": float,
          "Total cultivation costs (sto. solution)": float,
@@ -573,9 +589,12 @@ def _SetUpPandaDicts():
          
          "Number of samples with negative final fund": "list of ints",
          "Average final fund (over all samples)": float,
+         "Average final fund (over samples with catastrophe)": float,
          "Average aggregate debt after payout (excluding food security constraint)": float,
          "Average aggregate debt after payout": float,
          "Average aggregate debt after payout (including only samples with negative final fund)": float,
+         "Average aggregate debt after payout (including only samples with catastrophe)": float,
+         "Average aggregate debt after payout per capita (including only samples with catastrophe)": float, 
          "Average aggregate debt after payout per capita (including only samples with negative final fund)": float,
          "Average aggregate debt after payout per capita": float,  
          
@@ -635,6 +654,7 @@ def _SetUpPandaDicts():
         "Share of West Africa's population that is living in total considered region (2015)",
         "Share of West Africa's population that is living in considered clusters (2015)",
         
+        "Available arable area",
         "On average cultivated area per cluster",
         "Average yearly total cultivated area",
         "Total cultivation costs (sto. solution)",
@@ -659,9 +679,12 @@ def _SetUpPandaDicts():
         
         "Number of samples with negative final fund",
         "Average final fund (over all samples)",
+        "Average final fund (over samples with catastrophe)",
         "Average aggregate debt after payout (excluding food security constraint)",
         "Average aggregate debt after payout",
         "Average aggregate debt after payout (including only samples with negative final fund)",
+        "Average aggregate debt after payout (including only samples with catastrophe)",
+        "Average aggregate debt after payout per capita (including only samples with catastrophe)",
         "Average aggregate debt after payout per capita (including only samples with negative final fund)",
         "Average aggregate debt after payout per capita",
         

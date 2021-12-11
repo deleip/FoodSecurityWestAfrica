@@ -24,9 +24,6 @@ def VSS(settings, args):
     ----------
     settings : dict
         Dictionary of settings as given by DefaultSettingsExcept().
-    expected_incomes : np.array of size (len(k_using),)
-        The expected income of farmers in a scenario where the government is
-        not involved.
     args : dict
         Dictionary of arguments needed as model input (as given by 
         SetParameters()).
@@ -36,6 +33,9 @@ def VSS(settings, args):
     crop_alloc_vss : np.array
         Optimal crop areas for all years, crops, clusters in the deterministic
         setting.
+    expected_incomes_vss : np.array of size (len(k_using),)
+        The expected income of farmers in a scenario where the government is
+        not involved in VSS case.
     meta_sol_vss : dict
         Dictionary of additional information on the solution of the
         deterministic model.
@@ -65,7 +65,7 @@ def VSS(settings, args):
     # get information of using VSS solution in stochastic setting
     meta_sol_vss_ExpIn = GetMetaInformation(crop_alloc_vss_ExpIn, 
                                args_vss_ExpIn, args["rhoF"], args["rhoS"])
-    expected_incomes = meta_sol_vss_ExpIn["avg_profits_preTax"].flatten()
+    expected_incomes_vss = meta_sol_vss_ExpIn["avg_profits_preTax"].flatten()
         
     
     # 2. crop allocation and meta information for deterministic social planner 
@@ -73,7 +73,7 @@ def VSS(settings, args):
     # get arguments to calculate deterministic solution (in particular the 
     # expected yields instead of yield samples)
     args_vss, yield_information, population_information = \
-        SetParameters(settings, expected_incomes, VSS = True, 
+        SetParameters(settings, expected_incomes_vss, VSS = True, 
                       console_output = False, logs_on = False)
     
     # solve model for the expected yields
@@ -87,7 +87,7 @@ def VSS(settings, args):
     args_VSS_sto["guaranteed_income"] = args_vss["guaranteed_income"]
     meta_sol_vss = GetMetaInformation(crop_alloc_vss, args_VSS_sto, 
                                       args["rhoF"], args["rhoS"])
-    return(crop_alloc_vss, expected_incomes, meta_sol_vss)      
+    return(crop_alloc_vss, expected_incomes_vss, meta_sol_vss)      
     
 
 # %% ################### OUT OF SAMLE VALIDATION OF RESULT ####################  
@@ -120,10 +120,21 @@ def OutOfSampleVal(crop_alloc, settings, expected_incomes, rhoF, rhoS, \
         Specifying whether the progress should be documented in a log file.
         The default is defined in ModelCode/GeneralSettings.
 
-    Yields
+    Returns
     ------
-    meta_sol_vss : dict
-        Additional information on the outcome for the higher sample size.
+    validation_values : dict
+        Dictionary of validation values
+        
+        - sample_size : Validation sample size
+        - total_costs : expected total costs in model run
+        - total_costs_val : expected total costs in validation run
+        - fd_penalty : average total food demand penalty in model run
+        - fd_penalty_val : average total food demand penalty in validation run
+        - sol_penalty : average total solvency penalty in model run
+        - sol_penalty_val : average total solvency penalty in validation run
+        - total_penalties : fd_penalty + sol_penalty
+        - total_penalties_val : fd_penalty_val + sol_penalty_val
+        - deviation_penalties : 1 - (total_penalties / total_penalties_val)
 
     """
     

@@ -128,6 +128,22 @@ def CheckFolderStructure():
     return(None)
             
 def _GroupingPlotFolders(main, a = True):
+    """
+    Creates folders for cooperation-plots for specific scenarios
+
+    Parameters
+    ----------
+    main : str
+        Name of the main folder.
+    a : boolean, optional
+        Whether all subfolders should be created (including crop alloc folders).
+        The default is True.
+
+    Returns
+    -------
+    None.
+
+    """
     if not os.path.isdir("Figures/" + main):
         os.mkdir("Figures/" + main)
     if a:

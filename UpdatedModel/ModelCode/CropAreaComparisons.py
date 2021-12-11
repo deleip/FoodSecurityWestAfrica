@@ -265,6 +265,9 @@ def _CompareCropAllocRiskPooling(CropAllocsPool, CropAllocsIndep, MaxAreasPool,
         Labels for setting 2.
     title : str, optional
         Title of the plot. The default is None.
+    plot_total_area : boolean, optional
+        Specifies whether the total cultivated area should be included in plot.
+        Default is True.
     cols : list, optional
         List of colors to use. If None, a standard set of colors is used. The 
         default is None.
@@ -349,6 +352,10 @@ def _GetResultsToCompare(ResType = "k_using", panda_file = "current_panda", \
         be the exact name of that setting. The default is "k_using".
     panda_file : str, optional
         Filename of panda csv to use for results.
+    console_output : boolean, optional
+        Specifying whether the progress should be documented thorugh console 
+        outputs. The default is defined in ModelCode/GeneralSettings.
+        
     **kwargs : 
         Settings specifiying for which model run results shall be returned
 
@@ -451,7 +458,7 @@ def _PlotTotalAreas(total_areas, groupAim, adjacent, fnPlot = None,
     ----------
     total_areas : list of np.arrays
         Total cultivated area for each grouping size.
-    grouping_aim : str, optional
+    groupAim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
     adjacent : boolean, optional
         Whether clusters in a cluster group need to be adjacent. The default is False.

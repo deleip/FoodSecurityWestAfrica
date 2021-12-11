@@ -60,6 +60,8 @@ def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True,
     if figsize is None:
         from ModelCode.GeneralSettings import figsize
         
+    # for metric "medoids" we want to minimize (or maximize) the distance 
+    # between medoids of the same group
     if metric == "medoids":
         # distances between all grid cells
         with open("InputData/Other/PearsonDistSPEI03.txt", "rb") as fp:    
@@ -73,6 +75,11 @@ def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True,
             medoids = pickle.load(fp)
         DistMedoids = _MedoidMedoidDist(medoids, distance)
         
+    # if metric is equality, we look at the expected_surplus (or deficit) of 
+    # each cluster relative to their food demand (assuming they use the full
+    # area for the more productive crop). We then will group in a way that 
+    # the aggregated surplus is distributed as (un-)equal as possible over the
+    # groups.
     if metric == "equality":
         expected_surplus = []
         for cl in range(1, k + 1):

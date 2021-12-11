@@ -31,6 +31,7 @@ def _printing(content, console_output = None, flush = True, logs_on = None):
 
     """
     
+    # get default settings if not specified by function agruments
     if console_output is None:
         from ModelCode.GeneralSettings import console_output
     if logs_on is None:
@@ -52,7 +53,9 @@ def _printing(content, console_output = None, flush = True, logs_on = None):
 def GetFilename(settings, groupSize = "", groupAim = "", \
              adjacent = False, allNames = False):
     """
-    Combines all settings to a single file name to save results.
+    Combines all settings to a single file name to save results, and if 
+    allNames is True, also reports names used to save maximum probabilities
+    and resulting penalties.
 
     Parameters
     ----------
@@ -168,7 +171,6 @@ def GetFilename(settings, groupSize = "", groupAim = "", \
         adjacent = adjacent * len(groupAim)
     grouptypes = [groupAim[i] + str(groupSize) + adjacent[i] for i in range(0, len(adjacent))]
     
-  
     
     
     fn = fn + "K" + '_'.join(str(n) for n in settingsTmp["k"])
@@ -305,6 +307,9 @@ def _GetDefaults(PenMet, probF, probS, rhoF, rhoS, solv_const, k, k_using,
     ini_fund : float, or "default"
         Initial fund size. The default is defined in 
         ModelCode/DefaultModelSettings.py.
+    food_import : float, or "default"
+        Amount of food that is imported (and therefore substracted from the
+        food demand). The default is defined in ModelCode/DefaultModelSettings.py.
 
     Returns
     -------
@@ -376,6 +381,9 @@ def _GetDefaults(PenMet, probF, probS, rhoF, rhoS, solv_const, k, k_using,
         the government.
     ini_fund : float
         Initial fund size.
+    food_import : float, or "default"
+        Amount of food that is imported (and therefore substracted from the
+        food demand).
     """
                                     
     if PenMet == "default":

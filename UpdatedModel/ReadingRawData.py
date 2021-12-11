@@ -70,6 +70,8 @@ DP.ReadAndSave_SPEI03(lon_min, lon_max, lat_min, lat_max)
      
 # Data Download: https://population.un.org/wpp/Download/Files/1_Indicators%20(Standard)/CSV_FILES/WPP2019_TotalPopulationBySex.csv
 # Accessed April 12th 2020
+# annual data, historic part covers 1950-2019, projections cover 2020-2100
+# values per country
 # Short description of Scenarios: https://population.un.org/wpp/DefinitionOfProjectionVariants/
 # Report: "World Population Prospects 2019: Methodology of the United Nations 
 #          Population Estimates and Projections"
@@ -168,7 +170,7 @@ with open("ProcessedData/yld_mask.txt", "wb") as fp:
 # Guinea, Guinea-Bissau, Mali, Mauritania, Niger, Nigeria, Senegal,
 # Sierra Leone, Togo 
 # crops: Rice, paddy; Maize
-# Variable: Producer Price (USD/tonne), annual values, all years
+# Variable: Producer Price (USD/tonne), annual values, 1991-2018
 # "This sub-domain contains data on Agriculture Producer Prices. These are 
 # prices received by farmers for primary crops, live animals and livestock 
 # primary products as collected at the point of initial sale (prices paid at 
@@ -176,7 +178,7 @@ with open("ProcessedData/yld_mask.txt", "wb") as fp:
 # January 2010 for 180 country and 212 product."
 
 # We calculate average prices for each country using the given timeseries.
-# In the model, we calculate a single producer price per crop, by taking a
+# Later, we calculate a single producer price per crop, by taking a
 # weighted average of the country specific prices, using the country land 
 # areas as weight.
 
@@ -186,6 +188,9 @@ DP.VisualizeAndPrepare_ProducerPrices()
 #         InputData/Visualization/ProducerPrices.png  
 
 # %% 7. Crop Cultivation Costs
+
+# Values from literature research 
+
 # RICE:
 # Liberia: "The cost of production of swampland Nerica rice (farming 
 # and processing of the paddy) is $308 per metric tons [...]. 

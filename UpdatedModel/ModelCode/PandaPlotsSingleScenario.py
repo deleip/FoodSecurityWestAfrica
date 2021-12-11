@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 import sys
 import pickle
-import os 
 import matplotlib.pyplot as plt
 from textwrap import wrap
 
@@ -505,23 +504,23 @@ def PlotProbDetVsSto(panda_file = "current_panda",
 
     return(None)
 
-
-def PandaPlotsCooperation(panda_file = "current_panda", 
-                          scenarionames = None,
-                          folder_comparisons = "unnamed",
-                          fn_suffix = None,
-                          grouping_aim = "Dissimilar",
-                          grouping_metric = "medoids",
-                          adjacent = False,
-                          close_plots = None,
-                          console_output = None,
-                          **kwargs):
+def CollectionPlotsCooperationSingle(panda_file = "current_panda", 
+                                     scenarionames = None,
+                                     folder_comparisons = "unnamed",
+                                     publication_plot = False,
+                                     fn_suffix = None,
+                                     grouping_aim = "Dissimilar",
+                                     grouping_metric = "medoids",
+                                     adjacent = False,
+                                     close_plots = None,
+                                     console_output = None,
+                                     figsize = None,
+                                     **kwargs):
     """
     
-    Calls plotting functions for all main output variables such that all main 
-    output plots can be created and saved with one function call for fixed
-    model settings.
-
+    Collection of plotting function calls for variables shown as for each 
+    cluster group separately. 
+    
     Parameters
     ----------
     panda_file : str, optional
@@ -533,10 +532,14 @@ def PandaPlotsCooperation(panda_file = "current_panda",
     folder_comparisons: str
         Subfolder of /ComparingScenarios (i.e. for example
         ComparisonPlots/folder_comparison/AggregatedSum/NecImport.png).
-        Only relevant if scenarionames is not None.
+        Only relevant if scenarionames is not None. Default is "unnamed".
+    publication_plot : boolean
+        Whether to save the scenario comparison plots in the folde for the
+        final publication plots, or in the normal folder for comparisons.
+        Default is False.
     fn_suffix : str, optional
         Suffix to add to filename (normally defining the settings for which 
-        model results are visualized). Default is None. Default is "unnamed".
+        model results are visualized). Default is None. 
     grouping_aim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
         The default is "Dissimilar".
@@ -551,6 +554,9 @@ def PandaPlotsCooperation(panda_file = "current_panda",
         Specifying whether the progress should be documented thorugh console 
         outputs. If None, the default as defined in ModelCode/GeneralSettings 
         is used.        
+    figsize : tuple
+        Size of output figures. If None, the default as defined in
+        ModelCode/GeneralSettings is used.
     **kwargs : 
         Settings specifiying for which model runs we want the plots
     
@@ -571,8 +577,12 @@ def PandaPlotsCooperation(panda_file = "current_panda",
             foldername = foldername + "NonAdjacent"
         foldername = foldername + "/PandaPlots"
     else:
-        _GroupingPlotFolders(main = "ComparingScenarios/" + folder_comparisons, a = False)
-        foldername = "ComparingScenarios/" + folder_comparisons
+        if publication_plot:
+            _GroupingPlotFolders(main = "PublicationPlots/" + folder_comparisons, a = False)
+            foldername = "PublicationPlots/" + folder_comparisons
+        else:
+            _GroupingPlotFolders(main = "ComparingScenarios/" + folder_comparisons, a = False)
+            foldername = "ComparingScenarios/" + folder_comparisons
         
     if fn_suffix is None:
         settingsIterate = DefaultSettingsExcept(**kwargs)
@@ -583,70 +593,12 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                           adjacent = adjacent)
             
             
-    def _report(i, console_output = console_output, num_plots = 17):
+    def _report(i, console_output = console_output, num_plots = 5):
         if console_output:
             sys.stdout.write("\r     Plot " + str(i) + " of " + str(num_plots))
         return(i + 1)
     i = 1         
     
-    # plotting:
-    PlotPandaAggregate(panda_file = panda_file,
-                       agg_type = "agg_sum",
-                       output_var=['Average yearly total cultivated area', \
-                                   'Total cultivation costs (sto. solution)'],
-                       scenarionames = scenarionames,
-                       grouping_aim = grouping_aim,
-                       grouping_metric = grouping_metric,
-                       adjacent = adjacent,
-                       plt_file = "TotalAllocArea_TotalCultCosts" + fn_suffix,
-                       foldername = foldername,
-                       close_plots = close_plots,
-                       **kwargs)
-    i = _report(i)    
-        
-    PlotPandaAggregate(panda_file = panda_file,
-                       agg_type = "agg_sum",
-                       output_var=["Average total cultivation costs", \
-                                   "Average total food demand penalty (over samples)", \
-                                   "Average solvency penalty (over samples)"],
-                       scenarionames = scenarionames,
-                       grouping_aim = grouping_aim,
-                       grouping_metric = grouping_metric,
-                       adjacent = adjacent,
-                       plt_file = "CultivationAndSocialCosts" + fn_suffix,
-                       foldername = foldername,
-                       close_plots = close_plots,
-                       **kwargs)
-    i = _report(i)    
-    
-    PlotPandaAggregate(panda_file = panda_file,
-                       agg_type = "agg_sum", 
-                       output_var=['Average aggregate food shortage excluding solvency constraint', \
-                                   'Average aggregate debt after payout (excluding food security constraint)'],
-                       scenarionames = scenarionames,
-                       grouping_aim = grouping_aim,
-                       grouping_metric = grouping_metric,
-                       adjacent = adjacent,
-                       plt_file = "NecImportsPen_NecDebtPen" + fn_suffix,
-                       foldername = foldername,
-                       close_plots = close_plots,
-                       **kwargs)
-    i = _report(i)    
-        
-    PlotPandaAggregate(panda_file = panda_file,
-                       agg_type = "agg_sum",
-                       output_var=['Average aggregate food shortage', \
-                                   'Average aggregate debt after payout'],
-                       scenarionames = scenarionames,
-                       grouping_aim = grouping_aim,
-                       grouping_metric = grouping_metric,
-                       adjacent = adjacent,
-                       plt_file = "NecImports_NecDebt" + fn_suffix,
-                       foldername = foldername,
-                       close_plots = close_plots,
-                       **kwargs)
-    i = _report(i)    
-        
     PlotPandaSingle(panda_file = panda_file,
                     output_var=['Penalty for food shortage', \
                                 'Penalty for insolvency'],
@@ -657,6 +609,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     plt_file = "Penalties" + fn_suffix,
                     foldername = foldername,
                     close_plots = close_plots,
+                    figsize = figsize,
                     **kwargs)
     i = _report(i)    
 
@@ -670,25 +623,10 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     plt_file = "ResProbabilities" + fn_suffix,
                     foldername = foldername,
                     close_plots = close_plots,
+                    figsize = figsize,
                     **kwargs)
     i = _report(i)    
-
-    PlotPandaAggregate(panda_file = panda_file,
-                       agg_type = "agg_avgweight",
-                       var_weight = "Share of West Africa's population that is living in total considered region (2015)",
-                       weight_title = "population",
-                       output_var=['Resulting probability for food security', \
-                                   'Resulting probability for solvency'],
-                       scenarionames = scenarionames,
-                       grouping_aim = grouping_aim,
-                       grouping_metric = grouping_metric,
-                       adjacent = adjacent,
-                       plt_file = "ResProbabilities" + fn_suffix,
-                       foldername = foldername,
-                       close_plots = close_plots,
-                       **kwargs)
-    i = _report(i)    
-    
+ 
     PlotPandaSingle(panda_file = panda_file,
                     output_var=['Average aggregate food shortage per capita', \
                                 'Average aggregate debt after payout per capita'],
@@ -699,6 +637,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     plt_file = "ShortcomingsCapita" + fn_suffix,
                     foldername = foldername,
                     close_plots = close_plots,
+                    figsize = figsize,
                     **kwargs)
     i = _report(i)  
     
@@ -712,6 +651,7 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     plt_file = "ShortcomingsOnlyWhenNeededCapita" + fn_suffix,
                     foldername = foldername,
                     close_plots = close_plots,
+                    figsize = figsize,
                     **kwargs)
     i = _report(i)  
     
@@ -725,112 +665,441 @@ def PandaPlotsCooperation(panda_file = "current_panda",
                     plt_file = "Shortcomings" + fn_suffix,
                     foldername = foldername,
                     close_plots = close_plots,
+                    figsize = figsize,
                     **kwargs)
     i = _report(i) 
+        
+    # will not talk about technical VSS
+    # PlotPandaSingle(panda_file = panda_file,
+    #                 output_var=['Value of stochastic solution', \
+    #                             'VSS as share of total costs (sto. solution)',\
+    #                             'VSS as share of total costs (det. solution)'],
+    #                 scenarionames = scenarionames,
+    #                 grouping_aim = grouping_aim,
+    #                 grouping_metric = grouping_metric,
+    #                 adjacent = adjacent,
+    #                 plt_file = "VSScosts" + fn_suffix,
+    #                 foldername = foldername,
+    #                 close_plots = close_plots,
+    #                   figsize = figsize,
+    #                 **kwargs)
+    # i = _report(i)    
+    
+    # will not talk about technical VSS
+    # PlotPandaSingle(panda_file = panda_file,
+    #                 output_var=['VSS in terms of avg. nec. debt', \
+    #                             'VSS in terms of avg. nec. debt as share of avg. nec. debt of det. solution',\
+    #                             'VSS in terms of avg. nec. debt as share of avg. nec. debt of sto. solution'],
+    #                 scenarionames = scenarionames,
+    #                 grouping_aim = grouping_aim,
+    #                 grouping_metric = grouping_metric,
+    #                 adjacent = adjacent,
+    #                 plt_file = "VSSdebt" + fn_suffix,
+    #                 foldername = foldername,
+    #                 close_plots = close_plots,
+    #                   figsize = figsize,
+    #                 **kwargs)
+    # i = _report(i)  
+    
+    # will not talk about technical VSS
+    # PlotPandaSingle(panda_file = panda_file,
+    #                 output_var=['VSS in terms of avg. nec. import', \
+    #                             'VSS in terms of avg. nec. import as share of avg. nec. import of det. solution',\
+    #                             'VSS in terms of avg. nec. import as share of avg. nec. import of sto. solution'],
+    #                 scenarionames = scenarionames,
+    #                 grouping_aim = grouping_aim,
+    #                 grouping_metric = grouping_metric,
+    #                 adjacent = adjacent,
+    #                 plt_file = "VSSimport" + fn_suffix,
+    #                 foldername = foldername,
+    #                 close_plots = close_plots,
+    #                   figsize = figsize,
+    #                 **kwargs)
+    # i = _report(i)  
+    
+    # will not talk about technical VSS
+    # PlotPandaSingle(panda_file = panda_file,
+    #                 output_var=['Resulting probability for food security for VSS',\
+    #                             'Resulting probability for solvency for VSS'],
+    #                 scenarionames = scenarionames,
+    #                 grouping_aim = grouping_aim,
+    #                 grouping_metric = grouping_metric,
+    #                 adjacent = adjacent,
+    #                 plt_file = "VSSprobabilities" + fn_suffix,
+    #                 foldername = foldername,
+    #                 close_plots = close_plots,
+    #                   figsize = figsize,
+    #                 **kwargs)
+    # i = _report(i)    
+    
+    
+    return(None)
+
+
+def CollectionPlotsCooperationAgg(panda_file = "current_panda", 
+                                  scenarionames = None,
+                                  scenarios_shaded = False,
+                                  folder_comparisons = "unnamed",
+                                  publication_plot = False,
+                                  fn_suffix = None,
+                                  grouping_aim = "Dissimilar",
+                                  grouping_metric = "medoids",
+                                  adjacent = False,
+                                  close_plots = None,
+                                  console_output = None,
+                                  figsize = None,
+                                  **kwargs):
+    """
+    
+    Collection of plotting function calls for variables shown as aggregate
+    over all cluster groups.
+
+    Parameters
+    ----------
+    panda_file : str, optional
+        Filename of the panda csv to use. The default is "current_panda".
+    scenarionames : list of str, optional
+        Added as legend to describe the different scenarios, and leads to plots
+        being saved in /ComparingScenarios. If None, the folder according
+        grouping_aim and adjacent is used. Default is None.
+    scenarios_shaded : boolean, optional
+        Whether area between two scenarios should be shaded. To be used if
+        worst and best case scenario is to be compared for different settings.
+        In this case, an even number of scenarios must be given, and always 
+        two sequential scenarios are seen as a pair and the area between them
+        will be shaded.
+    folder_comparisons: str
+        Subfolder of /ComparingScenarios (i.e. for example
+        ComparisonPlots/folder_comparison/AggregatedSum/NecImport.png).
+        Only relevant if scenarionames is not None. Default is "unnamed".
+    publication_plot : boolean
+        Whether to save the scenario comparison plots in the folde for the
+        final publication plots, or in the normal folder for comparisons.
+        Default is False.
+    fn_suffix : str, optional
+        Suffix to add to filename (normally defining the settings for which 
+        model results are visualized). Default is None.
+    grouping_aim : str, optional
+        The aim in grouping clusters, either "Similar" or "Dissimilar".
+        The default is "Dissimilar".
+    grouping_metric : str, optional
+        The metric on which the grouping is based. The default is "medoids".
+    adjacent : boolean, optional
+        Whether clusters in a cluster group need to be adjacent. The default is False.
+    close_plots : boolean or None
+        Whether plots should be closed after plotting (and saving). If None, 
+        the default as defined in ModelCode/GeneralSettings is used.
+    console_output : boolean, optional
+        Specifying whether the progress should be documented thorugh console 
+        outputs. If None, the default as defined in ModelCode/GeneralSettings 
+        is used.        
+    figsize : tuple
+        Size of output figures. If None, the default as defined in
+        ModelCode/GeneralSettings is used.
+    **kwargs : 
+        Settings specifiying for which model runs we want the plots
+    
+    Returns
+    -------
+    None.
+
+    """
+    # settings
+    if console_output is None:
+        from ModelCode.GeneralSettings import console_output
+    
+    if scenarionames is None:
+        foldername = grouping_aim
+        if adjacent:
+            foldername = foldername + "Adjacent"
+        else:
+            foldername = foldername + "NonAdjacent"
+        foldername = foldername + "/PandaPlots"
+    else:
+        if publication_plot:
+            _GroupingPlotFolders(main = "PublicationPlots/" + folder_comparisons, a = False)
+            foldername = "PublicationPlots/" + folder_comparisons
+        else:
+            _GroupingPlotFolders(main = "ComparingScenarios/" + folder_comparisons, a = False)
+            foldername = "ComparingScenarios/" + folder_comparisons
+        
+    if fn_suffix is None:
+        settingsIterate = DefaultSettingsExcept(**kwargs)
+        settingsIterate["N"] = ""
+        settingsIterate["validation_size"] = ""
+        settingsIterate["k_using"] = ""
+        fn_suffix = "_" + GetFilename(settingsIterate, groupSize = "", groupAim = grouping_aim, \
+                          adjacent = adjacent)
+            
+            
+    def _report(i, console_output = console_output, num_plots = 10):
+        if console_output:
+            sys.stdout.write("\r     Plot " + str(i) + " of " + str(num_plots))
+        return(i + 1)
+    i = 1         
+    
+    # plotting:
+    PlotPandaAggregate(panda_file = panda_file,
+                       agg_type = "agg_sum",
+                       output_var=['Average yearly total cultivated area'],
+                       scenarionames = scenarionames,
+                       scenarios_shaded = scenarios_shaded,
+                       grouping_aim = grouping_aim,
+                       grouping_metric = grouping_metric,
+                       adjacent = adjacent,
+                       plt_file = "TotalAllocArea" + fn_suffix,
+                       foldername = foldername,
+                       close_plots = close_plots,
+                       figsize = figsize,
+                       **kwargs)
+    i = _report(i)    
+    
+    PlotPandaAggregate(panda_file = panda_file,
+                       agg_type = "agg_sum",
+                       output_var=['Average yearly total cultivated area'],
+                       scenarionames = scenarionames,
+                       scenarios_shaded = scenarios_shaded,
+                       scale_by = "Available arable area",
+                       grouping_aim = grouping_aim,
+                       grouping_metric = grouping_metric,
+                       adjacent = adjacent,
+                       plt_file = "TotalAllocArea_ScaledByTotalArable" + fn_suffix,
+                       foldername = foldername,
+                       close_plots = close_plots,
+                       figsize = figsize,
+                       **kwargs)
+    i = _report(i)    
+        
+    PlotPandaAggregate(panda_file = panda_file,
+                       agg_type = "agg_sum",
+                       output_var=['Total cultivation costs (sto. solution)'],
+                       scenarionames = scenarionames,
+                       scenarios_shaded = scenarios_shaded,
+                       grouping_aim = grouping_aim,
+                       grouping_metric = grouping_metric,
+                       adjacent = adjacent,
+                       plt_file = "TotalCultCosts" + fn_suffix,
+                       foldername = foldername,
+                       close_plots = close_plots,
+                       figsize = figsize,
+                       **kwargs)
+    i = _report(i)    
+    
+    # related to objective function
+    # PlotPandaAggregate(panda_file = panda_file,
+    #                    agg_type = "agg_sum",
+    #                    output_var=["Average total cultivation costs", \
+    #                                "Average total food demand penalty (over samples)", \
+    #                                "Average solvency penalty (over samples)"],
+    #                    scenarionames = scenarionames,
+    #                    scenarios_shaded = scenarios_shaded,
+    #                    grouping_aim = grouping_aim,
+    #                    grouping_metric = grouping_metric,
+    #                    adjacent = adjacent,
+    #                    plt_file = "CultivationAndSocialCosts" + fn_suffix,
+    #                    foldername = foldername,
+    #                    close_plots = close_plots,
+    #                    **kwargs)
+    # i = _report(i)    
+    
+    # we don't have a solvency contraint anymore...
+    # PlotPandaAggregate(panda_file = panda_file,
+    #                    agg_type = "agg_sum", 
+    #                    output_var=['Average aggregate food shortage excluding solvency constraint', \
+    #                                'Average aggregate debt after payout (excluding food security constraint)'],
+    #                    scenarionames = scenarionames,
+    #                    scenarios_shaded = scenarios_shaded,
+    #                    grouping_aim = grouping_aim,
+    #                    grouping_metric = grouping_metric,
+    #                    adjacent = adjacent,
+    #                    plt_file = "NecImportsPen_NecDebtPen" + fn_suffix,
+    #                    foldername = foldername,
+    #                    close_plots = close_plots,
+    #                    **kwargs)
+    # i = _report(i)    
+        
+    PlotPandaAggregate(panda_file = panda_file,
+                       agg_type = "agg_sum",
+                       output_var=['Average aggregate food shortage'],
+                       scenarionames = scenarionames,
+                       scenarios_shaded = scenarios_shaded,
+                       grouping_aim = grouping_aim,
+                       grouping_metric = grouping_metric,
+                       adjacent = adjacent,
+                       plt_file = "AggFoodShortage" + fn_suffix,
+                       foldername = foldername,
+                       close_plots = close_plots,
+                       figsize = figsize,
+                       **kwargs)
+    i = _report(i)    
+  
+    PlotPandaAggregate(panda_file = panda_file,
+                       agg_type = "agg_sum",
+                       output_var=['Average aggregate debt after payout'],
+                       scenarionames = scenarionames,
+                       scenarios_shaded = scenarios_shaded,
+                       grouping_aim = grouping_aim,
+                       grouping_metric = grouping_metric,
+                       adjacent = adjacent,
+                       plt_file = "AggDebt" + fn_suffix,
+                       foldername = foldername,
+                       close_plots = close_plots,
+                       figsize = figsize,
+                       **kwargs)
+    i = _report(i)    
     
     PlotPandaAggregate(panda_file = panda_file,
                        agg_type = "agg_avgweight",
                        var_weight = "Share of West Africa's population that is living in total considered region (2015)",
                        weight_title = "population",
-                       output_var=['Average aggregate food shortage per capita', \
-                                   'Average aggregate debt after payout per capita'],
+                       output_var=['Resulting probability for food security'],
                        scenarionames = scenarionames,
+                       scenarios_shaded = scenarios_shaded,
                        grouping_aim = grouping_aim,
                        grouping_metric = grouping_metric,
                        adjacent = adjacent,
-                       plt_file = "ShortcomingsCapita" + fn_suffix,
+                       plt_file = "ResFoodSecProb" + fn_suffix,
                        foldername = foldername,
                        close_plots = close_plots,
+                       figsize = figsize,
+                       **kwargs)
+    i = _report(i)    
+
+    PlotPandaAggregate(panda_file = panda_file,
+                       agg_type = "agg_avgweight",
+                       var_weight = "Share of West Africa's population that is living in total considered region (2015)",
+                       weight_title = "population",
+                       output_var=['Resulting probability for solvency'],
+                       scenarionames = scenarionames,
+                       scenarios_shaded = scenarios_shaded,
+                       grouping_aim = grouping_aim,
+                       grouping_metric = grouping_metric,
+                       adjacent = adjacent,
+                       plt_file = "ResSolvProb" + fn_suffix,
+                       foldername = foldername,
+                       close_plots = close_plots,
+                       figsize = figsize,
+                       **kwargs)
+    i = _report(i)    
+
+    PlotPandaAggregate(panda_file = panda_file,
+                       agg_type = "agg_avgweight",
+                       var_weight = "Share of West Africa's population that is living in total considered region (2015)",
+                       weight_title = "population",
+                       output_var=['Average aggregate food shortage per capita'],
+                       scenarionames = scenarionames,
+                       scenarios_shaded = scenarios_shaded,
+                       grouping_aim = grouping_aim,
+                       grouping_metric = grouping_metric,
+                       adjacent = adjacent,
+                       plt_file = "FoodShortcomingsCapita" + fn_suffix,
+                       foldername = foldername,
+                       close_plots = close_plots,
+                       figsize = figsize,
                        **kwargs)
     i = _report(i)   
         
     PlotPandaAggregate(panda_file = panda_file,
-                       agg_type = "agg_sum", 
-                       output_var=['Average food demand penalty (over samples and then years)', \
-                                   'Average solvency penalty (over samples)'],
+                       agg_type = "agg_avgweight",
+                       var_weight = "Share of West Africa's population that is living in total considered region (2015)",
+                       weight_title = "population",
+                       output_var=['Average aggregate food shortage per capita (including only samples that have shortage)'],
                        scenarionames = scenarionames,
+                       scenarios_shaded = scenarios_shaded,
                        grouping_aim = grouping_aim,
                        grouping_metric = grouping_metric,
                        adjacent = adjacent,
-                       plt_file = "PenaltiesPaied" + fn_suffix,
+                       plt_file = "FoodShortcomingsCapita" + fn_suffix,
                        foldername = foldername,
                        close_plots = close_plots,
+                       figsize = figsize,
                        **kwargs)
-    i = _report(i)    
-        
-    PlotPandaSingle(panda_file = panda_file,
-                    output_var=['Value of stochastic solution', \
-                                'VSS as share of total costs (sto. solution)',\
-                                'VSS as share of total costs (det. solution)'],
-                    scenarionames = scenarionames,
-                    grouping_aim = grouping_aim,
-                    grouping_metric = grouping_metric,
-                    adjacent = adjacent,
-                    plt_file = "VSScosts" + fn_suffix,
-                    foldername = foldername,
-                    close_plots = close_plots,
-                    **kwargs)
-    i = _report(i)    
-    
-    PlotPandaSingle(panda_file = panda_file,
-                    output_var=['VSS in terms of avg. nec. debt', \
-                                'VSS in terms of avg. nec. debt as share of avg. nec. debt of det. solution',\
-                                'VSS in terms of avg. nec. debt as share of avg. nec. debt of sto. solution'],
-                    scenarionames = scenarionames,
-                    grouping_aim = grouping_aim,
-                    grouping_metric = grouping_metric,
-                    adjacent = adjacent,
-                    plt_file = "VSSdebt" + fn_suffix,
-                    foldername = foldername,
-                    close_plots = close_plots,
-                    **kwargs)
-    i = _report(i)  
-    
-    PlotPandaSingle(panda_file = panda_file,
-                    output_var=['VSS in terms of avg. nec. import', \
-                                'VSS in terms of avg. nec. import as share of avg. nec. import of det. solution',\
-                                'VSS in terms of avg. nec. import as share of avg. nec. import of sto. solution'],
-                    scenarionames = scenarionames,
-                    grouping_aim = grouping_aim,
-                    grouping_metric = grouping_metric,
-                    adjacent = adjacent,
-                    plt_file = "VSSimport" + fn_suffix,
-                    foldername = foldername,
-                    close_plots = close_plots,
-                    **kwargs)
-    i = _report(i)  
-    
+    i = _report(i)   
     
     PlotPandaAggregate(panda_file = panda_file,
-                       agg_type = "agg_sum", 
-                       output_var=['Value of stochastic solution', \
-                                   'VSS in terms of avg. nec. debt', \
-                                   'VSS in terms of avg. nec. import'],
+                       agg_type = "agg_avgweight",
+                       var_weight = "Share of West Africa's population that is living in total considered region (2015)",
+                       weight_title = "population",
+                       output_var=['Average aggregate debt after payout per capita'],
                        scenarionames = scenarionames,
+                       scenarios_shaded = scenarios_shaded,
                        grouping_aim = grouping_aim,
                        grouping_metric = grouping_metric,
                        adjacent = adjacent,
-                       plt_file = "VSSagg" + fn_suffix,
+                       plt_file = "DebtCapita" + fn_suffix,
                        foldername = foldername,
                        close_plots = close_plots,
+                       figsize = figsize,
                        **kwargs)
-    i = _report(i)    
-        
-    PlotPandaSingle(panda_file = panda_file,
-                    output_var=['Resulting probability for food security for VSS',\
-                                'Resulting probability for solvency for VSS'],
-                    scenarionames = scenarionames,
-                    grouping_aim = grouping_aim,
-                    grouping_metric = grouping_metric,
-                    adjacent = adjacent,
-                    plt_file = "VSSprobabilities" + fn_suffix,
-                    foldername = foldername,
-                    close_plots = close_plots,
-                    **kwargs)
-    i = _report(i)    
+    i = _report(i)   
+       
+    PlotPandaAggregate(panda_file = panda_file,
+                       agg_type = "agg_avgweight",
+                       var_weight = "Share of West Africa's population that is living in total considered region (2015)",
+                       weight_title = "population",
+                       output_var=['Average aggregate debt after payout per capita (including only samples with negative final fund)'],
+                       scenarionames = scenarionames,
+                       scenarios_shaded = scenarios_shaded,
+                       grouping_aim = grouping_aim,
+                       grouping_metric = grouping_metric,
+                       adjacent = adjacent,
+                       plt_file = "DebtCapitaNegFund" + fn_suffix,
+                       foldername = foldername,
+                       close_plots = close_plots,
+                       figsize = figsize,
+                       **kwargs)
+    i = _report(i)   
+         
+    PlotPandaAggregate(panda_file = panda_file,
+                       agg_type = "agg_avgweight",
+                       var_weight = "Share of West Africa's population that is living in total considered region (2015)",
+                       weight_title = "population",
+                       output_var=['Average aggregate debt after payout per capita (including only samples with catastrophe)'],
+                       scenarionames = scenarionames,
+                       scenarios_shaded = scenarios_shaded,
+                       grouping_aim = grouping_aim,
+                       grouping_metric = grouping_metric,
+                       adjacent = adjacent,
+                       plt_file = "DebtCapitaOnlyCatastrophe" + fn_suffix,
+                       foldername = foldername,
+                       close_plots = close_plots,
+                       figsize = figsize,
+                       **kwargs)
+    i = _report(i)   
+    # will not talk about penalties explicitly
+    # PlotPandaAggregate(panda_file = panda_file,
+    #                    agg_type = "agg_sum", 
+    #                    output_var=['Average food demand penalty (over samples and then years)', \
+    #                                'Average solvency penalty (over samples)'],
+    #                    scenarionames = scenarionames,
+    #                    scenarios_shaded = scenarios_shaded,
+    #                    grouping_aim = grouping_aim,
+    #                    grouping_metric = grouping_metric,
+    #                    adjacent = adjacent,
+    #                    plt_file = "PenaltiesPaied" + fn_suffix,
+    #                    foldername = foldername,
+    #                    close_plots = close_plots,
+    #                    **kwargs)
+    # i = _report(i)    
     
+    # will not talk about technical VSS
+    # PlotPandaAggregate(panda_file = panda_file,
+    #                    agg_type = "agg_sum", 
+    #                    output_var=['Value of stochastic solution', \
+    #                                'VSS in terms of avg. nec. debt', \
+    #                                'VSS in terms of avg. nec. import'],
+    #                    scenarionames = scenarionames,
+    #                    scenarios_shaded = scenarios_shaded,
+    #                    grouping_aim = grouping_aim,
+    #                    grouping_metric = grouping_metric,
+    #                    adjacent = adjacent,
+    #                    plt_file = "VSSagg" + fn_suffix,
+    #                    foldername = foldername,
+    #                    close_plots = close_plots,
+    #                    **kwargs)
     
     return(None)
+
 
 def OtherPandaPlots(panda_file = "current_panda", 
                     grouping_aim = "Dissimilar",
@@ -1045,6 +1314,8 @@ def PlotPandaMedian(panda_file = "current_panda",
     close_plots : boolean or None
         Whether plots should be closed after plotting (and saving). If None, 
         the default as defined in ModelCode/GeneralSettings is used.
+    cols : list, optional
+        Colors to plot the different scenarios.        
     **kwargs : 
         Settings specifiying for which model run results shall be returned, 
         passed to _Panda_GetResults.
@@ -1055,9 +1326,10 @@ def PlotPandaMedian(panda_file = "current_panda",
 
     """
     
+    
     # settings
     if cols is None:
-            cols = ["royalblue", "darkred", "grey", "gold"]
+            cols = ["royalblue", "darkred", "grey", "gold", "turquoise", "darkviolet"]
     
     if figsize is None:
         from ModelCode.GeneralSettings import figsize
@@ -1189,7 +1461,7 @@ def PlotPandaAll(panda_file = "current_panda",
     
     # settings
     if cols is None:
-            cols = ["royalblue", "darkred", "grey", "gold"]
+            cols = ["royalblue", "darkred", "grey", "gold", "turquoise", "darkviolet"]
             
     if figsize is None:
         from ModelCode.GeneralSettings import figsize
@@ -1205,7 +1477,7 @@ def PlotPandaAll(panda_file = "current_panda",
                            output_var = output_var,
                            out_type = "all", 
                            grouping_aim = grouping_aim, 
-                           grounping_metric = grouping_metric,
+                           grouping_metric = grouping_metric,
                            adjacent = adjacent, 
                            **kwargs)
     
@@ -1266,7 +1538,9 @@ def PlotPandaAggregate(panda_file = "current_panda",
                     var_weight = None,
                     weight_title = None,
                     output_var = None,
+                    scale_by = None, 
                     scenarionames = None,
+                    scenarios_shaded = False,
                     grouping_aim = "Dissimilar",
                     grouping_metric = "medoids",
                     adjacent = False,
@@ -1297,6 +1571,23 @@ def PlotPandaAggregate(panda_file = "current_panda",
         for agg_type == "agg_avgweight".
     output_var : list of str or str
         The variables that are reported.
+    scale_by : float or str or list of str
+        If float, all output variables will be scaled by this value. If str, all 
+        output variables will be scaled by the sum of his scaling variable over
+        all clusters (e.g. to scale by total demand). If list, each output
+        variable can have a specific scaling variable/value (length of scale_by 
+        must length of output_var). If None, no scaling is happening. The
+        default is None.
+    scenarionames : list of str, optional
+        Added as legend to describe the different scenarios, and leads to plots
+        being saved in /ComparingScenarios. If None, the folder according
+        grouping_aim and adjacent is used. Default is None.
+    scenarios_shaded : boolean, optional
+        Whether area between two scenarios should be shaded. To be used if
+        worst and best case scenario is to be compared for different settings.
+        In this case, an even number of scenarios must be given, and always 
+        two sequential scenarios are seen as a pair and the area between them
+        will be shaded.
     grouping_aim : str, optional
         The aim in grouping clusters, either "Similar" or "Dissimilar".
         The default is "Dissimilar".
@@ -1326,6 +1617,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
     None.
 
     """
+    
     
     # settings
     if cols is None:
@@ -1360,6 +1652,50 @@ def PlotPandaAggregate(panda_file = "current_panda",
                            adjacent = adjacent, 
                            **kwargs)
     
+    # get scaling variable
+    if (type(scale_by) is list) and (len(scale_by) == 1):
+        scale_by = scale_by[0]
+        
+    if (type(scale_by) is str) or ((type(scale_by) is list) and (type(scale_by[0]) is str)):
+        scaling = Panda_GetResults(file = panda_file, 
+                               output_var = scale_by,
+                               out_type = "agg_sum", 
+                               grouping_aim = grouping_aim, 
+                               grouping_metric = grouping_metric,
+                               adjacent = adjacent, 
+                               **kwargs)
+    
+    # scale output variables
+    plt_values = []
+    for scen in range(0, len(res)):
+        if scale_by is None:
+            plt_values.append(res[scen])
+        elif type(scale_by) is str:
+            for var in output_var:
+                res[scen][var + " - Aggregated over all groups"] = \
+                    res[scen][var + " - Aggregated over all groups"]/ \
+                        scaling[scen][scale_by + " - Aggregated over all groups"]
+            plt_values.append(res[scen])
+        elif type(scale_by) is list:
+            if len(scale_by) != len(output_var):
+                sys.exit("Not the right number of scaling variables")
+            if type(scale_by[0]) is str:
+                for idx, var in enumerate(output_var):
+                    res[scen][var + " - Aggregated over all groups"] = \
+                        res[scen][var + " - Aggregated over all groups"]/ \
+                            scaling[scen][scale_by[idx] + " - Aggregated over all groups"]
+                plt_values.append(res[scen])
+            else:
+                for idx, var in enumerate(output_var):
+                    res[scen][var + " - Aggregated over all groups"] = \
+                        res[scen][var + " - Aggregated over all groups"]/ \
+                           scale_by[idx]
+                plt_values.append(res[scen])                
+        else:
+            res[scen].iloc[:, 1:] = res[scen].iloc[:, 1:]/scale_by
+            plt_values.append(res[scen])
+    res = plt_values
+        
     # make sure the output variable are given as list
     if output_var is str:
         output_var = [output_var]
@@ -1373,39 +1709,89 @@ def PlotPandaAggregate(panda_file = "current_panda",
         num_cols = int(np.ceil(len(output_var)/num_rows))
         
     markers = ["X", "o", "^", "P", "s", "v"]    
+    cols = ["royalblue", "darkred", "grey", "gold", "limegreen"]
     
     # plot each of the oubput variables
-    for idx, var in enumerate(output_var):
-        if subplots:
-            fig.add_subplot(num_rows, num_cols, idx + 1)
-            plt.suptitle("Development depending on colaboration of clusters" + agg_title, \
-                  fontsize = 24)
-        else:
-            fig = plt.figure(figsize = figsize)
-            plt.title("Development depending on colaboration of clusters" + agg_title, \
-                  fontsize = 24, pad = 15)
-        scatters = []
-        mins = []
-        maxs = []
-        for scen in range(0, len(res)):
-            if res[scen] is None:
-                if scenarionames is not None:
-                    scenarionames.pop(scen)
-                continue
-            plt.plot([1, 2, 3, 4, 5], res[scen][var + " - Aggregated over all groups"], lw = 2.8)
-            sc = plt.scatter([1, 2, 3, 4, 5], res[scen][var + " - Aggregated over all groups"], marker = markers[scen], s = 70)
-            scatters.append(sc)
-            mins.append(min(-res[scen][var + " - Aggregated over all groups"].max()*0.01, res[scen][var + " - Aggregated over all groups"].min()*1.05))
-            maxs.append(res[scen][var + " - Aggregated over all groups"].max()*1.1)
-        plt.xticks([1, 2, 3, 4, 5], [9, 5, 3, 2, 1], fontsize = 16)
-        plt.ylim((min(mins), max(maxs)))
-        plt.yticks(fontsize = 16)
-        plt.xlabel("Number of different cluster groups", fontsize = 20)
-        plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
-        if scenarionames is not None:
-            plt.legend(scatters, scenarionames, fontsize = 18, title = "Scenarios",
-                       title_fontsize = 20, loc = "best")
+    if scenarios_shaded is False:
+        for idx, var in enumerate(output_var):
+            if subplots:
+                fig.add_subplot(num_rows, num_cols, idx + 1)
+                plt.suptitle("Development depending on colaboration of clusters" + agg_title, \
+                      fontsize = 24)
+            else:
+                fig = plt.figure(figsize = figsize)
+                plt.title("Development depending on colaboration of clusters" + agg_title, \
+                      fontsize = 24, pad = 15)
+            scatters = []
+            mins = []
+            maxs = []
+            for scen in range(0, len(res)):
+                if res[scen] is None:
+                    if scenarionames is not None:
+                        scenarionames.pop(scen)
+                    continue
+                plt.plot([1, 2, 3, 4, 5], res[scen][var + " - Aggregated over all groups"], lw = 2.8)
+                sc = plt.scatter([1, 2, 3, 4, 5], res[scen][var + " - Aggregated over all groups"], marker = markers[scen], s = 70)
+                scatters.append(sc)
+                mins.append(min(-res[scen][var + " - Aggregated over all groups"].max()*0.01, res[scen][var + " - Aggregated over all groups"].min()*1.05))
+                maxs.append(res[scen][var + " - Aggregated over all groups"].max()*1.1)
+            plt.xticks([1, 2, 3, 4, 5], [9, 5, 3, 2, 1], fontsize = 16)
+            plt.ylim((min(mins), max(maxs)))
+            plt.yticks(fontsize = 16)
+            plt.xlabel("Number of different cluster groups", fontsize = 20)
+            plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
+            if scenarionames is not None:
+                plt.legend(scatters, scenarionames, fontsize = 18, title = "Scenarios",
+                           title_fontsize = 20, loc = "best")
         
+    else:
+        if (scenarionames is None) or (len(scenarionames)%3 != 0):
+            sys.exit("Scenarionames not valid for option scenarios_shaded")
+        for idx, var in enumerate(output_var):
+            if subplots:
+                fig.add_subplot(num_rows, num_cols, idx + 1)
+                plt.suptitle("Development depending on colaboration of clusters" + agg_title, \
+                      fontsize = 24)
+            else:
+                fig = plt.figure(figsize = figsize)
+                plt.title("Development depending on colaboration of clusters" + agg_title, \
+                      fontsize = 20, pad = 15)
+            scatters = []
+            mins = []
+            maxs = []
+            for scen in range(0, int(len(res)/3)):
+                scen1 = 3 * scen
+                scen2 = 3 * scen + 1
+                scen3 = 3 * scen + 2
+                if (res[scen1] is None) or (res[scen2] is None) or (res[scen3] is None):
+                    res[scen1] = None
+                    res[scen2] = None
+                    res[scen3] = None
+                    if scenarionames is not None:
+                        scenarionames.pop(scen1)
+                        scenarionames.pop(scen2)
+                        scenarionames.pop(scen3)
+                    continue
+                plt.plot([1, 2, 3, 4, 5], res[scen1][var + " - Aggregated over all groups"], lw = 2.8, color = cols[scen], label = scenarionames[scen1])
+                plt.plot([1, 2, 3, 4, 5], res[scen2][var + " - Aggregated over all groups"], lw = 2.8, color = cols[scen], linestyle = "dashdot", label = scenarionames[scen2])
+                plt.plot([1, 2, 3, 4, 5], res[scen3][var + " - Aggregated over all groups"], lw = 2.8, color = cols[scen], linestyle = "--", label = scenarionames[scen3])
+                plt.fill_between(x = [1, 2, 3, 4, 5], y1 = np.array(res[scen1][var + " - Aggregated over all groups"], dtype = float), 
+                                                      y2 = np.array(res[scen3][var + " - Aggregated over all groups"], dtype = float), 
+                                                      color = cols[scen], alpha = 0.3)
+                mins.append(min(-res[scen1][var + " - Aggregated over all groups"].max()*0.01, res[scen1][var + " - Aggregated over all groups"].min()*1.05))
+                mins.append(min(-res[scen2][var + " - Aggregated over all groups"].max()*0.01, res[scen2][var + " - Aggregated over all groups"].min()*1.05))
+                mins.append(min(-res[scen3][var + " - Aggregated over all groups"].max()*0.01, res[scen3][var + " - Aggregated over all groups"].min()*1.05))
+                maxs.append(res[scen1][var + " - Aggregated over all groups"].max()*1.1)
+                maxs.append(res[scen2][var + " - Aggregated over all groups"].max()*1.1)
+                maxs.append(res[scen3][var + " - Aggregated over all groups"].max()*1.1)
+            plt.xticks([1, 2, 3, 4, 5], [9, 5, 3, 2, 1], fontsize = 16)
+            plt.ylim((min(mins), max(maxs)))
+            plt.yticks(fontsize = 16)
+            plt.xlabel("Number of different cluster groups", fontsize = 20)
+            plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
+            if scenarionames is not None:
+                plt.legend(fontsize = 18, title = "Scenarios",
+                           title_fontsize = 20, loc = "best")
 
     # save plot
     if plt_file is not None:

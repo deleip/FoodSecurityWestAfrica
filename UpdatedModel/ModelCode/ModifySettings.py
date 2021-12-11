@@ -141,6 +141,7 @@ def ModifyGeneralSettings(accuracyF_demandedProb = None,
     settings = open("ModelCode/GeneralSettings.py", "w")
     settings.write("# General Settings \n")
     settings.write("# Last modified " + str(datetime.now().strftime("%B %d, %Y, at %H:%M")) + "\n\n")
+    
     settings.write("# accuracy demanded from the target probabilities (given as share of\n")
     settings.write("# target probability)\n")
     if accuracyF_demandedProb is None:
@@ -149,12 +150,14 @@ def ModifyGeneralSettings(accuracyF_demandedProb = None,
         settings.write("accuracyF_demandedProb = " + str(accuracyF_demandedProb) + "\n")
         if accuracyF_demandedProb != accuracyF_demandedProbFbefore:
             report += "accuracyF_demandedProb, "
+            
     if accuracyS_demandedProb is None:
         settings.write("accuracyS_demandedProb = " + str(accuracyS_demandedProbFbefore) + "\n\n")
     else:
         settings.write("accuracyS_demandedProb = " + str(accuracyS_demandedProb) + "\n\n")
         if accuracyS_demandedProb != accuracyS_demandedProbFbefore:
             report += "accuracyS_demandedProb, "
+            
     settings.write("# accuracy demanded from the maximum probabilities (given as share of\n")
     settings.write("# maximum probability))\n")
     if accuracyF_maxProb is None:
@@ -163,12 +166,14 @@ def ModifyGeneralSettings(accuracyF_demandedProb = None,
         settings.write("accuracyF_maxProb = " + str(accuracyF_maxProb) + "\n")
         if accuracyF_maxProb != accuracyF_maxProbFbefore:
             report += "accuracyF_maxProb, "
+            
     if accuracyS_maxProb is None:
         settings.write("accuracyS_maxProb = " + str(accuracyS_maxProbFbefore) + "\n\n")
     else:
         settings.write("accuracyS_maxProb = " + str(accuracyS_maxProb) + "\n\n")
         if accuracyS_maxProb != accuracyS_maxProbFbefore:
             report += "accuracyS_maxProb, "
+            
     settings.write("# accuracy of the penalties given thorugh size of the accuracy interval:\n")
     settings.write("# the size needs to be smaller than final rho * shareDiff\n")
     if accuracyF_rho is None:
@@ -177,12 +182,14 @@ def ModifyGeneralSettings(accuracyF_demandedProb = None,
         settings.write("accuracyF_rho = " + str(accuracyF_rho) + "\n")
         if accuracyF_rho != accuracyF_rhobefore:
             report += "accuracyF_rho, "
+            
     if accuracyS_rho is None:
         settings.write("accuracyS_rho = " + str(accuracyS_rhobefore) + "\n\n")
     else:
         settings.write("accuracyS_rho = " + str(accuracyS_rho) + "\n\n")
         if accuracyS_rho != accuracyS_rhobefore:
             report += "accuracyS_rho, "
+            
     settings.write("# if penalty is found according to import/debt, what accuracy should be used \n")
     settings.write("# (share of diff between max and min import/debt)\n")
     if accuracy_help is None:
@@ -191,6 +198,7 @@ def ModifyGeneralSettings(accuracyF_demandedProb = None,
         settings.write("accuracy_help = " + str(accuracy_help) + "\n\n")
         if accuracy_help != accuracy_helpbefore:
              report += "accuracy_help, "
+             
     settings.write("# should model progress be logged?\n")
     if logs_on is None:
         settings.write("logs_on = " + str(logs_onFbefore) + "\n")
@@ -198,6 +206,7 @@ def ModifyGeneralSettings(accuracyF_demandedProb = None,
         settings.write("logs_on = " + str(logs_on) + "\n")
         if logs_on != logs_onFbefore:
             report += "logs_on, "
+            
     settings.write("# should model progress be reported in console?" + "\n")
     if console_output is None:
         settings.write("console_output = " + str(console_outputbefore) + "\n\n")
@@ -205,6 +214,7 @@ def ModifyGeneralSettings(accuracyF_demandedProb = None,
         settings.write("console_output = " + str(console_output) + "\n\n")
         if console_output != console_outputbefore:
             report += "console_output, "
+            
     settings.write("# figsize used for all figures\n")
     if figsize is None:
         settings.write("figsize = " + str(figsizebefore) + "\n\n")
@@ -212,6 +222,7 @@ def ModifyGeneralSettings(accuracyF_demandedProb = None,
         settings.write("figsize = " + str(figsize) + "\n\n")
         if figsize != figsizebefore:
             report += "figsize, "
+            
     settings.write("# close figures after plotting\n")
     if close_plots is None:
         settings.write("close_plots = " + str(close_plotsbefore))

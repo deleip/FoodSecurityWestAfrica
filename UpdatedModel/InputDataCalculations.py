@@ -80,6 +80,8 @@ DP.CalcPearsonDist(MaskAreaUsed)
 
 # %% 5. run clustering algorithm 
 
+# k-medoids algrithm based on gridded SPEI values
+
 with open("InputData/Other/MaskAreaUsed.txt", "rb") as fp:    
     MaskAreaUsed = pickle.load(fp)
     
@@ -93,6 +95,7 @@ for k in range(1, 20):
 
 # %% 6. best number of cluster
 
+
 with open("InputData/Other/PearsonDistSPEI03.txt", "rb") as fp:    
     pearsonDist = pickle.load(fp)  
 
@@ -101,6 +104,7 @@ between_closest = []
 within_cluster = []
 kmax = 19
 
+# calculate the distances within clusters and between clusters
 for k in range(2, kmax + 1):
     with open("InputData/Clusters/Clustering/kMediods" + \
                           str(k) + "_PearsonDistSPEI.txt", "rb") as fp:  
@@ -117,7 +121,7 @@ dists_within = [within_cluster, within_cluster]
 title = ["Comparison using all clusters for SPEI", \
          "Comparison using closest clusters for SPEI"]
 
-# plot distances
+# plot distances for different numbers of clusters
 version = ["All", "Closest"]
 for i in range(0,2):
     fig = plt.figure(figsize = (24, 13.5))
@@ -151,6 +155,8 @@ for i in range(0,2):
 # Using only the closest cluster, the optimum lies at 9 cluster.   
        
 # %% 7. Adjacency matrix
+
+# manually setting up an adjacency matrix (to be used when making cluster groups)
 
 with open("InputData/Clusters/Clustering/kMediods9_PearsonDistSPEI.txt", "rb") as fp:  
     clusters = pickle.load(fp)

@@ -30,14 +30,14 @@ def ReadAndSave_SPEI03(lon_min, lon_max, lat_min, lat_max):
 
     Parameters
     ----------
-    lat_min : float
-        Latitude defining lower border of area.
     lon_min : float
         Latitude defining upper border of area.
-    lat_max : float
-        Longitude defining left border of area.
     lon_max : float
-        Longitude defining right border of area.
+        Longitude defining right border of area
+    lat_min : float
+        Latitude defining lower border of area.
+    lat_max : float
+        Longitude defining left border of area..
 
     Returns
     -------
@@ -254,6 +254,27 @@ def ReadAndReduce_GPW(lat_min, lon_min, lat_max, lon_max):
 # %% 4. GDHY data
 
 def ReadAndSave_GDHY(v_name, lon_min, lon_max, lat_min, lat_max):
+    """
+    Function to read and save GDHY data.
+
+    Parameters
+    ----------
+    v_name : str
+        Name of crop for which yields should be read.
+    lon_min : float
+        Latitude defining upper border of area.
+    lon_max : float
+        Longitude defining right border of area
+    lat_min : float
+        Latitude defining lower border of area.
+    lat_max : float
+        Longitude defining left border of area..
+
+    Returns
+    ------
+    None.
+
+    """
     
     def __Read_GDHY(v_name, year, lon_min, lon_max, lat_min, lat_max):
         f = netCDF4.Dataset("RawData/yields/" + v_name + "/yield_" + str(year) + ".nc4")
@@ -316,13 +337,15 @@ def ReadAndSave_GDHY(v_name, lon_min, lon_max, lat_min, lat_max):
 def VisualizeAndPrepare_ProducerPrices():
     """
     Function reading producer prices for countries in West Africa, viasualizes 
-    and saes in format used by the model.
+    and saes in format used in input data preparation.
 
     Returns
     -------
     None.
 
     """
+    
+    # reading raw price data and 
     prices_raw = pd.read_csv("RawData/FAOSTAT_data_6-11-2020.csv")
     prices_raw = prices_raw[["Area","Item", "Year","Value"]]
     countries = np.array(prices_raw["Area"])
@@ -331,6 +354,8 @@ def VisualizeAndPrepare_ProducerPrices():
     items = items[sorted(np.unique(items, return_index = True)[1])]
     years = np.array(prices_raw["Year"])
     years = years[sorted(np.unique(years, return_index = True)[1])]
+    
+    # visualize raw data
     col = ["indianred", "navy"]
     fig = plt.figure(figsize = (24, 13.5))
     fig.subplots_adjust(wspace=0.25, hspace=0.5)
@@ -347,6 +372,7 @@ def VisualizeAndPrepare_ProducerPrices():
             if c >= len(countries) - 4:
                 plt.xlabel("Years")
             plt.title(country)
+            
     plt.show()
     plt.suptitle("Farm-gate prices in USD per tonne for maize (red)" + \
                                          " and rice (blue)") 
@@ -354,6 +380,7 @@ def VisualizeAndPrepare_ProducerPrices():
                                 bbox_inches = "tight", pad_inches = 0.5)
     plt.close()
      
+    # write prices into 3d array
     prices = np.empty([len(years), len(countries), len(items)])
     prices.fill(np.nan)
     for idx_c, country in enumerate(countries):
@@ -367,8 +394,10 @@ def VisualizeAndPrepare_ProducerPrices():
                                        (prices_raw.Item==item) & \
                                        (prices_raw.Year==year)]["Value"].values[0]
             
+    # calucalte regional average
     prices = np.nanmean(prices, axis = 0)
     
+    # visualize resulting average prices
     x = np.arange(len(countries))  # the label locations
     width = 0.35  # the width of the bars
     
@@ -389,10 +418,12 @@ def VisualizeAndPrepare_ProducerPrices():
                                 bbox_inches = "tight", pad_inches = 0.5)
     plt.close()
     
+    # make data frame out of results
     prices = pd.DataFrame(prices)
     prices.insert(0, 'Countries', countries)
     prices.columns = ["Countries", "Maize", "Rice"]
     
+    # save resulting prices
     with open("InputData/Prices/CountryAvgFarmGatePrices.txt", "wb") as fp:    
         pickle.dump(prices, fp)
 
@@ -451,13 +482,6 @@ def ProfitableAreas():
         rice_mask = pickle.load(fp)
     with open("ProcessedData/maize_mask.txt", "rb") as fp:    
         maize_mask = pickle.load(fp)
-        
-    # with open("IntermediateResults/PreparedData/GDHY/" + \
-    #                                           crops[0] + "_mask.txt", "rb") as fp:    
-    #     rice_mask = (pickle.load(fp)).astype(float)
-    # with open("IntermediateResults/PreparedData/GDHY/" + \
-    #                                           crops[1] + "_mask.txt", "rb") as fp:    
-    #     maize_mask = (pickle.load(fp)).astype(float)
      
     # index of year 2016 (as 1981 is the first for which we have yield data)
     year_rel = (2017 - 1) - 1981
@@ -518,6 +542,24 @@ def ProfitableAreas():
 # %% 2. Calculates average producer prices (weighted with land area per country)
 
 def CalcAvgProducerPrices(rice_mask, maize_mask):
+    """
+    Function calculates average producer prices, by averaging the given 
+    country values using using the country land areas as weight. The country
+    prices values are based on FAO timeseries (see
+    VisualizeAndPrepare_ProducerPrices).
+
+    Parameters
+    ----------
+    rice_mask : np.array
+        Specifiying which cells have rice yield data.
+    maize_mask : np.array
+        Specifiying which cells have maize yield data.
+
+    Returns
+    -------
+    None.
+
+    """
     
     ## Country shares of area for price calculation
     with open("InputData/Prices/CountryCodesGridded.txt", "rb") as fp:    
@@ -589,7 +631,17 @@ def CalcAvgProducerPrices(rice_mask, maize_mask):
 # %% 3. Average caloric demand (with area as weight)
 
 def AvgCaloricDemand():
+    """
+    Calculates average caloric demand per person per day based on country 
+    values (weighted with areas).
 
+    Returns
+    -------
+    None.
+
+    """
+    
+    # read data
     with open("InputData/Other/MaskAreaUsed.txt", "rb") as fp:    
         mask_profitable = pickle.load(fp)                         
 
@@ -601,6 +653,7 @@ def AvgCaloricDemand():
     
     CaloricDemand = pd.read_csv("ProcessedData/CountryCaloricDemand.csv")  
 
+    # calculate average
     CaloricDemand["LandCells"] = 0
     for c in CaloricDemand["Country"]:
         code = country_codes.loc[country_codes["CountryName"] == c, "Code"].values
@@ -609,6 +662,7 @@ def AvgCaloricDemand():
     CaloricDemand["Shares"] = CaloricDemand["LandCells"] / np.sum(CaloricDemand["LandCells"])        
     avgCaloricDemand = np.sum(CaloricDemand["Demand"] * CaloricDemand["Shares"])
     
+    # save resulting value
     with open("InputData/Other/AvgCaloricDemand.txt", "wb") as fp:
         pickle.dump(avgCaloricDemand, fp)
     
@@ -682,6 +736,22 @@ def CalcPearsonDist(mask):
 # %% 5. Functions to find best number of clusters
 
 def MedoidMedoidDistd(medoids, dist):
+    """
+    Calculates the distance (based on similarity of SPEI) between each pair
+    of medoids.
+
+    Parameters
+    ----------
+    medoids : list
+        List giving indices of the cluster medoids.
+    dist : np.array
+        Giving distances between any two grid cells (based on SPEI).
+
+    Returns
+    -------
+    None.
+
+    """
     k = len(medoids)
     res = np.empty([k,k])
     res.fill(np.nan)
@@ -699,6 +769,38 @@ def MedoidMedoidDistd(medoids, dist):
     return(res, res_closest)
 
 def MetricClustering(dist_within, dist_between, refX = 0, refY = 1):
+    """
+    Orders the clustering into differnet numbers of clusters based on their
+    within cluster similarities and between cluster similarities. Optimal 
+    would be distance_within = 0 (complete similarity) and distance_between = 1
+    (complete dissimilarity). The metric qunatifies the quality of a clustering
+    by calculating the Eudlidean distance between 
+    (distance_within, distance_between) and the optimal point (0, 1), or if 
+    specified, a different reference point (as the optimal value can never
+    be reached in a real world).
+
+    Parameters
+    ----------
+    dist_within : list
+        Value descrinding the distance within clusters for different number of
+        clusters.
+    dist_between : list
+        Value descrinding the distance between clusters for different number of
+        clusters.
+    refX : float, optional
+        Reference value for distance within clusters. The default is 0.
+    refY : floart, optional
+        Reference value for distance between clusters. The default is 1.
+
+    Returns
+    -------
+    m : np.array
+        resulting metric values, ordered from best to worst.
+    cl_order : np.array
+        Tells number of clusters from best to worst.
+    
+
+    """
     # euclidean distance
     m = np.sqrt(((np.array(dist_within)-refX)**2) + \
                 ((refY- np.array(dist_between))**2))
@@ -709,12 +811,31 @@ def MetricClustering(dist_within, dist_between, refX = 0, refY = 1):
     cl_order = order + 2
     # sort results metric according to performance
     m = m[order]
+    
     return(m, cl_order)
 
 # %% 6. Calculate yield trends within clusters
 
 def YldTrendsCluster(k):
+    """
+    Uses gridded yield data to calculate timeseries of average yields per 
+    cluster. Then, a linear regression is calculated for these yield timeseries,
+    and the standard deviation of the residuals is calculated. The results are
+    saved.
+
+    Parameters
+    ----------
+    k : int
+        Number of clusters.
+
+    Returns
+    -------
+    None.
+
+    """
     
+    # sub-function to calculate timeseries of average yields per cluster (call
+    # for one crop at a time)
     def __ClusterAverage(data, cl, k):
         n_t = data.shape[0]
         res = np.empty([n_t, k])
@@ -724,6 +845,12 @@ def YldTrendsCluster(k):
                 res[t, i] = np.nanmean(data[t, (cl == i + 1)])
         return(res) 
 
+    # sub-function to calculate linear trends for each cluster-timeseries, 
+    # and returns for each cluster:
+    # regression values, residuals (ie.e. observations - regression vlaues),
+    # the mean of the residuals (should be close to zero), standard 
+    # deviation of the residuals, f statistics of the regression, regression
+    # coefficients constant value and slope
     def __DetrendClusterAvgYlds(yields_avg, k, crops):
         len_ts = yields_avg.shape[0]
         # initializing results 
@@ -756,10 +883,12 @@ def YldTrendsCluster(k):
         return(avg_pred, residuals, residual_means, residual_stds, fstat, \
                constants, slopes)
 
+    # load clustering for given k
     with open("InputData/Clusters/Clustering/kMediods" + \
                  str(k) + "_PearsonDistSPEI.txt", "rb") as fp:  
         clusters = pickle.load(fp)
         
+    # load yield data
     crops = ["rice", "maize"]
     yields = []
     for cr in crops:
@@ -767,6 +896,7 @@ def YldTrendsCluster(k):
             yld_tmp = pickle.load(fp)
         yields.append(yld_tmp)
         
+    # get average yields per cluster
     num_years = yields[0].shape[0]
     yields_avg = np.empty([num_years, len(crops), k])
     yields_avg.fill(np.nan)
@@ -778,9 +908,11 @@ def YldTrendsCluster(k):
         pickle.dump(yields_avg, fp)
         pickle.dump(crops, fp)
     
+    # detrend cluster average yield timeseries
     avg_pred, residuals, residual_means, residual_stds, fstat, constants,\
         slopes = __DetrendClusterAvgYlds(yields_avg, k, crops)
         
+    # save results
     years = np.array(range(1981, 2017))
     with open("InputData/YieldTrends/DetrYieldAvg_k" + \
                               str(k) + ".txt", "wb") as fp:    
@@ -816,6 +948,50 @@ def YldTrendsCluster(k):
 # 0) Main part
 def kMedoids(k, dist, mask, file, version = "", start_medoids = None, \
                       term = True, max_its = np.inf, seed = 3052020):
+    """
+    Definition of the k-Medoids algorithm:
+    Step 1. k different objects are chosen as initial medoids by a greedy 
+            algorithm 
+    Step 2. Each remaining object is associated with the medoid that is closest. 
+            The total costs are calculated as the sum over all squared distances 
+            between object and respective medoid.
+    Step 3. For each pair of object and medoid, it is checked whether switching 
+            them (i.e. the normal object becoming medoid) would improve the 
+            clustering (i.e. decrease the total costs). After going through all
+            pairs, the switch yielding the biggest improvement is performed 
+            and step 3 is repeated. If none of the switches would yield an 
+            improvement the algorithm terminates.
+
+    Parameters
+    ----------
+    k : int
+        Number of clusters in which the full data is to be divided.
+    dist : np.array
+        Distance between any two locations, on which the clustering is based.
+    mask : np.array
+        Specifiying which cells are to be considered in clustering.
+    file : str
+        Name for saving results.
+    version : str, optional
+        Version name to be specified when saving results. The default is "".
+    start_medoids : list, optional
+        List of indices describing the start medoids. The default is None.
+    term : booleand, optional
+        Whether algorithm should run until it finds optimal solution (True) 
+        or whether it should stop based on a different termination criterium, 
+        i.e. maximum number of iterations (False). The default is True.
+    max_its : int, optional
+        Maximum number of iterations that should be tried before terminating
+        the algorithm. The default is np.inf.
+    seed : int, optional
+        Seed to be set before getting intial medoids (to make the results
+        reproducable). The default is 3052020.
+
+    Returns
+    -------
+    None.
+
+    """
     # initializing variables
     [num_lats, num_lons] = mask.shape
     terminated = False

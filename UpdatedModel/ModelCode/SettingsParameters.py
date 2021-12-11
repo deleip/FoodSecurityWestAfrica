@@ -229,6 +229,7 @@ def SetParameters(settings,
     logs_on : boolean, optional
         Specifying whether the progress should be documented in a log document.
         The default is defined in ModelCode/GeneralSettings.
+        
 
     Returns
     -------
@@ -274,7 +275,7 @@ def SetParameters(settings,
           solvency constraint.
     yield_information : dict
         Dictionary giving additional information on the yields
-        
+     
         - slopes: slopes of the yield trends
         - constants: constants of the yield trends
         - yld_means: average yields 
