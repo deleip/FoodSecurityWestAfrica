@@ -40,11 +40,11 @@ y = "fixed"
 for cl in range(1, 10):
     panelAB = plt.figure(figsize = (14, 8))
     
-    for (alpha, col) in [(0.5, "#AA496E"),
-                         (0.7, "#5E5887"),
-                         (0.9, "#5D769E"), 
-                         (0.95, "#6099B5"),
-                         (0.99, "#89BEC4")]:
+    for (alpha, col) in [(0.5, "#62275D"),
+                         (0.7, "#C32C57"),
+                         (0.9, "#F38F1D"), 
+                         (0.95, "#67D120"),
+                         (0.99, "#2E6FCC")]:
         # get results
         settings, args, yield_information, population_information, \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
@@ -86,11 +86,11 @@ SI1 = plt.figure(figsize = (14, 8))
 SI1.subplots_adjust(hspace = 0.39)
 for cl in range(1, 10):
     ax = SI1.add_subplot(3, 3, cl)
-    for (alpha, col) in [(0.5, "#AA496E"),
-                         (0.7, "#5E5887"),
-                         (0.9, "#5D769E"), 
-                         (0.95, "#6099B5"),
-                         (0.99, "#89BEC4")]:
+    for (alpha, col) in [(0.5, "#62275D"),
+                         (0.7, "#C32C57"),
+                         (0.9, "#F38F1D"), 
+                         (0.95, "#67D120"),
+                         (0.99, "#2E6FCC")]:
         # get results
         settings, args, yield_information, population_information, \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
@@ -126,11 +126,11 @@ plt.close(SI1)
 SI1legend = plt.figure(figsize  = (5, 3))
 legend_elements1 = [Line2D([0], [0], color ='#003479', lw = 2, ls = "dashed",
                           label="Food demand", alpha = 0.6),
-                    Patch(color = "#AA496E", label='50%', alpha = 0.6),
-                    Patch(color = "#5E5887", label='70%', alpha = 0.6),
-                    Patch(color = "#5D769E", label='90%', alpha = 0.6),
-                    Patch(color = "#6099B5", label='95%', alpha = 0.6),
-                    Patch(color = "#89BEC4", label='99%', alpha = 0.6)
+                    Patch(color = "#62275D", label='50%', alpha = 0.6),
+                    Patch(color = "#C32C57", label='70%', alpha = 0.6),
+                    Patch(color = "#F38F1D", label='90%', alpha = 0.6),
+                    Patch(color = "#67D120", label='95%', alpha = 0.6),
+                    Patch(color = "#2E6FCC", label='99%', alpha = 0.6)
                     ]
 
 ax = SI1legend.add_subplot(1, 1, 1)
@@ -175,6 +175,7 @@ for (y, p, scen, col) in [("fixed", "High", "worst case", "#C53B21"),
 
     
     plt.scatter(alphas, costs, label = scen, color = col, s = 80)
+    plt.plot(alphas, costs, color = col, lw = 2.5)
 
 plt.xlabel("Input probability for food security, %", fontsize = 24)
 plt.ylabel(r"Total cultivation costs, $10^9\$$", fontsize = 24)

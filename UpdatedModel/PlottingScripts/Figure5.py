@@ -14,9 +14,8 @@ import FoodSecurityModule as FS
 
 # import other modules
 import matplotlib.pyplot as plt
-from ModelCode.GeneralSettings import figsize
-from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
+import numpy as np
 
 
 if not os.path.isdir("Figures/PublicationPlots/Figure5"):
@@ -38,6 +37,7 @@ alphas = [50, 60, 70, 80, 90, 95, 99]
 for cl in range(1, 10):
     fig = plt.figure(figsize = (14, 9))
     
+    miny = 100
     for (risk, ls) in [(0.01, "solid"), (0.05, "dashed")]:
         for (tax, mk, col) in [(0.01, "o", "#6F6058"),
                                (0.05,  "X", "#BB7369"),
@@ -60,11 +60,13 @@ for cl in range(1, 10):
                         label = "risk " + str(risk * 100) + "%, tax " + str(tax * 100) + "%")
             plt.plot(alphas, solvency, color = col, linestyle = ls, lw = 3)
             
+            miny = min(miny, np.min(solvency))
+            
     plt.legend()
     plt.xlabel("Input probability for food security, %", fontsize = 20)
     plt.ylabel("Output probability for solvency, %", fontsize = 20)
-    plt.title("Region " + str(cl), fontsize = 24)
-    plt.ylim(-4, 101)
+    plt.title("Region " + str(cl), fontsize = 24, pad = 16)
+    plt.ylim(0.96 * miny, 101)
     plt.xlim(48, 101)
     ax = plt.gca()
     ax.xaxis.set_tick_params(labelsize=16)
@@ -82,7 +84,7 @@ for cl in range(1, 10):
                     Line2D([0], [0], color = "#E4C496", marker = "s", linestyle = "none", 
                           label='Tax: 10%', ms = 10)]
 
-    ax.legend(handles = legend_elements1, fontsize = 18)
+    ax.legend(handles = legend_elements1, fontsize = 18, bbox_to_anchor = (1, 0.5))
     
     fig.savefig("Figures/PublicationPlots/Figure5/cl" + str(cl) + ".jpg", 
                 bbox_inches = "tight", pad_inches = 1, format = "jpg")

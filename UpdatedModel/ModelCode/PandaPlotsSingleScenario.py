@@ -209,6 +209,7 @@ def PlotPandaSingle(panda_file = "current_panda",
                     subplots = True,
                     plt_file = None,
                     foldername = None,
+                    plt_legend = True,
                     close_plots = None,
                     **kwargs):
     """
@@ -239,6 +240,8 @@ def PlotPandaSingle(panda_file = "current_panda",
     foldername : str, optional
         The subfolder of Figures which to use (depends on the grouping type).
         The default is None.
+    plt_legend : boolean
+        Whether legend should be plotted (in case with multiple scenarios).
     close_plots : boolean or None
         Whether plots should be closed after plotting (and saving). If None, 
         the default as defined in ModelCode/GeneralSettings is used.
@@ -261,6 +264,7 @@ def PlotPandaSingle(panda_file = "current_panda",
                     subplots = subplots,
                     plt_file = plt_file,
                     foldername = foldername,
+                    plt_legend = plt_legend,
                     close_plots = close_plots,
                     **kwargs)
 
@@ -274,6 +278,7 @@ def PlotPandaSingle(panda_file = "current_panda",
                     subplots = subplots,
                     plt_file = plt_file,
                     foldername = foldername,
+                    plt_legend = plt_legend,
                     close_plots = close_plots,
                     **kwargs)
     
@@ -512,6 +517,7 @@ def CollectionPlotsCooperationSingle(panda_file = "current_panda",
                                      grouping_aim = "Dissimilar",
                                      grouping_metric = "medoids",
                                      adjacent = False,
+                                     plt_legend = True,
                                      close_plots = None,
                                      console_output = None,
                                      figsize = None,
@@ -547,6 +553,8 @@ def CollectionPlotsCooperationSingle(panda_file = "current_panda",
         The metric on which the grouping is based. The default is "medoids".
     adjacent : boolean, optional
         Whether clusters in a cluster group need to be adjacent. The default is False.
+    plt_legend : boolean
+        Whether legend should be plotted (in case with multiple scenarios).
     close_plots : boolean or None
         Whether plots should be closed after plotting (and saving). If None, 
         the default as defined in ModelCode/GeneralSettings is used.
@@ -608,6 +616,7 @@ def CollectionPlotsCooperationSingle(panda_file = "current_panda",
                     adjacent = adjacent,
                     plt_file = "Penalties" + fn_suffix,
                     foldername = foldername,
+                    plt_legend = plt_legend,
                     close_plots = close_plots,
                     figsize = figsize,
                     **kwargs)
@@ -622,6 +631,7 @@ def CollectionPlotsCooperationSingle(panda_file = "current_panda",
                     adjacent = adjacent,
                     plt_file = "ResProbabilities" + fn_suffix,
                     foldername = foldername,
+                    plt_legend = plt_legend,
                     close_plots = close_plots,
                     figsize = figsize,
                     **kwargs)
@@ -636,6 +646,7 @@ def CollectionPlotsCooperationSingle(panda_file = "current_panda",
                     adjacent = adjacent,
                     plt_file = "ShortcomingsCapita" + fn_suffix,
                     foldername = foldername,
+                    plt_legend = plt_legend,
                     close_plots = close_plots,
                     figsize = figsize,
                     **kwargs)
@@ -650,6 +661,7 @@ def CollectionPlotsCooperationSingle(panda_file = "current_panda",
                     adjacent = adjacent,
                     plt_file = "ShortcomingsOnlyWhenNeededCapita" + fn_suffix,
                     foldername = foldername,
+                    plt_legend = plt_legend,
                     close_plots = close_plots,
                     figsize = figsize,
                     **kwargs)
@@ -664,6 +676,7 @@ def CollectionPlotsCooperationSingle(panda_file = "current_panda",
                     adjacent = adjacent,
                     plt_file = "Shortcomings" + fn_suffix,
                     foldername = foldername,
+                    plt_legend = plt_legend,
                     close_plots = close_plots,
                     figsize = figsize,
                     **kwargs)
@@ -680,6 +693,7 @@ def CollectionPlotsCooperationSingle(panda_file = "current_panda",
     #                 adjacent = adjacent,
     #                 plt_file = "VSScosts" + fn_suffix,
     #                 foldername = foldername,
+    #                 plt_legend = plt_legend,
     #                 close_plots = close_plots,
     #                   figsize = figsize,
     #                 **kwargs)
@@ -696,6 +710,7 @@ def CollectionPlotsCooperationSingle(panda_file = "current_panda",
     #                 adjacent = adjacent,
     #                 plt_file = "VSSdebt" + fn_suffix,
     #                 foldername = foldername,
+    #                 plt_legend = plt_legend,
     #                 close_plots = close_plots,
     #                   figsize = figsize,
     #                 **kwargs)
@@ -712,6 +727,7 @@ def CollectionPlotsCooperationSingle(panda_file = "current_panda",
     #                 adjacent = adjacent,
     #                 plt_file = "VSSimport" + fn_suffix,
     #                 foldername = foldername,
+    #                 plt_legend = plt_legend,
     #                 close_plots = close_plots,
     #                   figsize = figsize,
     #                 **kwargs)
@@ -727,6 +743,7 @@ def CollectionPlotsCooperationSingle(panda_file = "current_panda",
     #                 adjacent = adjacent,
     #                 plt_file = "VSSprobabilities" + fn_suffix,
     #                 foldername = foldername,
+    #                 plt_legend = plt_legend,
     #                 close_plots = close_plots,
     #                   figsize = figsize,
     #                 **kwargs)
@@ -745,6 +762,7 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
                                   grouping_aim = "Dissimilar",
                                   grouping_metric = "medoids",
                                   adjacent = False,
+                                  plt_legend = True,
                                   close_plots = None,
                                   console_output = None,
                                   figsize = None,
@@ -786,6 +804,8 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
         The metric on which the grouping is based. The default is "medoids".
     adjacent : boolean, optional
         Whether clusters in a cluster group need to be adjacent. The default is False.
+    plt_legend : boolean
+        Whether legend should be plotted (in case with multiple scenarios).
     close_plots : boolean or None
         Whether plots should be closed after plotting (and saving). If None, 
         the default as defined in ModelCode/GeneralSettings is used.
@@ -832,7 +852,7 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
                           adjacent = adjacent)
             
             
-    def _report(i, console_output = console_output, num_plots = 10):
+    def _report(i, console_output = console_output, num_plots = 12):
         if console_output:
             sys.stdout.write("\r     Plot " + str(i) + " of " + str(num_plots))
         return(i + 1)
@@ -849,6 +869,7 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
                        adjacent = adjacent,
                        plt_file = "TotalAllocArea" + fn_suffix,
                        foldername = foldername,
+                       plt_legend = plt_legend,
                        close_plots = close_plots,
                        figsize = figsize,
                        **kwargs)
@@ -865,6 +886,7 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
                        adjacent = adjacent,
                        plt_file = "TotalAllocArea_ScaledByTotalArable" + fn_suffix,
                        foldername = foldername,
+                       plt_legend = plt_legend,
                        close_plots = close_plots,
                        figsize = figsize,
                        **kwargs)
@@ -880,6 +902,7 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
                        adjacent = adjacent,
                        plt_file = "TotalCultCosts" + fn_suffix,
                        foldername = foldername,
+                       plt_legend = plt_legend,
                        close_plots = close_plots,
                        figsize = figsize,
                        **kwargs)
@@ -898,6 +921,7 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
     #                    adjacent = adjacent,
     #                    plt_file = "CultivationAndSocialCosts" + fn_suffix,
     #                    foldername = foldername,
+    #                    plt_legend = plt_legend,
     #                    close_plots = close_plots,
     #                    **kwargs)
     # i = _report(i)    
@@ -914,6 +938,7 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
     #                    adjacent = adjacent,
     #                    plt_file = "NecImportsPen_NecDebtPen" + fn_suffix,
     #                    foldername = foldername,
+    #                    plt_legend = plt_legend,
     #                    close_plots = close_plots,
     #                    **kwargs)
     # i = _report(i)    
@@ -928,6 +953,7 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
                        adjacent = adjacent,
                        plt_file = "AggFoodShortage" + fn_suffix,
                        foldername = foldername,
+                       plt_legend = plt_legend,
                        close_plots = close_plots,
                        figsize = figsize,
                        **kwargs)
@@ -943,6 +969,7 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
                        adjacent = adjacent,
                        plt_file = "AggDebt" + fn_suffix,
                        foldername = foldername,
+                       plt_legend = plt_legend,
                        close_plots = close_plots,
                        figsize = figsize,
                        **kwargs)
@@ -960,6 +987,7 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
                        adjacent = adjacent,
                        plt_file = "ResFoodSecProb" + fn_suffix,
                        foldername = foldername,
+                       plt_legend = plt_legend,
                        close_plots = close_plots,
                        figsize = figsize,
                        **kwargs)
@@ -977,6 +1005,7 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
                        adjacent = adjacent,
                        plt_file = "ResSolvProb" + fn_suffix,
                        foldername = foldername,
+                       plt_legend = plt_legend,
                        close_plots = close_plots,
                        figsize = figsize,
                        **kwargs)
@@ -994,6 +1023,7 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
                        adjacent = adjacent,
                        plt_file = "FoodShortcomingsCapita" + fn_suffix,
                        foldername = foldername,
+                       plt_legend = plt_legend,
                        close_plots = close_plots,
                        figsize = figsize,
                        **kwargs)
@@ -1011,6 +1041,7 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
                        adjacent = adjacent,
                        plt_file = "FoodShortcomingsCapita" + fn_suffix,
                        foldername = foldername,
+                       plt_legend = plt_legend,
                        close_plots = close_plots,
                        figsize = figsize,
                        **kwargs)
@@ -1028,6 +1059,7 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
                        adjacent = adjacent,
                        plt_file = "DebtCapita" + fn_suffix,
                        foldername = foldername,
+                       plt_legend = plt_legend,
                        close_plots = close_plots,
                        figsize = figsize,
                        **kwargs)
@@ -1045,6 +1077,7 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
                        adjacent = adjacent,
                        plt_file = "DebtCapitaNegFund" + fn_suffix,
                        foldername = foldername,
+                       plt_legend = plt_legend,
                        close_plots = close_plots,
                        figsize = figsize,
                        **kwargs)
@@ -1062,6 +1095,7 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
                        adjacent = adjacent,
                        plt_file = "DebtCapitaOnlyCatastrophe" + fn_suffix,
                        foldername = foldername,
+                       plt_legend = plt_legend,
                        close_plots = close_plots,
                        figsize = figsize,
                        **kwargs)
@@ -1078,6 +1112,7 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
     #                    adjacent = adjacent,
     #                    plt_file = "PenaltiesPaied" + fn_suffix,
     #                    foldername = foldername,
+    #                    plt_legend = plt_legend,
     #                    close_plots = close_plots,
     #                    **kwargs)
     # i = _report(i)    
@@ -1095,6 +1130,7 @@ def CollectionPlotsCooperationAgg(panda_file = "current_panda",
     #                    adjacent = adjacent,
     #                    plt_file = "VSSagg" + fn_suffix,
     #                    foldername = foldername,
+    #                    plt_legend = plt_legend,
     #                    close_plots = close_plots,
     #                    **kwargs)
     
@@ -1278,6 +1314,7 @@ def PlotPandaMedian(panda_file = "current_panda",
                     subplots = True,
                     plt_file = None,
                     foldername = None,
+                    plt_legend = True,
                     close_plots = None,
                     cols = None,
                     **kwargs):
@@ -1311,6 +1348,8 @@ def PlotPandaMedian(panda_file = "current_panda",
     foldername : str, optional
         The subfolder of Figures which to use (depends on the grouping type).
         The default is None.
+    plt_legend : boolean
+        Whether legend should be plotted (in case with multiple scenarios).
     close_plots : boolean or None
         Whether plots should be closed after plotting (and saving). If None, 
         the default as defined in ModelCode/GeneralSettings is used.
@@ -1389,7 +1428,7 @@ def PlotPandaMedian(panda_file = "current_panda",
         plt.xlabel("Number of different cluster groups", fontsize = 20)
         plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
         plt.legend()
-        if scenarionames is not None:
+        if (scenarionames is not None) and (plt_legend):
             plt.legend(scatters, scenarionames, fontsize = 18, title = "Scenarios", title_fontsize = 20)
         if (not subplots) and (plt_file is not None):
             fig.savefig("Figures/" + foldername + "/Median/" + plt_file + str(idx) + ".jpg", bbox_inches = "tight", pad_inches = 1)
@@ -1416,6 +1455,7 @@ def PlotPandaAll(panda_file = "current_panda",
                  color = "blue",
                  plt_file = None,
                  foldername = None,
+                 plt_legend = True,
                  close_plots = None,
                  cols = None,
                  **kwargs):
@@ -1447,6 +1487,8 @@ def PlotPandaAll(panda_file = "current_panda",
     foldername : str, optional
         The subfolder of Figures which to use (depends on the grouping type).
         The default is None.
+    plt_legend : boolean
+        Whether legend should be plotted (in case with multiple scenarios).
     close_plots : boolean or None
         Whether plots should be closed after plotting (and saving). If None, 
         the default as defined in ModelCode/GeneralSettings is used.
@@ -1519,7 +1561,7 @@ def PlotPandaAll(panda_file = "current_panda",
         plt.yticks(fontsize = 16)
         plt.xlabel("Number of different cluster groups", fontsize = 20)
         plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
-        if scenarionames is not None:
+        if (scenarionames is not None) and (plt_legend):
             plt.legend(scatters, scenarionames, fontsize = 18, title = "Scenarios", title_fontsize = 20)
         
     # save plot
@@ -1546,6 +1588,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
                     adjacent = False,
                     figsize = None,
                     subplots = True,
+                    plt_legend = True,
                     plt_file = None,
                     foldername = None,
                     close_plots = None,
@@ -1600,6 +1643,8 @@ def PlotPandaAggregate(panda_file = "current_panda",
     subplots : boolean, optional
         Whether different output variables should be shown in separate figures
         or as subplots of the same figure.
+    plt_legend : boolean
+        Whether legend should be plotted (in case with multiple scenarios).
     plt_file : str or None, optional
         If not None, the resluting figure(s) will be saved using this name.
         The default is None.
@@ -1740,7 +1785,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
             plt.yticks(fontsize = 16)
             plt.xlabel("Number of different cluster groups", fontsize = 20)
             plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
-            if scenarionames is not None:
+            if (scenarionames is not None) and (plt_legend):
                 plt.legend(scatters, scenarionames, fontsize = 18, title = "Scenarios",
                            title_fontsize = 20, loc = "best")
         
@@ -1789,7 +1834,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
             plt.yticks(fontsize = 16)
             plt.xlabel("Number of different cluster groups", fontsize = 20)
             plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
-            if scenarionames is not None:
+            if (scenarionames is not None) and (plt_legend):
                 plt.legend(fontsize = 18, title = "Scenarios",
                            title_fontsize = 20, loc = "best")
 
