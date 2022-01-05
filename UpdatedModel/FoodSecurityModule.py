@@ -5,7 +5,8 @@ Created on Fri Jan  1 14:35:49 2021
 
 @author: Debbora Leip
 """
-# get all functions 
+# get all functions
+# this file is automatically sourced when running the first block of the main file
 
 from ModelCode.Auxiliary import GetFilename
 
@@ -41,17 +42,18 @@ from ModelCode.PandaHandling import ReadFromPanda
 from ModelCode.PandaHandling import LoadFullResults
 from ModelCode.PandaHandling import RemoveRun
 
-from ModelCode.PandaPlotsSingleScenario import PlotPandaSingle
-from ModelCode.PandaPlotsSingleScenario import PlotPenaltyVsProb
-from ModelCode.PandaPlotsSingleScenario import PlotProbDetVsSto
-from ModelCode.PandaPlotsSingleScenario import CollectionPlotsCooperationSingle
-from ModelCode.PandaPlotsSingleScenario import CollectionPlotsCooperationAgg
-from ModelCode.PandaPlotsSingleScenario import OtherPandaPlots
-from ModelCode.PandaPlotsSingleScenario import Panda_GetResults
-from ModelCode.PandaPlotsSingleScenario import Panda_GetResultsSingScen
-from ModelCode.PandaPlotsSingleScenario import PlotPandaMedian
-from ModelCode.PandaPlotsSingleScenario import PlotPandaAll
-from ModelCode.PandaPlotsSingleScenario import PlotPandaAggregate
+from ModelCode.PandaPlotsCollection import CollectionPlotsCooperationSingle
+from ModelCode.PandaPlotsCollection import CollectionPlotsCooperationAgg
+from ModelCode.PandaPlotsCollection import OtherPandaPlots
+
+from ModelCode.PandaPlotFunctions import PlotPandaSingle
+from ModelCode.PandaPlotFunctions import PlotPenaltyVsProb
+from ModelCode.PandaPlotFunctions import PlotProbDetVsSto
+from ModelCode.PandaPlotFunctions import Panda_GetResults
+from ModelCode.PandaPlotFunctions import Panda_GetResultsSingScen
+from ModelCode.PandaPlotFunctions import PlotPandaMedian
+from ModelCode.PandaPlotFunctions import PlotPandaAll
+from ModelCode.PandaPlotFunctions import PlotPandaAggregate
 
 from ModelCode.SetFolderStructure import CheckFolderStructure
 from ModelCode.SetFolderStructure import CleanFolderStructure

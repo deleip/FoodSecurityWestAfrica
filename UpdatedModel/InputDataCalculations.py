@@ -22,6 +22,7 @@ import seaborn as sns
 
 import ModelCode.DataPreparation as DP
 import ModelCode.GroupingClusters as GC
+from ModelCode.PlotMaps import MapValues
 
 if not os.path.isdir("InputData/Visualization"):
     os.mkdir("InputData/Visualization")
@@ -33,13 +34,15 @@ if not os.path.isdir("InputData/Visualization"):
 
 DP.ProfitableAreas()
 # creates ProcessedData/MaskProfitableArea.txt
-# TODO visualizations
     
 # combine with SPEI mask
 with open("ProcessedData/MaskProfitableArea.txt", "rb") as fp:    
     mask_profitable = pickle.load(fp)
 with open("ProcessedData/mask_SPEI03_WA.txt", "rb") as fp:    
     mask_SPEI = pickle.load(fp)
+ 
+# plot map of profitable area 
+MapValues(mask_profitable, title = "Profitable area for maize or rice", file = "InputData/Visualization/ProfitableArea", cmap = False)
     
 maskAreaUsed = mask_profitable * mask_SPEI
 
@@ -47,6 +50,9 @@ with open("InputData/Other/MaskAreaUsed.txt", "wb") as fp:
     pickle.dump(maskAreaUsed, fp)
 # creates InputData/Other/MaskAreaUsed.txt
 
+# plot map of area used 
+MapValues(maskAreaUsed, title = "Area used", file = "InputData/Visualization/AreaUsed", cmap = False)
+    
 # %% 2. Average farm gate prices
 
 # based on prepared price dataset and weighted with areas
@@ -162,17 +168,9 @@ with open("InputData/Clusters/Clustering/kMediods9_PearsonDistSPEI.txt", "rb") a
     clusters = pickle.load(fp)
     
 fig = plt.figure()
-cmap = mpl.cm.Paired
-bounds = np.arange(0.5, 10, 1)
-norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
-plt.imshow(np.flip(clusters, axis = 0), cmap = cmap)
-plt.title("Division in 9 cluster")
-plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
-             orientation='horizontal',
-             ticks = range(1, 10))
-plt.show()
-fig.savefig("InputData/Visualization/kMediods9.png", bbox_inches = "tight", pad_inches = 0.5)     
-plt.close()
+
+MapValues(values = clusters, clusters = True, title = "Division in 9 cluster", 
+          file = "InputData/Visualization/kMediods9")
 
 AdjacencyMatrix = np.array([[1, 0, 1, 0, 1, 1, 1, 0, 1],
                             [0, 1, 0, 0, 1, 0, 0, 1, 0],

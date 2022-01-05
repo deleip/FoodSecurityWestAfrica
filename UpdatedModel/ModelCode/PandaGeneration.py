@@ -24,6 +24,9 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
     """
     Adds information on the model run to the given pandas csv.
     
+    !! If additional variables are included in the _WriteToPandas function,
+    they need to be added to all three dictionaries in _SetUpPandaDicts as well !!
+    
     Parameters
     ---------- 
     settings : dict
@@ -270,8 +273,11 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
     panda["VSS as share of total costs (det. solution)"]     = VSS_value/meta_sol_vss["exp_tot_costs"]
     panda["VSS in terms of avg. nec. debt"] \
             = meta_sol_vss["avg_nec_debt"] - meta_sol["avg_nec_debt"]
-    panda["VSS in terms of avg. nec. debt as share of avg. nec. debt of det. solution"] \
-            = (meta_sol_vss["avg_nec_debt"] - meta_sol["avg_nec_debt"])/meta_sol_vss["avg_nec_debt"]
+    if meta_sol_vss["avg_nec_debt"] == 0:
+        panda["VSS in terms of avg. nec. debt as share of avg. nec. debt of det. solution"] = 0
+    else:
+        panda["VSS in terms of avg. nec. debt as share of avg. nec. debt of det. solution"] \
+                = (meta_sol_vss["avg_nec_debt"] - meta_sol["avg_nec_debt"])/meta_sol_vss["avg_nec_debt"]
     panda["VSS in terms of avg. nec. debt as share of avg. nec. debt of sto. solution"] \
             =(meta_sol_vss["avg_nec_debt"] - meta_sol["avg_nec_debt"])/meta_sol["avg_nec_debt"]
     panda["VSS in terms of avg. nec. import"] \
@@ -431,8 +437,8 @@ def _SetUpPandaDicts():
     Sets up and saves the dicts that are needed to deal with the panda csvs.
     Dictonaries are defined here and saved so they can be loaded from other
     functions. 
-    !! If additional variables are included in the write_to_pandas function,
-    they need to be added to all three dictionaries here as well!!
+    !! If additional variables are included in the _WriteToPandas function,
+    they need to be added to all three dictionaries here as well !!
 
     Returns
     ------

@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 import random
 
+from ModelCode.PlotMaps import MapValues
 
 # ---------------------- FUNCTIONS FOR ReadingRawData.py ----------------------
 
@@ -77,6 +78,8 @@ def ReadAndSave_SPEI03(lon_min, lon_max, lat_min, lat_max):
         pickle.dump(lats_WA, fp)
         pickle.dump(lons_WA, fp)
         
+    MapValues(data_WA_filled[-1,:,:], title = "SPEI03 (most recent date)", file = "InputData/Visualization/SPEI03_WA")
+        
     # Mask: cells that are masked in every timestep should be excluded in
     # further analysis, therefore we define an object "mask" with value 1 
     # for cells with data for at least one timestep and value 0 for the rest 
@@ -92,6 +95,8 @@ def ReadAndSave_SPEI03(lon_min, lon_max, lat_min, lat_max):
         pickle.dump(lats_WA, fp)
         pickle.dump(lons_WA, fp)
         
+    MapValues(mask_WA, title = "SPEI03 area covered", file = "InputData/Visualization/mask_SPEI03_WA", cmap = False)
+    
     return(None)
 
 # %% 2. UN world population prospect (UNWPP) data
