@@ -23,8 +23,17 @@ comb = [("Similar", True),
         ("Dissimilar", False)]
 
 k = 9
-for s in [1, 2, 3, 5]:
+
+with open("InputData/Clusters/Clustering/kMediods" + str(k) + \
+             "_PearsonDistSPEI.txt", "rb") as fp:  
+    clusters = pickle.load(fp) # clusters
+
+for s in [1, 2, 3, 5, 9]:
     for (aim, adjacent) in comb:
+        if adjacent:
+            adj = "Adj"
+        else:
+            adj = ""
         for metric in ["medoids", "equality"]:
             print("metric " + metric + ", group size s = " + str(s) + \
                   " according to " + aim + "ity with " + \
@@ -32,6 +41,11 @@ for s in [1, 2, 3, 5]:
             BestGrouping, BestCosts, valid = \
                     FS.GroupingClusters(k = k, size = s, aim = aim, \
                         adjacent = adjacent, metric = metric, title = None)
+            FS.PlotClusterGroups(grouping = BestGrouping,
+                                 k = k,
+                                 title = "Grouping for k = " + str(k) + ", s = " + str(s) +
+                                 ", aim = " + aim  + ", adjacent =" + str(adjacent) + ", metric = " + metric,
+                                 file = "Figures/ClusterGroups/k" + str(k) + "s" + str(s) + "Aim" + aim + adj + metric.capitalize())
 
 
         

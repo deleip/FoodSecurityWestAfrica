@@ -23,6 +23,7 @@ import seaborn as sns
 import ModelCode.DataPreparation as DP
 import ModelCode.GroupingClusters as GC
 from ModelCode.PlotMaps import MapValues
+from ModelCode.PlotMaps import PlotClusterGroups
 
 if not os.path.isdir("InputData/Visualization"):
     os.mkdir("InputData/Visualization")
@@ -41,9 +42,6 @@ with open("ProcessedData/MaskProfitableArea.txt", "rb") as fp:
 with open("ProcessedData/mask_SPEI03_WA.txt", "rb") as fp:    
     mask_SPEI = pickle.load(fp)
  
-# plot map of profitable area 
-MapValues(mask_profitable, title = "Profitable area for maize or rice", file = "InputData/Visualization/ProfitableArea", cmap = False)
-    
 maskAreaUsed = mask_profitable * mask_SPEI
 
 with open("InputData/Other/MaskAreaUsed.txt", "wb") as fp:    
@@ -51,7 +49,8 @@ with open("InputData/Other/MaskAreaUsed.txt", "wb") as fp:
 # creates InputData/Other/MaskAreaUsed.txt
 
 # plot map of area used 
-MapValues(maskAreaUsed, title = "Area used", file = "InputData/Visualization/AreaUsed", cmap = False)
+MapValues(maskAreaUsed, title = "Area used", 
+          file = "InputData/Visualization/AreaUsed", plot_cmap = False)
     
 # %% 2. Average farm gate prices
 
@@ -97,6 +96,8 @@ with open("InputData/Other/PearsonDistSPEI03.txt", "rb") as fp:
 for k in range(1, 20):
     print(k, flush = True)
     DP.kMedoids(k, pearsonDist, MaskAreaUsed, "PearsonDistSPEI")
+    PlotClusterGroups(k = k, title = "Division in " + str(k) + " cluster", 
+              file = "InputData/Visualization/MapkMediods" + str(k))
 # creates Inputdata/Clusters/Clustering/kMedoidsX_PearsonDistSPEI.txt    
 
 # %% 6. best number of cluster
@@ -168,9 +169,6 @@ with open("InputData/Clusters/Clustering/kMediods9_PearsonDistSPEI.txt", "rb") a
     clusters = pickle.load(fp)
     
 fig = plt.figure()
-
-MapValues(values = clusters, clusters = True, title = "Division in 9 cluster", 
-          file = "InputData/Visualization/kMediods9")
 
 AdjacencyMatrix = np.array([[1, 0, 1, 0, 1, 1, 1, 0, 1],
                             [0, 1, 0, 0, 1, 0, 0, 1, 0],

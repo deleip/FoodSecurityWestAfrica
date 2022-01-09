@@ -65,6 +65,9 @@ from ModelCode.SettingsParameters import RiskForCatastrophe
 from ModelCode.VSSandValidation import VSS
 from ModelCode.VSSandValidation import OutOfSampleVal
 
+from ModelCode.PlotMaps import PlotClusterGroups
+from ModelCode.PlotMaps import MapValues
+
 # set up folder structure (if not already done)
 CheckFolderStructure()
         

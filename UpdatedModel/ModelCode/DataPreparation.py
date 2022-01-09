@@ -78,7 +78,8 @@ def ReadAndSave_SPEI03(lon_min, lon_max, lat_min, lat_max):
         pickle.dump(lats_WA, fp)
         pickle.dump(lons_WA, fp)
         
-    MapValues(data_WA_filled[-1,:,:], title = "SPEI03 (most recent date)", file = "InputData/Visualization/SPEI03_WA")
+    MapValues(data_WA_filled[-1,:,:], title = "SPEI03 (most recent date)",
+              file = "InputData/Visualization/SPEI03_WA")
         
     # Mask: cells that are masked in every timestep should be excluded in
     # further analysis, therefore we define an object "mask" with value 1 
@@ -95,7 +96,8 @@ def ReadAndSave_SPEI03(lon_min, lon_max, lat_min, lat_max):
         pickle.dump(lats_WA, fp)
         pickle.dump(lons_WA, fp)
         
-    MapValues(mask_WA, title = "SPEI03 area covered", file = "InputData/Visualization/mask_SPEI03_WA", cmap = False)
+    MapValues(mask_WA, title = "SPEI03 area covered", 
+              file = "InputData/Visualization/mask_SPEI03_WA", plot_cmap = False)
     
     return(None)
 
@@ -324,7 +326,12 @@ def ReadAndSave_GDHY(v_name, lon_min, lon_max, lat_min, lat_max):
     mask_save = np.prod(mask_save, axis = 0)*(-1) +1 # chagne 0 and 1 so it 
                                                      # fits with other masks    
                                       
-                                                     
+    MapValues(var_save[-1,:,:], title = v_name + " yields (most recent date)", 
+              file = "InputData/Visualization/" + v_name + "_yields") 
+     
+    MapValues(mask_save, title = "Area with " + v_name + " yield data", 
+              file = "InputData/Visualization/" + v_name + "_mask", plot_cmap = False)                                     
+                                      
     with open("ProcessedData/" + v_name.split("_")[0] + "_yld.txt", "wb") as fp:    
         pickle.dump(var_save, fp)
         pickle.dump(lats_WA, fp)
@@ -497,15 +504,10 @@ def ProfitableAreas():
     data_detrend, p_val_slopes, slopes, intercepts = __DetrendDataLinear(maize_yld, maize_mask)
     exp_yld_maize = intercepts + year_rel * slopes
     
-    # fig = plt.figure(figsize = (24, 13.5))
-    # ax = fig.add_subplot(1,2,1)
-    # c = OF2.MapValues(exp_yld_rice, lats_WA, lons_WA, vmin = 0, vmax = 4, ax = ax, title = "rice")
-    # ax = fig.add_subplot(1,2,2)
-    # c = OF2.MapValues(exp_yld_maize, lats_WA, lons_WA, vmin = 0, vmax = 4, ax = ax, title = "maize")
-    # cb_ax = fig.add_axes([0.93, 0.2, 0.02, 0.6])
-    # cbar = fig.colorbar(c, cax = cb_ax)     
-    # fig.savefig("../ForPublication/Clustering/Area/exp_ylds.png", bbox_inches = "tight", pad_inches = 1)
-    
+    MapValues(exp_yld_rice, vmin = 0, vmax = 4, title = "Expected yields rice",
+              file = "InputData/Visualization/ExpYieldsRice")
+    MapValues(exp_yld_rice, vmin = 0, vmax = 4, title = "Expected yields maize",
+              file = "InputData/Visualization/ExpYieldsMaize")    
     
     # calculate threshold
     prices = CalcAvgProducerPrices(rice_mask, maize_mask)
@@ -524,20 +526,17 @@ def ProfitableAreas():
     maize_expProfitable[np.isnan(maize_expProfitable)] = 0
     
     
-    # fig = plt.figure(figsize = figsize)
-    # ax = fig.add_subplot(1,2,1)
-    # c = OF2.MapValues(rice_expProfitable, lats_WA, lons_WA, vmin = 0, vmax = 4, ax = ax, title = "rice")
-    # ax = fig.add_subplot(1,2,2)
-    # c = OF2.MapValues(maize_expProfitable, lats_WA, lons_WA, vmin = 0, vmax = 4, ax = ax, title = "maize")
-    # cb_ax = fig.add_axes([0.93, 0.2, 0.02, 0.6])
-    # cbar = fig.colorbar(c, cax = cb_ax)     
-    # cbar.set_ticks([1.87144197, 1.05603763, 0, 1.5, 3])   
-    # cbar.set_ticklabels(["rice", "maize", str(0), str(1.5), str(3)])
-    # fig.savefig("../ForPublication/Clustering/Area/exp_ylds_profitable.png", bbox_inches = "tight", pad_inches = 1)
+    MapValues(rice_expProfitable, title = "Expected profitable area rice",
+              file = "InputData/Visualization/ProfitableAreaRice", plot_cmap = False)
+    MapValues(maize_expProfitable, title = "Expected profitable area maize",
+              file = "InputData/Visualization/ProfitableAreaMaize", plot_cmap = False)
     
     mask_profitable = rice_expProfitable + maize_expProfitable
     mask_profitable[mask_profitable > 1] = 1
 
+    MapValues(mask_profitable, title = "Expected profitable area either crop",
+              file = "InputData/Visualization/ProfitableArea", plot_cmap = False)
+    
     with open("ProcessedData/MaskProfitableArea.txt", "wb") as fp:    
         pickle.dump(mask_profitable, fp)
 
@@ -1148,86 +1147,3 @@ def GetSwitch(k, dist, num_lats, num_lons, medoids, mask):
     # returning best switch found (even if it is no improvement to current 
     # situation - this is checked after)
     return(new_cluster, new_cost, new_medoids)
-
-
-
-
-# --------------------------------- deprected --------------------------------
-
-
-
-# def MapValues(values, lat_min, lat_max, lon_min, lon_max, lons_rel, title = "", vmin = None, vmax = None):
-    
-    
-    # extent = [lon_min, lon_max, lat_min, lat_max]
-    # ax = plt.axes(projection=ccrs.PlateCarree())
-    # ax.set_extent(extent)
-
-    # # lons = np.arange(lon_min, lon_max, 0.5)
-    # # lats = np.arange(lat_min, lat_max, 0.5)
-    # # lon2d, lat2d = np.meshgrid(lons, lats)
-    
-    # with open("InputData/Other/LatsLonsArea.txt", "rb") as fp:
-    #     lats_WA = pickle.load(fp)
-    #     lons_WA = pickle.load(fp)
-        
-    
-    # plt.pcolormesh(lons_WA, lats_WA, clusters, shading='flat', transfoom = ccrs.PlateCarree())
-    # ax.gridlines(draw_labels=True)
-    
-#     resol = '50m'  # use data at this scale
-#     bodr = cartopy.feature.NaturalEarthFeature(category='cultural', 
-#         name='admin_0_boundary_lines_land', scale=resol, facecolor='none', alpha=0.7)
-#     land = cartopy.feature.NaturalEarthFeature('physical', 'land', \
-#         scale=resol, edgecolor='k', facecolor=cartopy.feature.COLORS['land'])
-#     ocean = cartopy.feature.NaturalEarthFeature('physical', 'ocean', \
-#         scale=resol, edgecolor='none', facecolor=cartopy.feature.COLORS['water'])
-#     lakes = cartopy.feature.NaturalEarthFeature('physical', 'lakes', \
-#         scale=resol, edgecolor='b', facecolor=cartopy.feature.COLORS['water'])
-#     rivers = cartopy.feature.NaturalEarthFeature('physical', 'rivers_lake_centerlines', \
-#         scale=resol, edgecolor='b', facecolor='none')
-    
-#     ax.add_feature(land, facecolor='beige')
-#     ax.add_feature(ocean, linewidth=0.2 )
-#     ax.add_feature(lakes)
-#     ax.add_feature(rivers, linewidth=0.5)
-#     ax.add_feature(bodr, linestyle='--', edgecolor='k', alpha=1)
-    
-    
-#     plt.show()
-        
-
-# def MapValues(values, lats_rel, lons_rel, \
-#               title = "", vmin = None, vmax = None, ax = None):    
-#     # initialize map
-#     m = Basemap(llcrnrlon=lons_rel[0], llcrnrlat=lats_rel[0], \
-#                 urcrnrlat=lats_rel[-1], urcrnrlon=lons_rel[-1], \
-#                 resolution='l', projection='merc', \
-#                 lat_0=lats_rel.mean(),lon_0=lons_rel.mean(), ax = ax)
-    
-#     lon, lat = np.meshgrid(lons_rel, lats_rel)
-#     xi, yi = m(lon, lat)
-    
-#     # Plot Data
-#     m.drawmapboundary(fill_color='azure')
-#     c = m.pcolormesh(xi,yi,np.squeeze(values), cmap = 'jet_r', \
-#                                           vmin = vmin, vmax = vmax)
-
-#     # Add Grid Lines
-#     m.drawparallels(np.arange(-80., 81., 10.), labels=[0,1,0,0], fontsize=8)
-#     m.drawmeridians(np.arange(-180., 181., 10.), labels=[0,0,0,1], fontsize=8)
-#     # Add Coastlines, States, and Country Boundaries
-#     m.drawcoastlines(linewidth=1.1)
-#     m.drawstates(linewidth=1.1)
-#     m.drawcountries(linewidth=1.1)
-#     m.drawrivers(linewidth=0.5, color='blue')
-#     # Add Title
-#     if ax:
-#         ax.set_title(title)
-#     else:
-#         plt.title(title)
-#     plt.show()
-#     return(c)
-
-
-
