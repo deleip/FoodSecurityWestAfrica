@@ -54,10 +54,11 @@ y = "fixed"
 p = "fixed"
 
 N = 1000
-M = 50000
+M = 5000
 
 cl = 3
 
+# should take about 1.5 min
 settings, args, yield_information, population_information, \
 status, durations, exp_incomes, crop_alloc, meta_sol, \
 crop_allocF, meta_solF, crop_allocS, meta_solS, \
@@ -70,3 +71,13 @@ crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
                       pop_scenario = p)
 # full results saved in ModelOutput/SavedRuns
 # specific indicators added to csv in ModelOutput/Pandas
+
+# %% ########################### 2. READING RAW DATA ##########################
+
+# should take less than a minute
+import ReadingRawData
+
+# %% ########################## 3. PREPATING INPUT DATA ####################### 
+
+# takes wuite a long time, as clustering algorithm is run for k = 1, ..., 20
+import InputDataCalculations

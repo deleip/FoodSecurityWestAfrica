@@ -24,7 +24,11 @@ if not os.path.isdir("ProcessedData"):
 if not os.path.isdir("InputData/Visualization"):
     os.mkdir("InputData/Visualization")
 
+print("Reading raw data ...", flush = True)
+
 # %% 1. General Definition
+
+print("... general settings", flush = True)
 
 # define region corresponding to West Africa
 lon_min = -19 
@@ -45,8 +49,10 @@ with open("InputData/Other/LatsLonsArea.txt", "wb") as fp:
     pickle.dump(lons_WA, fp)
 # creates InputData/Other/LatsLonsArea.txt
 
-# %% 2. SPEI
+# %% 2. SPEI (~20sec)
     
+print("... SPEI", flush = True)
+
 # The Standardized Precipitation-Evapotranspiration Index (SPEI) was proposed 
 # to overcome problems of the SPI (mainly not considering temperature) and the 
 # sc-PDSI (mainly having only one timescale).
@@ -68,6 +74,8 @@ DP.ReadAndSave_SPEI03(lon_min, lon_max, lat_min, lat_max)
 
 # %% 3. Population data from UN World Population Prospects 
      
+print("... UN World Population data", flush = True)
+
 # Data Download: https://population.un.org/wpp/Download/Files/1_Indicators%20(Standard)/CSV_FILES/WPP2019_TotalPopulationBySex.csv
 # Accessed April 12th 2020
 # annual data, historic part covers 1950-2019, projections cover 2020-2100
@@ -98,6 +106,8 @@ DP.ReadAndSave_UNWPP(WhichRegion = "Western Africa", WhichValues = "PopTotal")
 
 # %% 4. Gridded Populaion of the World (SEDAC)
     
+print("... gridded population data", flush = True)
+
 # Data download: https://sedac.ciesin.columbia.edu/data/set/gpw-v4-population
 #             -count-adjusted-to-2015-unwpp-country-totals-rev11/data-download    
 # Accessed Juune 4th 2020
@@ -132,6 +142,8 @@ country_codes.to_csv("InputData/Prices/CountryCodes.csv", index = False)
 # creates InputData/Prices/CountryCodes.csv
 
 # %% 5. Preparing GDHY yield data    
+
+print("... GDHY", flush = True)
 
 # Data downloaded from https://doi.pangaea.de/10.1594/PANGAEA.909132
 # Annual time series data of 0.5-degree grid-cell yield estimates of major 
@@ -168,6 +180,8 @@ with open("ProcessedData/yld_mask.txt", "wb") as fp:
 
 # %% 6. Farm gate prices for countries in West Africa
 
+print("... farm gate prices", flush = True)
+
 # Data download: http://www.fao.org/faostat/en/#data/PP
 # countries: Benin, Burkina Faso, Cameroon, Cote d'Ivoire, Gambia, Ghana, 
 # Guinea, Guinea-Bissau, Mali, Mauritania, Niger, Nigeria, Senegal,
@@ -191,6 +205,8 @@ DP.VisualizeAndPrepare_ProducerPrices()
 #         InputData/Visualization/ProducerPrices.png  
 
 # %% 7. Crop Cultivation Costs
+
+print("... crop cultivation costs", flush = True)
 
 # Values from literature research 
 

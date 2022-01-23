@@ -17,8 +17,8 @@ os.chdir(dir_path)
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 import seaborn as sns
+from termcolor import colored
 
 from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
@@ -31,7 +31,11 @@ from ModelCode.PlotMaps import PlotClusterGroups
 if not os.path.isdir("InputData/Visualization"):
     os.mkdir("InputData/Visualization")
 
+print("Preparing input data ...", flush = True)
+
 # %% 1. Profitable Areas
+
+print("... profitable area", flush = True)
 
 # Only including cells, where either maize or rice has profitable average 
 # yields (based on linear regression evaluated for baseyear 2016)
@@ -57,6 +61,8 @@ MapValues(maskAreaUsed, title = "Area used",
     
 # %% 2. Average farm gate prices
 
+print("... average farm gate prices", flush = True)
+
 # based on prepared price dataset and weighted with areas
 
 with open("InputData/Other/MaskAreaUsed.txt", "rb") as fp:    
@@ -71,6 +77,8 @@ with open("InputData/Prices/RegionFarmGatePrices.txt", "wb") as fp:
 
 # %% 3. Average calorie demand per person and day
 
+print("... average calorie demand per person and day", flush = True)
+
 # based on some country values (ProcessedData/CountryCaloricDemand.csv)
 # we calculate the average caloric demand per person and day, using area as weight
                 
@@ -78,6 +86,8 @@ DP.AvgCaloricDemand()
 # creates InputData/Other/AvgCaloricDemand.txt
 
 # %% 4. calculate pearson distance between all cells
+
+print("... Pearson Distance between cells", flush = True)
 
 with open("InputData/Other/MaskAreaUsed.txt", "rb") as fp:    
     MaskAreaUsed = pickle.load(fp)
@@ -87,6 +97,8 @@ DP.CalcPearsonDist(MaskAreaUsed)
 # creates InputData/Other/PearsonDistSPEI03.txt
 
 # %% 5. run clustering algorithm 
+
+print("... clustering algorithm", flush = True)
 
 # k-medoids algrithm based on gridded SPEI values
 
@@ -105,6 +117,7 @@ for k in range(1, 20):
 
 # %% 6. best number of cluster
 
+print("... best number of clusters", flush = True)
 
 with open("InputData/Other/PearsonDistSPEI03.txt", "rb") as fp:    
     pearsonDist = pickle.load(fp)  
@@ -169,6 +182,10 @@ for i in range(0,2):
        
 # %% 7. Adjacency matrix
 
+print("... adjacency matrix \n        " + \
+      colored("!!This was included manually, needs to be change if different" + \
+              "input data or number of clusters is used!!", "red"), flush = True)
+
 # manually setting up an adjacency matrix (to be used when making cluster groups)
 
 with open("InputData/Clusters/Clustering/kMediods9_PearsonDistSPEI.txt", "rb") as fp:  
@@ -192,6 +209,8 @@ with open("InputData/Clusters/AdjacencyMatrices/k9AdjacencyMatrix.txt", "wb") as
         
 # %% 8. Cluster groupings
 
+print("... Cluster groupinds", flush = True)
+
 for aim in ["Similar", "Dissimilar"]:
     for adj in [True, False]:
         for s in [1, 2, 3, 5, 9]:
@@ -200,6 +219,8 @@ for aim in ["Similar", "Dissimilar"]:
 # creates GroupingSizeX(Dis)Similar(Adj).txt  
  
 # %% 9. Yield trends
+
+print("... yield trends", flush = True)
 
 with open("InputData/Other/CultivationCosts.txt", "rb") as fp:
     costs = pickle.load(fp)
