@@ -20,6 +20,9 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import seaborn as sns
 
+from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
+
 import ModelCode.DataPreparation as DP
 import ModelCode.GroupingClusters as GC
 from ModelCode.PlotMaps import MapValues
@@ -125,32 +128,35 @@ for k in range(2, kmax + 1):
     
 dists_between = [between_all, between_closest]
 dists_within = [within_cluster, within_cluster]
-title = ["Comparison using all clusters for SPEI", \
+title = ["a. Comparison using all clusters for SPEI", \
          "Comparison using closest clusters for SPEI"]
 
 # plot distances for different numbers of clusters
 version = ["All", "Closest"]
 for i in range(0,2):
-    fig = plt.figure(figsize = (24, 13.5))
+    fig = plt.figure(figsize = (18, 9))
     ax = fig.add_subplot(1,2,1) 
     ax.scatter(dists_within[i], dists_between[i],  c=range(2, kmax + 1))
-    plt.title(title[i])
-    plt.xlabel("Average distance within clusters")
-    plt.ylabel("Average distance between clusters")
-    for t, txt in enumerate(range(2, kmax + 1)):
-        ax.annotate(txt, (dists_within[i][t] + 0.0013, \
-                          dists_between[i][t] - 0.001)) 
+    plt.title("a. Inter- and intra-cluster similarity", fontsize = 22)
+    plt.xlabel("Similarity within clusters", fontsize = 16)
+    plt.ylabel("Similarity between clusters", fontsize = 16)
+    plt.xticks(fontsize =14)
+    plt.yticks(fontsize =14)
+    for t, txt in enumerate(np.arange(2, kmax + 1, 4)):
+        ax.annotate(txt, (dists_within[i][3*t] - 0.0024, \
+                          dists_between[i][3*t] + 0.0029)) 
     fig.add_subplot(1,2,2) 
     metric, cl_order = DP.MetricClustering(dists_within[i], dists_between[i], \
                                         refX = 0, refY = max(dists_between[i])) 
     plt.scatter(cl_order, metric)
-    plt.xticks(range(2, 21))
-    plt.title("Quantification of tradeoff")
-    plt.xlabel("Number of clusters")
+    plt.xticks(range(2, kmax + 1), fontsize =14)
+    plt.yticks(fontsize =14)
+    plt.title("b. Quantification of tradeoff", fontsize = 22)
+    plt.xlabel("Number of clusters", fontsize = 16)
     plt.ylabel("Euclidean distance to (0, "+ \
                                   str(np.round(max(dists_between[i]), 2)) + \
-                                  ") on scatter plot of distances")
-    plt.suptitle("Tradeoff of distances within and between cluster")
+                                  ") in figure a.", fontsize = 16)
+    # plt.suptitle("Tradeoff of distances within and between cluster")
         
     fig.savefig("InputData/Visualization/kMediods_ScatterInterVsIntraCluster" +\
                  version[i] + ".png", bbox_inches = "tight", pad_inches = 0.5)      
@@ -219,9 +225,9 @@ cols = ["darkgreen", "darkred"]
 start_year = 1981
 len_ts = yields_avg.shape[0]
 
-fig = plt.figure(figsize = (24, 13.5))
+fig = plt.figure(figsize = (12, 8))
 fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9,
-                wspace=0.3, hspace=0.3)
+                wspace=0.2, hspace=0.45)
 for cl in range(0, k):
     if k > 6:
         ax = fig.add_subplot(3, int(np.ceil(k/3)), cl + 1)
@@ -238,17 +244,37 @@ for cl in range(0, k):
                  np.repeat(threshold[0], len_ts), ls = "--", alpha = 0.7)
         plt.plot(range(start_year, start_year + len_ts), \
                  np.repeat(threshold[1], len_ts), ls = "--", alpha = 0.7)
-    if (cl + 1) > (k - np.ceil(k/2)):
+    if cl > 5:
         plt.xlabel("Years")
-    if cl%(np.ceil(k/2)) == 0:
+    if cl%3 == 0:
         plt.ylabel("Yield in t/ha")
     plt.title("Cluster " + str(cl + 1))
-    plt.ylim([0, 5.5])
-plt.suptitle("Cluster average of GDHY " + \
-         "yields (k = " + str(k) + ") and trend " + \
-         "with 95% confidence interval for " + crops[0] + " (" + \
-         cols[0] + ") and " + crops[1] + " (" + cols[1] + ")")
+    # plt.ylim([0, 5.5])
+# plt.suptitle("Cluster average of GDHY " + \
+         # "yields (k = " + str(k) + ") and trend " + \
+         # "with 95% confidence interval for " + crops[0] + " (" + \
+         # cols[0] + ") and " + crops[1] + " (" + cols[1] + ")")
 fig.savefig("InputData/Visualization/k" + str(k) + \
         "AvgYieldTrends.png", bbox_inches = "tight", \
         pad_inches = 0.5)   
 plt.close()
+
+legend = plt.figure(figsize  = (5, 3))
+legend_elements1 = [Line2D([0], [0], lw = 2, ls = "dashed", color= "black",
+                          label="Threshold for profitability"),
+                    Patch(color = "darkgreen", label='Rice', alpha = 0.6),
+                    Patch(color = "darkred", label='Maize', alpha = 0.6)
+                    ]
+
+ax = legend.add_subplot(1, 1, 1)
+ax.set_yticks([])
+ax.set_xticks([])
+ax.spines['right'].set_visible(False)
+ax.spines['top'].set_visible(False)
+ax.spines['left'].set_visible(False)
+ax.spines['bottom'].set_visible(False)
+ax.legend(handles = legend_elements1, fontsize = 14, loc = 6)
+
+legend.savefig("InputData/Visualization/YieldTrendsLegend.jpg", 
+                bbox_inches = "tight", pad_inches = 1, format = "jpg")
+plt.close(legend)

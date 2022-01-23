@@ -31,6 +31,7 @@ if not os.path.isdir("Figures/PublicationPlots/SI"):
 
 aim = "Similar"
 adj = "Adj"
+metric = "medoids"
 
 
 # for similar adjacent (medoids)
@@ -79,8 +80,8 @@ for i in range(0, 4):
 # plot for all cluster groups of all sizes
 for idx, size in enumerate([1, 2, 3, 5, 9]):
     # get grouping for that size
-    with open("InputData/Clusters/ClusterGroups/GroupingMedoidsSize" \
-                  + str(size) + aim + adj + ".txt", "rb") as fp:
+    with open("InputData/Clusters/ClusterGroups/Grouping" + metric.capitalize() + \
+              "Size" + str(size) + aim + adj + ".txt", "rb") as fp:
             BestGrouping = pickle.load(fp)
     tmp = mapping_sim_adj[idx]
     for cl in BestGrouping:
@@ -139,8 +140,8 @@ for idx, size in enumerate([1, 2, 3, 5, 9]):
         income_vss = np.maximum(meta_sol_vss["profits_afterTax"], guaranteed_vss)
         income_F = np.maximum(meta_solF["profits_afterTax"], guaranteed)
         ax2_tmp = plt.Subplot(fig[2], inner[2][rows, colfirst:collast])
-        ax2_tmp.axvline(np.sum(meta_sol["guaranteed_income"], axis = 1)[0], color = "blue", linestyle = "dashed", alpha = 0.6)
-        ax2_tmp.axvline(np.sum(meta_sol_vss["guaranteed_income"], axis = 1)[0], color = "green", linestyle = "dashed", alpha = 0.6)
+        ax2_tmp.axvline(np.sum(meta_sol["guaranteed_income"], axis = 1)[0], color = "red", linestyle = "dashed", alpha = 0.6)
+        ax2_tmp.axvline(np.sum(meta_sol_vss["guaranteed_income"], axis = 1)[0], color = "blue", linestyle = "dashed", alpha = 0.6)
         ax2_tmp.hist(np.sum(income_vss, axis = 2).flatten(), bins = 100, alpha = 0.6)   
         ax2_tmp.hist(np.sum(income, axis = 2).flatten(), bins = 100, alpha = 0.6) 
         if size == 1:
@@ -180,7 +181,7 @@ xlabels = [r"Food supply in cluster [$10^{12}\,kcal$]",
            r"Final fund size after payouts [$10^9\,\$$]"]
 legend_labels = ["Food demand", 
                  "Guaranteed income (sto.)",
-                 "Guaranteed income (sto.)",
+                 "Guaranteed income (det.)",
                  "Zero"]
 filenames = ["FoodSupplyDistribution_NoTrends_WithCoop",
              "ProfitDistribution_NoTrends_WithCoop",
@@ -198,8 +199,8 @@ for i in range(0, 4):
                        Line2D([0], [0], color = 'blue', lw = 1.5, ls = "dashed",
                               label = legend_labels[i], alpha = 0.6)]
     if i in [1,2]:
-        legend_elements.append( Line2D([0], [0], color = 'green', lw = 1.5, 
-              ls = "dashed", label = "Guaranteed income (det.)", alpha = 0.6))
+        legend_elements.append( Line2D([0], [0], color = 'red', lw = 1.5, 
+              ls = "dashed", label = "Guaranteed income (sto.)", alpha = 0.6))
         
     ax[i].legend(handles = legend_elements, bbox_to_anchor = (1.02, 0.5),
                  loc = 'center left', fontsize = 14)

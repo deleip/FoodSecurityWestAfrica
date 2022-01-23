@@ -241,6 +241,11 @@ def ReadAndReduce_GPW(lat_min, lon_min, lat_max, lon_max):
     country_codes_filled[country_codes_filled == 32767] = np.nan
     
     
+    
+    MapValues(data_rel_filled[3,:,:], title = "Population in 2015",
+              file = "InputData/Visualization/Population2015",
+              vmin = 0, vmax = 2e5)
+    
     with open("InputData/Population/GPW_WA.txt", "wb") as fp:    
         pickle.dump(data_rel_filled, fp)
         pickle.dump(years, fp)

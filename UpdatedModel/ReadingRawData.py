@@ -159,6 +159,9 @@ with open("ProcessedData/maize_mask.txt", "rb") as fp:
 
 yld_mask = rice_mask * maize_mask
 
+print(np.sum(yld_mask == 1))
+# 861
+
 with open("ProcessedData/yld_mask.txt", "wb") as fp:    
     pickle.dump(yld_mask, fp)
 # creates ProcessedData/yld_mask.txt
