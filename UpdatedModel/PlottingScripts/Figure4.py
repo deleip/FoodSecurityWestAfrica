@@ -18,10 +18,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
+from string import ascii_uppercase as letter
 
-if not os.path.isdir("Figures/PublicationPlots/Figure4"):
-    os.mkdir("Figures/PublicationPlots/Figure4")
-
+publication_colors = {"purple" : "#5e0fb8",
+                      "red" : "darkred",
+                      "orange" : "#F38F1D",
+                      "lavender" : "#d9a5d4",
+                      "cyan" : "#52dedc",
+                      "grey" : "#a3a3a3",
+                      "green" : "#67b03f",
+                      "blue" : "royalblue",
+                      "yellow" : "#e8d035"}
 
 # %%  CROP AREAS 
 
@@ -34,6 +41,9 @@ panelA = plt.figure(figsize = (16, 11))
 
 panelA.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.95,
                 wspace=0.15, hspace=0.35)
+
+col1 = publication_colors["green"]
+col2 = publication_colors["yellow"]
 
 print("Plotting in progress ...", flush = True)
 for cl in range(1, 10):
@@ -74,24 +84,24 @@ for cl in range(1, 10):
     #         color = "dimgrey", lw = 5, alpha = 0.4)
     
     # plot crop lines
-    ax_tmp.plot(years, (crop_alloc_worst[:,0,0]/args["max_areas"]) * 100, color = "#656C12", lw = 3)
-    ax_tmp.plot(years, (crop_alloc_fixed[:,0,0]/args["max_areas"]) * 100, color = "#656C12", lw = 3, ls = "dashdot")
-    ax_tmp.plot(years, (crop_alloc_best[:,0,0]/args["max_areas"]) * 100, color = "#656C12", lw = 3, ls = "--")
+    ax_tmp.plot(years, (crop_alloc_worst[:,0,0]/args["max_areas"]) * 100, color = col1, lw = 3)
+    ax_tmp.plot(years, (crop_alloc_fixed[:,0,0]/args["max_areas"]) * 100, color = col1, lw = 3, ls = "dashdot")
+    ax_tmp.plot(years, (crop_alloc_best[:,0,0]/args["max_areas"]) * 100, color = col1, lw = 3, ls = "--")
     
-    ax_tmp.plot(years, (crop_alloc_worst[:,1,0]/args["max_areas"]) * 100, color = "#ECC216", lw = 3)
-    ax_tmp.plot(years, (crop_alloc_fixed[:,1,0]/args["max_areas"]) * 100, color = "#ECC216", lw = 3, ls = "dashdot")
-    ax_tmp.plot(years, (crop_alloc_best[:,1,0]/args["max_areas"]) * 100, color = "#ECC216", lw = 3, ls = "--")
+    ax_tmp.plot(years, (crop_alloc_worst[:,1,0]/args["max_areas"]) * 100, color = col2, lw = 3)
+    ax_tmp.plot(years, (crop_alloc_fixed[:,1,0]/args["max_areas"]) * 100, color = col2, lw = 3, ls = "dashdot")
+    ax_tmp.plot(years, (crop_alloc_best[:,1,0]/args["max_areas"]) * 100, color = col2, lw = 3, ls = "--")
     
     # shade area between worst and best case
     ax_tmp.fill_between(years, (crop_alloc_worst[:,0,0]/args["max_areas"]) * 100,
                         (crop_alloc_best[:,0,0]/args["max_areas"]) * 100,
-                      color = "#656C12", alpha = 0.5, label = "Range of rice")
+                      color = col1, alpha = 0.5, label = "Range of rice")
     ax_tmp.fill_between(years, (crop_alloc_worst[:,1,0]/args["max_areas"]) * 100,
                         (crop_alloc_best[:,1,0]/args["max_areas"]) * 100,
-                      color = "#ECC216", alpha = 0.5, label = "Range of maize")
+                      color = col2, alpha = 0.5, label = "Range of maize")
      
     # subplot titles
-    ax_tmp.set_title("Region " + str(cl), fontsize = 16)
+    ax_tmp.set_title("Region " + letter[cl-1], fontsize = 16)
     
     # set limits and fontsizes
     ax_tmp.set_xlim(years[0] - 0.5, years[-1] + 0.5)
@@ -104,49 +114,60 @@ for cl in range(1, 10):
         
     
 # add a big axis, hide frame, ticks and tick labels of overall axis
-panelA.add_subplot(111, frameon=False)
+ax = panelA.add_subplot(111, frameon=False)
 plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
 plt.xlabel("Year", fontsize = 24, labelpad = 20)
-plt.ylabel("Crop area as share of available arable area, %", fontsize = 24, labelpad = 20)
+plt.ylabel("Crop area as percentage of available arable area", fontsize = 24, labelpad = 20)
 
-panelA.savefig("Figures/PublicationPlots/Figure4/CropAreas.jpg", 
-                bbox_inches = "tight", pad_inches = 1, format = "jpg")
-plt.close(panelA)
-
-
-# LEGEND AS SEPARATE FIGURE
-panelAlegend = plt.figure(figsize  = (5, 3))
-legend_elements1 = [Line2D([0], [0], color ='black', lw = 2, 
+legend_elements = [Line2D([0], [0], color ='black', lw = 2, 
                           label='worst case'),
                     Line2D([0], [0], color ='black', lw = 2, ls = "dashdot",
                           label='stationary'),
                     Line2D([0], [0], color ='black', lw = 2, ls = "--",
                           label='best case'),
-                    # Line2D([0], [0], color ='dimgrey',  lw = 5,
-                    #       label="Available arable area")
-                    ]
+                    Patch(color = col1, label='Rice'),
+                    Patch(color = col2,  label='Maize')]
+ax.legend(handles = legend_elements, fontsize = 18, bbox_to_anchor = (0.5, -0.15),
+          loc = "upper center", ncol = 2)
 
-legend_elements2 = [Patch(color ='#656C12', label='Rice'),
-                    Patch(color ='#ECC216',  label='Maize')]
-
-ax = panelAlegend.add_subplot(2, 1, 1)
-ax.set_yticks([])
-ax.set_xticks([])
-ax.spines['right'].set_visible(False)
-ax.spines['top'].set_visible(False)
-ax.spines['left'].set_visible(False)
-ax.spines['bottom'].set_visible(False)
-ax.legend(handles = legend_elements1, fontsize = 14, loc = 6)
-
-ax = panelAlegend.add_subplot(2, 1, 2)
-ax.set_yticks([])
-ax.set_xticks([])
-ax.spines['right'].set_visible(False)
-ax.spines['top'].set_visible(False)
-ax.spines['left'].set_visible(False)
-ax.spines['bottom'].set_visible(False)
-ax.legend(handles = legend_elements2, fontsize = 14, loc = 6)
-
-panelAlegend.savefig("Figures/PublicationPlots/Figure4/CropAreasLegend.jpg", 
+panelA.savefig("Figures/PublicationPlots/Figure4_CropAreas.jpg", 
                 bbox_inches = "tight", pad_inches = 1, format = "jpg")
-plt.close(panelAlegend)
+plt.close(panelA)
+
+
+# LEGEND AS SEPARATE FIGURE
+# panelAlegend = plt.figure(figsize  = (5, 3))
+# legend_elements = [Line2D([0], [0], color ='black', lw = 2, 
+#                           label='worst case'),
+#                     Line2D([0], [0], color ='black', lw = 2, ls = "dashdot",
+#                           label='stationary'),
+#                     Line2D([0], [0], color ='black', lw = 2, ls = "--",
+#                           label='best case'),
+#                     Patch(color ='#67b03f', label='Rice'),
+#                     Patch(color ='#ffe95c',  label='Maize')
+#                     # Line2D([0], [0], color ='dimgrey',  lw = 5,
+#                     #       label="Available arable area")
+#                     ]
+
+
+# ax = panelAlegend.add_subplot(1, 1, 1)
+# ax.set_yticks([])
+# ax.set_xticks([])
+# ax.spines['right'].set_visible(False)
+# ax.spines['top'].set_visible(False)
+# ax.spines['left'].set_visible(False)
+# ax.spines['bottom'].set_visible(False)
+# ax.legend(handles = legend_elements, fontsize = 14, loc = 6, ncol = 2)
+
+# # ax = panelAlegend.add_subplot(1, 2, 2)
+# # ax.set_yticks([])
+# # ax.set_xticks([])
+# # ax.spines['right'].set_visible(False)
+# # ax.spines['top'].set_visible(False)
+# # ax.spines['left'].set_visible(False)
+# # ax.spines['bottom'].set_visible(False)
+# # ax.legend(handles = legend_elements2, fontsize = 14, loc = 6)
+
+# panelAlegend.savefig("Figures/PublicationPlots/Figure4_CropAreasLegend.jpg", 
+#                 bbox_inches = "tight", pad_inches = 1, format = "jpg")
+# plt.close(panelAlegend)

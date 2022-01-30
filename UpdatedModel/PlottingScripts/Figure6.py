@@ -11,9 +11,130 @@ os.chdir(dir_path)
 
 # import all project related functions
 import FoodSecurityModule as FS  
+from ModelCode.PandaPlotFunctions import PlotPandaAggregate
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
 
 if not os.path.isdir("Figures/PublicationPlots/Figure6"):
     os.mkdir("Figures/PublicationPlots/Figure6")
+
+publication_colors = {"purple" : "#5e0fb8",
+                      "red" : "darkred",
+                      "orange" : "#F38F1D",
+                      "lavender" : "#d9a5d4",
+                      "cyan" : "#52dedc",
+                      "grey" : "#a3a3a3",
+                      "green" : "#67b03f",
+                      "blue" : "royalblue",
+                      "yellow" : "#e8d035"}
+
+
+# %% ################# SCENARIO COMPARISONS WITH COOPERATION ##################
+
+# for the 3 population/yield scenarios, this plots different output parameters
+# over the different cooperation levels (using 2 different groupings)
+# input probability and government parmeters use default values
+
+panda_file = "current_panda"
+
+output_vars = ["Resulting probability for food security",
+               "Average aggregate food shortage per capita (including only samples that have shortage)",
+               "Resulting probability for solvency",
+               "Average aggregate debt after payout per capita (including only samples with negative final fund)",
+               # or: "Average aggregate debt after payout per capita (including only samples with catastrophe)",
+               "Average yearly total cultivated area",
+               "Total cultivation costs (sto. solution)"]
+
+ylabels = ["Resulting probability for food security, %",
+           r"Average food shortage per capita, $10^{3}\,$kcal",
+           "Resulting probability for solvency, %",
+           r"Average debt after payout per capita, $10^9\,\$$",
+           # or: "Average aggregate debt after payout per capita (including only samples with catastrophe)",
+           r"Average yearly total cultivated area, $10^9\,$ha",
+           r"Total cultivation costs, $10^9\,\$$"]
+
+agg_types = ["agg_avgweight",
+             "agg_avgweight",
+             "agg_avgweight",
+             "agg_avgweight",
+             "agg_sum",
+             "agg_sum"]
+
+var_weights = ["Share of West Africa's population that is living in total considered region (2015)",
+               "Share of West Africa's population that is living in total considered region (2015)",
+               "Share of West Africa's population that is living in total considered region (2015)",
+               "Share of West Africa's population that is living in total considered region (2015)",
+               None, 
+               None]
+
+weight_titles = ["population",
+                 "population",
+                 "population",
+                 "population",
+                 None,
+                 None]
+
+scenarionames = ["YieldFixedPopHigh_Equality",
+                 "YieldFixedPopFixed_Equality",
+                 "YieldTrendPopFixed_Equality",
+                 "YieldFixedPopHigh_Medoids",
+                 "YieldFixedPopFixed_Medoids",
+                 "YieldTrendPopFixed_Medoids"]
+
+subplot_titles = ["(a)", "(b)", "(c)", "(d)", "(e)", "(f)"]
+
+scenarios_shaded = True
+
+grouping_aim = "Similar"
+grouping_metric = ["equality", "equality", "equality",
+                   "medoids", "medoids", "medoids"]
+adjacent = [False, False, False, True, True, True]
+yield_projection = ["fixed", "fixed", "trend",
+                   "fixed", "fixed", "trend"]
+pop_scenario = ["High", "fixed", "fixed",
+                "High", "fixed", "fixed"]
+
+# din a4 is 8.5 x 14 inches                         
+figsize = (22, 29)
+
+
+fig = PlotPandaAggregate(panda_file = panda_file,
+                   agg_type = agg_types,
+                   var_weight = var_weights,
+                   weight_title = weight_titles,
+                   output_var = output_vars,
+                   scenarionames = scenarionames,
+                   scenarios_shaded = scenarios_shaded,
+                   grouping_aim = grouping_aim,
+                   grouping_metric = grouping_metric,
+                   adjacent = adjacent,
+                   yield_projection = yield_projection,
+                   pop_scenario = pop_scenario,
+                   plt_legend = True,
+                   ylabels = ylabels,
+                   subplot_titles = subplot_titles,
+                   plt_title = True,
+                   close_plots = False,
+                   foldername = "PublicationPlots/",
+                   cols = [publication_colors["blue"], publication_colors["red"]],
+                   figsize = figsize)
+
+ax = fig.add_subplot(111, frameon=False)
+plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+legend_elements = [Line2D([0], [0], color ='black', lw = 2, 
+                      label='worst case'),
+                Line2D([0], [0], color ='black', lw = 2, ls = "dashdot",
+                      label='stationary'),
+                Line2D([0], [0], color ='black', lw = 2, ls = "--",
+                      label='best case'),
+                Patch(color ='royalblue', alpha = 0.6, label = 'equality grouping'),
+                Patch(color ='darkred', alpha = 0.6, label = 'medoid grouping')]
+ax.legend(handles = legend_elements, fontsize = 18, bbox_to_anchor = (0.5, -0.06),
+          loc = "upper center", ncol = 2)
+
+fig.savefig("Figures/PublicationPlots/Figure6_Cooperation.jpg", bbox_inches = "tight", pad_inches = 1)
 
 # %% ################# SCENARIO COMPARISONS WITH COOPERATION ##################
 

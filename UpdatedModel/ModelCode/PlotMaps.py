@@ -116,9 +116,9 @@ def MapValues(values, lat_min = 3.25, lat_max = 18.25, lon_min = -18.75, lon_max
     return()
 
 def PlotClusterGroups(grouping = None, k = 9, lat_min = 3.25, lat_max = 18.25, 
-                      lon_min = -18.75, lon_max = 10.25,
-                      title = "", file = None, plot_cmap = True, 
-                      close_plt = True):
+                      lon_min = -18.75, lon_max = 10.25, basecolors = None,
+                      ax = None, title = "", file = None, plot_cmap = True, 
+                      figsize = None, close_plt = True):
     
     """
     Function to plot cluster on a map. If a grouing is provided, clusters of
@@ -138,6 +138,10 @@ def PlotClusterGroups(grouping = None, k = 9, lat_min = 3.25, lat_max = 18.25,
         Minimum longitude of the provided data. The default is -18.75.
     lon_max : float, optional
         Maximum longitude of the procided data. The default is 10.25.
+    basecolors: list of colors or None
+        List of colors to use. If None, default colors are used.
+    ax : axis
+        Axis on which to plot the map. The default is None.    
     title : str, optional
         Title of the plot. The default is "".
     file : str, optional
@@ -145,6 +149,8 @@ def PlotClusterGroups(grouping = None, k = 9, lat_min = 3.25, lat_max = 18.25,
         aved. The default is None.
     plot_cmap : boolean, optional
         Whether the colorar should be added. The default is True.
+    figsize : tuple or None
+        If not None, used as figsize (if ax is not None).
     close_plt : boolean, optional
         Whether the plotting window should be closed after plotting.
         The default is True.
@@ -166,8 +172,12 @@ def PlotClusterGroups(grouping = None, k = 9, lat_min = 3.25, lat_max = 18.25,
     extent = [lon_min, lon_max, lat_min, lat_max]
     
     # set up figure
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection = ccrs.PlateCarree())
+    if ax is None:
+        if figsize is None:
+            fig = plt.figure(figsize = figsize)
+        else:
+            fig = plt.figure()
+        ax = fig.add_subplot(111, projection = ccrs.PlateCarree())
         
     # add gridlines
     gls = ax.gridlines(draw_labels = True, color = "lightgray", crs = ccrs.PlateCarree())
@@ -204,18 +214,19 @@ def PlotClusterGroups(grouping = None, k = 9, lat_min = 3.25, lat_max = 18.25,
         c = colorsys.rgb_to_hls(*mc.to_rgb(c))
         return colorsys.hls_to_rgb(c[0], max(0, min(1, amount * c[1])), c[2])
         
-    basecolors = ["dimgray", "firebrick", "darkorange", 
-                  "forestgreen", "darkturquoise", "steelblue",
-                  "blue", "darkviolet", "gold",
-                  "peru", "yellow", "lightskyblue",
-                  "pink", "plum", "cornflowerblue",
-                  "indianred", "salmon", "khaki",
-                  "palegreen", "tan"]
-    
+    if basecolors is None:
+        basecolors = ["dimgray", "firebrick", "darkorange", 
+                      "forestgreen", "darkturquoise", "steelblue",
+                      "blue", "darkviolet", "gold",
+                      "peru", "yellow", "lightskyblue",
+                      "pink", "plum", "cornflowerblue",
+                      "indianred", "salmon", "khaki",
+                      "palegreen", "tan"]
+        
     colors = [np.nan] * k
     for idx1, tu in enumerate(grouping):
         for idx2, t in enumerate(tu):
-            colors[t - 1] = _adjustLightness(basecolors[idx1], 0.6 + idx2 * 0.15)
+            colors[t - 1] = _adjustLightness(basecolors[idx1], 0.95 + idx2 * 0.12)
     
     cmap = mpl.colors.ListedColormap(colors)    
     bounds = np.arange(0.5, k + 1, 1)
@@ -226,6 +237,13 @@ def PlotClusterGroups(grouping = None, k = 9, lat_min = 3.25, lat_max = 18.25,
     with open("InputData/Clusters/Clustering/kMediods" + str(k) + \
              "_PearsonDistSPEI.txt", "rb") as fp:  
         clusters = pickle.load(fp) # clusters
+    
+    # clusters_white = clusters.copy()
+    # clusters_white[~np.isnan(clusters)] = 0
+    # cmap_white = mpl.colors.ListedColormap(["white"]) 
+    
+    # ax.imshow(clusters_white, cmap = cmap_white, origin = "lower", extent = extent,
+    #                transform = ccrs.PlateCarree()) 
     
     ax.imshow(clusters, cmap = cmap, origin = "lower", extent = extent,
                    transform = ccrs.PlateCarree()) 
@@ -246,7 +264,7 @@ def PlotClusterGroups(grouping = None, k = 9, lat_min = 3.25, lat_max = 18.25,
     
     # save if file name is provided
     if file is not None:
-        fig.savefig(file + ".jpg", bbox_inches = "tight", pad_inches = 1)
+        fig.savefig(file + ".jpg", bbox_inches = "tight", pad_inches = 0.2)
         
     if close_plt:
         plt.close()

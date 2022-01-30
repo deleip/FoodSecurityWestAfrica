@@ -613,6 +613,9 @@ def PlotPandaAggregate(panda_file = "current_panda",
                     figsize = None,
                     subplots = True,
                     plt_legend = True,
+                    subplot_titles = None,
+                    ylabels = None,
+                    plt_title = True,
                     plt_file = None,
                     foldername = None,
                     close_plots = None,
@@ -669,6 +672,13 @@ def PlotPandaAggregate(panda_file = "current_panda",
         or as subplots of the same figure.
     plt_legend : boolean
         Whether legend should be plotted (in case with multiple scenarios).
+    subplot_titles : list of str or str of None
+        Custom titles if the standard title shouldn't be used
+    ylabels : list of str or str or None
+        List of custom ylabels if output variables and units should not be used.
+        The default is None.
+    plt_title : boolean
+        Whether the plot title should be added.
     plt_file : str or None, optional
         If not None, the resluting figure(s) will be saved using this name.
         The default is None.
@@ -678,6 +688,8 @@ def PlotPandaAggregate(panda_file = "current_panda",
     close_plots : boolean or None
         Whether plots should be closed after plotting (and saving). If None, 
         the default as defined in ModelCode/GeneralSettings is used.
+    cols : list of colors or None
+        Colors to use. If None, default colors are used.
     **kwargs : 
         Settings specifiying for which model run results shall be plotted.
 
@@ -690,7 +702,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
     
     # settings
     if cols is None:
-            cols = ["royalblue", "darkred", "grey", "gold"]
+        cols = ["royalblue", "darkred", "grey", "gold", "limegreen"]
     
     if figsize is None:
         from ModelCode.GeneralSettings import figsize
@@ -703,13 +715,38 @@ def PlotPandaAggregate(panda_file = "current_panda",
     
     with open("ModelOutput/Pandas/ColumnUnits.txt", "rb") as fp:
         units = pickle.load(fp)
+      
+    if (type(agg_type) is not list):
+        if agg_type == "agg_sum":
+            agg_title = " (aggregated by adding up)"
+        if agg_type == "agg_avgweight":
+            agg_title = " (aggregated by averaging with " + weight_title + " as weight)"
+    else:
+        agg_title = ""
+    
+    # make sure the output variable are given as list
+    if output_var is str:
+        output_var = [output_var]
         
-    if agg_type == "agg_sum":
-        agg_title = " (aggregated by adding up)"
-        agg_folder = "/AggregatedSum/"
-    if agg_type == "agg_avgweight":
-        agg_title = " (aggregated by averaging with " + weight_title + " as weight)"
-        agg_folder = "/AggregatedWeightedAvg/"
+    if (len(subplot_titles) != len(output_var)):
+        sys.exit("Not the right number of subplot titles.")
+        
+    agg_title = []
+    for idx, a_t in enumerate(agg_type):
+        if a_t == "agg_sum":
+            agg_title.append(" (aggregated by adding up)")
+        else:
+            agg_title.append(" (aggregated by averaging with " + weight_title[idx] + " as weight)")
+                
+                             
+        
+    # right number of subplot titles?
+    if subplot_titles is not None:
+        if type(subplot_titles) is not list:
+            subplot_titles = [subplot_titles]
+        if (len(subplot_titles) != len(output_var)):
+            sys.exit("Not the right number of subplot titles.")
+            
     
     # get results
     res = Panda_GetResults(file = panda_file, 
@@ -765,32 +802,33 @@ def PlotPandaAggregate(panda_file = "current_panda",
             plt_values.append(res[scen])
     res = plt_values
         
-    # make sure the output variable are given as list
-    if output_var is str:
-        output_var = [output_var]
     
     # set up subplots
     if subplots:
         fig = plt.figure(figsize = figsize)
         fig.subplots_adjust(bottom=0.2, top=0.9, left=0.1, right=0.9,
                     wspace=0.3, hspace=0.35)
-        num_rows = int(np.floor(np.sqrt(len(output_var))))
-        num_cols = int(np.ceil(len(output_var)/num_rows))
+        num_cols = int(np.floor(np.sqrt(len(output_var))))
+        num_rows = int(np.ceil(len(output_var)/num_cols))
         
     markers = ["X", "o", "^", "P", "s", "v"]    
-    cols = ["royalblue", "darkred", "grey", "gold", "limegreen"]
     
     # plot each of the oubput variables
     if scenarios_shaded is False:
         for idx, var in enumerate(output_var):
             if subplots:
                 fig.add_subplot(num_rows, num_cols, idx + 1)
-                plt.suptitle("Development depending on colaboration of clusters" + agg_title, \
-                      fontsize = 24)
+                if plt_title is True:
+                    if subplot_titles is not None:
+                        plt.suptitle(subplot_titles[idx], fontsize = 24)
+                    else:
+                        plt.suptitle("Development depending on colaboration of clusters" + agg_title, \
+                              fontsize = 24)
             else:
                 fig = plt.figure(figsize = figsize)
-                plt.title("Development depending on colaboration of clusters" + agg_title, \
-                      fontsize = 24, pad = 15)
+                if plt_title is True:
+                    plt.title("Development depending on colaboration of clusters" + agg_title, \
+                          fontsize = 24, pad = 15)
             scatters = []
             mins = []
             maxs = []
@@ -808,10 +846,16 @@ def PlotPandaAggregate(panda_file = "current_panda",
             plt.ylim((min(mins), max(maxs)))
             plt.yticks(fontsize = 16)
             plt.xlabel("Number of different cluster groups", fontsize = 20)
-            plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
-            if (scenarionames is not None) and (plt_legend):
-                plt.legend(scatters, scenarionames, fontsize = 18, title = "Scenarios",
-                           title_fontsize = 20, loc = "best")
+            if ylabels is not None:
+                plt.ylabel("\n".join(wrap(ylabels[idx], width = 40)), fontsize = 20)
+            else:
+                plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
+        if (scenarionames is not None) and (plt_legend):
+            ax = fig.add_subplot(1, 1, 1, frameon=False)
+            plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+            ax.legend(scatters, scenarionames, fontsize = 18, title = "Scenarios",
+                       title_fontsize = 20, bbox_to_anchor = (0.5, -0.15),
+                       loc = "upper center")
         
     else:
         if (scenarionames is None) or (len(scenarionames)%3 != 0):
@@ -819,13 +863,18 @@ def PlotPandaAggregate(panda_file = "current_panda",
         for idx, var in enumerate(output_var):
             if subplots:
                 fig.add_subplot(num_rows, num_cols, idx + 1)
-                plt.suptitle("Development depending on colaboration of clusters" + agg_title, \
-                      fontsize = 24)
+                if plt_title is True:
+                    if subplot_titles is not None:
+                        plt.title("  " + subplot_titles[idx], fontsize = 24, loc = "left", pad = 15)
+                    else:
+                        plt.title("Development depending on colaboration of clusters" + agg_title, \
+                              fontsize = 24, pad = 15)
             else:
                 fig = plt.figure(figsize = figsize)
-                plt.title("Development depending on colaboration of clusters" + agg_title, \
-                      fontsize = 20, pad = 15)
-            scatters = []
+                if plt_title is True:
+                    plt.title("Development depending on colaboration of clusters" + agg_title, \
+                          fontsize = 20, pad = 15)
+            lines = []
             mins = []
             maxs = []
             for scen in range(0, int(len(res)/3)):
@@ -841,12 +890,14 @@ def PlotPandaAggregate(panda_file = "current_panda",
                         scenarionames.pop(scen2)
                         scenarionames.pop(scen3)
                     continue
-                plt.plot([1, 2, 3, 4, 5], res[scen1][var + " - Aggregated over all groups"], lw = 2.8, color = cols[scen], label = scenarionames[scen1])
-                plt.plot([1, 2, 3, 4, 5], res[scen2][var + " - Aggregated over all groups"], lw = 2.8, color = cols[scen], linestyle = "dashdot", label = scenarionames[scen2])
-                plt.plot([1, 2, 3, 4, 5], res[scen3][var + " - Aggregated over all groups"], lw = 2.8, color = cols[scen], linestyle = "--", label = scenarionames[scen3])
+                l1, = plt.plot([1, 2, 3, 4, 5], res[scen1][var + " - Aggregated over all groups"], lw = 2.8, color = cols[scen], label = scenarionames[scen1])
+                l2, = plt.plot([1, 2, 3, 4, 5], res[scen2][var + " - Aggregated over all groups"], lw = 2.8, color = cols[scen], linestyle = "dashdot", label = scenarionames[scen2])
+                l3, = plt.plot([1, 2, 3, 4, 5], res[scen3][var + " - Aggregated over all groups"], lw = 2.8, color = cols[scen], linestyle = "--", label = scenarionames[scen3])
                 plt.fill_between(x = [1, 2, 3, 4, 5], y1 = np.array(res[scen1][var + " - Aggregated over all groups"], dtype = float), 
                                                       y2 = np.array(res[scen3][var + " - Aggregated over all groups"], dtype = float), 
                                                       color = cols[scen], alpha = 0.3)
+                lines = lines + [l1, l2, l3]
+                
                 mins.append(min(-res[scen1][var + " - Aggregated over all groups"].max()*0.01, res[scen1][var + " - Aggregated over all groups"].min()*1.05))
                 mins.append(min(-res[scen2][var + " - Aggregated over all groups"].max()*0.01, res[scen2][var + " - Aggregated over all groups"].min()*1.05))
                 mins.append(min(-res[scen3][var + " - Aggregated over all groups"].max()*0.01, res[scen3][var + " - Aggregated over all groups"].min()*1.05))
@@ -857,23 +908,29 @@ def PlotPandaAggregate(panda_file = "current_panda",
             plt.ylim((min(mins), max(maxs)))
             plt.yticks(fontsize = 16)
             plt.xlabel("Number of different cluster groups", fontsize = 20)
-            plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
-            if (scenarionames is not None) and (plt_legend):
-                plt.legend(fontsize = 18, title = "Scenarios",
-                           title_fontsize = 20, loc = "best")
+            if ylabels is not None:
+                plt.ylabel("\n".join(wrap(ylabels[idx], width = 40)), fontsize = 20)
+            else:
+                plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
+        if (scenarionames is not None) and (plt_legend):
+            ax = fig.add_subplot(1, 1, 1, frameon=False)
+            plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+            ax.legend(handles = lines, fontsize = 18, title = "Scenarios",
+                       title_fontsize = 20, bbox_to_anchor = (0.5, -0.1),
+                       loc = "upper center")
 
     # save plot
     if plt_file is not None:
-        fig.savefig("Figures/" + foldername + agg_folder + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
+        fig.savefig("Figures/" + foldername  + plt_file + ".jpg", bbox_inches = "tight", pad_inches = 1)
     
     # close plot
     if close_plots:
         plt.close()
     
-    return(None)
+    return(fig)
 
 
-# %% ########## FUNCTIONS TO GET THE RIGHT SUBSET OF PANDA RRESULTS ###########
+ # %% ########## FUNCTIONS TO GET THE RIGHT SUBSET OF PANDA RRESULTS ###########
 
 
 def Panda_GetResults(file = "current_panda", 
@@ -924,39 +981,44 @@ def Panda_GetResults(file = "current_panda",
 
     """
     
-    # adding settings to dict
-    fulldict = kwargs.copy()
-    fulldict["file"] = file
-    fulldict["out_type"] = out_type
-    fulldict["var_weight"] = var_weight
-    fulldict["grouping_aim"] = grouping_aim
-    fulldict["grouping_metric"] = grouping_metric
-    fulldict["adjacent"] = adjacent
+    # scenario dicts
+    scenario_dict = kwargs.copy()
+    scenario_dict["grouping_aim"] = grouping_aim
+    scenario_dict["grouping_metric"] = grouping_metric
+    scenario_dict["adjacent"] = adjacent
 
-    # checking which of the settings are lists
-    l = []
-    keys_list = []
-    for key in fulldict.keys():
-        if type(fulldict[key]) is list:
-            l.append(len(fulldict[key]))
-            keys_list.append(key)
-     
-    # checking if the settings which should be iterated over have same length
-    if (len(l) > 0) and (not all(ls == l[0] for ls in l)):
+    # checking which of the scenario settings are lists
+    l_scenario = []
+    keys_list_scenario = []
+    for key in scenario_dict.keys():
+        if type(scenario_dict[key]) is list:
+            l_scenario.append(len(scenario_dict[key]))
+            keys_list_scenario.append(key)
+            
+    # checking if the scenario settings which should be iterated over have same length
+    if (len(l_scenario) > 0) and (not all(ls == l_scenario[0] for ls in l_scenario)):
         sys.exit("All settings over which should be iterated must be " +
                      "lists of the same length!")
      
     # run _Panda_GetResultsSingScen for each setting combination
-    if len(l) == 0:
-        res = [Panda_GetResultsSingScen(output_var = output_var, **fulldict)]
+    if len(l_scenario) == 0:
+        res = [Panda_GetResultsSingScen(output_var = output_var,
+                                        out_type = out_type,
+                                        var_weight = var_weight,
+                                        **scenario_dict,
+                                        file = file)]
     else:
         res = []
-        for idx in range(0, l[0]):
-            fulldict_tmp = fulldict.copy()
-            for key in keys_list:
-                fulldict_tmp[key] = fulldict[key][idx]
+        for idx in range(0, l_scenario[0]):
+            scenario_dict_tmp = scenario_dict.copy()
+            for key in keys_list_scenario:
+                scenario_dict_tmp[key] = scenario_dict[key][idx]
             try:
-                res.append(Panda_GetResultsSingScen(output_var = output_var, **fulldict_tmp))
+                res.append(Panda_GetResultsSingScen(output_var = output_var,
+                                                     out_type = out_type,
+                                                     var_weight = var_weight,
+                                                    **scenario_dict_tmp,
+                                                    file = file))
             except SystemExit:
                 print("The " + str(idx + 1) + ". scenario is not available", flush = True)
                 res.append(None)
@@ -1012,6 +1074,24 @@ def Panda_GetResultsSingScen(file = "current_panda",
 
     """
     
+    # output variables dict
+    output_dict = {"output_var" : output_var,
+                   "out_type" : out_type,
+                   "var_weight" : var_weight}
+    
+    # checking which of the output settings are lists
+    l_output = []
+    keys_list_output = []
+    for key in output_dict.keys():
+        if type(output_dict[key]) is list:
+            l_output.append(len(output_dict[key]))
+            keys_list_output.append(key)
+    
+    # checking if the output settings which should be iterated over have same length
+    if (len(l_output) > 0) and (not all(ls == l_output[0] for ls in l_output)):
+        sys.exit("All settings over which should be iterated must be " +
+                     "lists of the same length!")
+        
     add = ""
     if adjacent:
         add = "Adj"
@@ -1032,23 +1112,53 @@ def Panda_GetResultsSingScen(file = "current_panda",
                                   k_using = BestGrouping, \
                                   **kwargs)
             
-        if out_type == "agg_avgweight":
-            weight = ReadFromPanda(file = file, \
-                                   output_var = var_weight, \
-                                   k_using = BestGrouping, \
-                                   **kwargs)
-            res = res.append(_ExtractResPanda(sub_panda = panda_tmp, 
-                                              out_type = out_type, 
-                                              output_var = output_var,
-                                              size = size, 
-                                              weight = weight, 
-                                              var_weight = var_weight))
-        else:         
-            res = res.append(_ExtractResPanda(sub_panda = panda_tmp, 
-                                              out_type = out_type, 
-                                              output_var = output_var,
-                                              size = size))
-            
+        # run _ExtractResPanda for each output var
+        if len(l_output) == 0:
+            if out_type == "agg_avgweight":
+                weight = ReadFromPanda(file = file, \
+                                       output_var = var_weight, \
+                                       k_using = BestGrouping, \
+                                       **kwargs)
+                tmp = _ExtractResPanda(sub_panda = panda_tmp, 
+                                    out_type = out_type, 
+                                    output_var = output_var,
+                                    size = size, 
+                                    weight = weight, 
+                                    var_weight = var_weight)
+            else:         
+                tmp = _ExtractResPanda(sub_panda = panda_tmp, 
+                                    out_type = out_type, 
+                                    output_var = output_var,
+                                    size = size)
+        else:
+            for idx in range(0, l_output[0]):
+                output_dict_tmp = output_dict.copy()
+                for key in keys_list_output:
+                    output_dict_tmp[key] = output_dict[key][idx]
+                    
+                if output_dict_tmp["out_type"] == "agg_avgweight":
+                    weight = ReadFromPanda(file = file, \
+                                           output_var = output_dict_tmp["var_weight"], \
+                                           k_using = BestGrouping, \
+                                           **kwargs)
+                    tmp2 = _ExtractResPanda(sub_panda = panda_tmp, 
+                                        out_type = output_dict_tmp["out_type"], 
+                                        output_var = output_dict_tmp["output_var"],
+                                        size = size, 
+                                        weight = weight, 
+                                        var_weight = output_dict_tmp["var_weight"])
+                else:         
+                    tmp2 = _ExtractResPanda(sub_panda = panda_tmp, 
+                                        out_type = output_dict_tmp["out_type"], 
+                                        output_var = output_dict_tmp["output_var"],
+                                        size = size)
+                if idx == 0:
+                    tmp = tmp2
+                else:
+                    tmp = pd.concat([tmp, tmp2], axis = 1)    
+                    
+        res = res.append(tmp)
+    
     return(res)
 
 
@@ -1144,4 +1254,3 @@ def _ExtractResPanda(sub_panda, out_type, output_var, size, weight = None, var_w
         sys.exit("Invalid aggregation type! Please choose one of \"agg\", \"median\", or \"all\"")
             
     return(res)
-    

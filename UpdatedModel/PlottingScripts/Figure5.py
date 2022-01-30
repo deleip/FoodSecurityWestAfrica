@@ -16,14 +16,21 @@ import FoodSecurityModule as FS
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import numpy as np
+from string import ascii_uppercase as letter
 
-
-if not os.path.isdir("Figures/PublicationPlots/Figure5"):
-    os.mkdir("Figures/PublicationPlots/Figure5")
     
 if not os.path.isdir("Figures/PublicationPlots/SI"):
     os.mkdir("Figures/PublicationPlots/SI")
 
+publication_colors = {"purple" : "#5e0fb8",
+                      "red" : "darkred",
+                      "orange" : "#F38F1D",
+                      "lavender" : "#d9a5d4",
+                      "cyan" : "#52dedc",
+                      "grey" : "#a3a3a3",
+                      "green" : "#67b03f",
+                      "blue" : "royalblue",
+                      "yellow" : "#e8d035"}
     
 # %% ########################### GOVERNMENT LEVERS ###########################
 
@@ -34,14 +41,14 @@ if not os.path.isdir("Figures/PublicationPlots/SI"):
 
 alphas = [50, 60, 70, 80, 90, 95, 99]
 
-for cl in range(1, 10):
+for cl in range(5, 6):
     fig = plt.figure(figsize = (14, 9))
     
     miny = 100
     for (risk, ls) in [(0.01, "solid"), (0.05, "dashed")]:
-        for (tax, mk, col) in [(0.01, "o", "#6F6058"),
-                               (0.05,  "X", "#BB7369"),
-                               (0.1, "s", "#E4C496")]:
+        for (tax, mk, col) in [(0.01, "o", publication_colors["yellow"]),
+                               (0.05,  "X", publication_colors["orange"]),
+                               (0.1, "s", publication_colors["red"])]:
             solvency = []
             
             for alpha in alphas:
@@ -57,15 +64,15 @@ for cl in range(1, 10):
                 solvency.append(tmp.loc[:,"Resulting probability for solvency"].values[0]*100)
                 
             plt.scatter(alphas, solvency, color = col, marker = mk, s = 80,
-                        label = "risk " + str(risk * 100) + "%, tax " + str(tax * 100) + "%")
-            plt.plot(alphas, solvency, color = col, linestyle = ls, lw = 3)
+                        label = "risk " + str(risk * 100) + "%, tax " + str(tax * 100) + "%", alpha = 0.7)
+            plt.plot(alphas, solvency, color = col, linestyle = ls, lw = 3, alpha = 0.7)
             
             miny = min(miny, np.min(solvency))
             
     plt.legend()
     plt.xlabel("Input probability for food security, %", fontsize = 20)
     plt.ylabel("Output probability for solvency, %", fontsize = 20)
-    plt.title("Region " + str(cl), fontsize = 24, pad = 16)
+    plt.title("Region " + letter[cl-1], fontsize = 24, pad = 16)
     plt.ylim(0.96 * miny, 101)
     plt.xlim(48, 101)
     ax = plt.gca()
@@ -77,16 +84,16 @@ for cl in range(1, 10):
                           label='Covered risk: 1%'),
                     Line2D([0], [0], color ='black', lw = 3, ls = "--",
                           label='Covered risk: 5%'),
-                    Line2D([0], [0], color = "#6F6058", marker = "o", linestyle = "none", 
+                    Line2D([0], [0], color = publication_colors["yellow"], marker = "o", linestyle = "none", 
                           label='Tax: 1%', ms = 10),
-                    Line2D([0], [0], color = "#BB7369", marker = "X", linestyle = "none", 
+                    Line2D([0], [0], color = publication_colors["orange"], marker = "X", linestyle = "none", 
                           label='Tax: 5%', ms = 10),
-                    Line2D([0], [0], color = "#E4C496", marker = "s", linestyle = "none", 
+                    Line2D([0], [0], color = publication_colors["red"], marker = "s", linestyle = "none", 
                           label='Tax: 10%', ms = 10)]
 
-    ax.legend(handles = legend_elements1, fontsize = 18, bbox_to_anchor = (1, 0.5))
+    ax.legend(handles = legend_elements1, fontsize = 18, bbox_to_anchor = (1, 0.5), loc = "center left")
     
-    fig.savefig("Figures/PublicationPlots/Figure5/cl" + str(cl) + ".jpg", 
+    fig.savefig("Figures/PublicationPlots/Figure5_GovLevers.jpg", 
                 bbox_inches = "tight", pad_inches = 1, format = "jpg")
     
     plt.close(fig)
@@ -126,7 +133,7 @@ for cl in range(1, 10):
             plt.scatter(alphas, solvency, color = col, marker = mk, s= 40)
             plt.plot(alphas, solvency, color = col, linestyle = ls, lw = 2)
             
-    plt.title("Region " + str(cl), fontsize = 18)
+    plt.title("Region " + letter[cl-1], fontsize = 18)
     plt.ylim(-4, 101)
     plt.xlim(48, 101)
     ax = plt.gca()
