@@ -18,19 +18,12 @@ from matplotlib.lines import Line2D
 import numpy as np
 from string import ascii_uppercase as letter
 
+from PlottingScripts.PlottingSettings import publication_colors
+from PlottingScripts.PlottingSettings import cluster_letters
     
 if not os.path.isdir("Figures/PublicationPlots/SI"):
     os.mkdir("Figures/PublicationPlots/SI")
 
-publication_colors = {"purple" : "#5e0fb8",
-                      "red" : "darkred",
-                      "orange" : "#F38F1D",
-                      "lavender" : "#d9a5d4",
-                      "cyan" : "#52dedc",
-                      "grey" : "#a3a3a3",
-                      "green" : "#67b03f",
-                      "blue" : "royalblue",
-                      "yellow" : "#e8d035"}
     
 # %% ########################### GOVERNMENT LEVERS ###########################
 
@@ -72,7 +65,7 @@ for cl in range(5, 6):
     plt.legend()
     plt.xlabel("Input probability for food security, %", fontsize = 20)
     plt.ylabel("Output probability for solvency, %", fontsize = 20)
-    plt.title("Region " + letter[cl-1], fontsize = 24, pad = 16)
+    plt.title("Region " + cluster_letters[cl-1], fontsize = 24, pad = 16)
     plt.ylim(0.96 * miny, 101)
     plt.xlim(48, 101)
     ax = plt.gca()
@@ -133,7 +126,7 @@ for cl in range(1, 10):
             plt.scatter(alphas, solvency, color = col, marker = mk, s= 40)
             plt.plot(alphas, solvency, color = col, linestyle = ls, lw = 2)
             
-    plt.title("Region " + letter[cl-1], fontsize = 18)
+    plt.title("Region " + cluster_letters[cl-1], fontsize = 18)
     plt.ylim(-4, 101)
     plt.xlim(48, 101)
     ax = plt.gca()

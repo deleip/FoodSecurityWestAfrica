@@ -845,7 +845,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
             plt.xticks([1, 2, 3, 4, 5], [9, 5, 3, 2, 1], fontsize = 16)
             plt.ylim((min(mins), max(maxs)))
             plt.yticks(fontsize = 16)
-            plt.xlabel("Number of different cluster groups", fontsize = 20)
+            plt.xlabel("Number of risk pools", fontsize = 20)
             if ylabels is not None:
                 plt.ylabel("\n".join(wrap(ylabels[idx], width = 40)), fontsize = 20)
             else:
@@ -907,7 +907,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
             plt.xticks([1, 2, 3, 4, 5], [9, 5, 3, 2, 1], fontsize = 16)
             plt.ylim((min(mins), max(maxs)))
             plt.yticks(fontsize = 16)
-            plt.xlabel("Number of different cluster groups", fontsize = 20)
+            plt.xlabel("Number of risk pools", fontsize = 20)
             if ylabels is not None:
                 plt.ylabel("\n".join(wrap(ylabels[idx], width = 40)), fontsize = 20)
             else:

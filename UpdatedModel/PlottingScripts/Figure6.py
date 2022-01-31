@@ -20,15 +20,7 @@ from matplotlib.lines import Line2D
 if not os.path.isdir("Figures/PublicationPlots/Figure6"):
     os.mkdir("Figures/PublicationPlots/Figure6")
 
-publication_colors = {"purple" : "#5e0fb8",
-                      "red" : "darkred",
-                      "orange" : "#F38F1D",
-                      "lavender" : "#d9a5d4",
-                      "cyan" : "#52dedc",
-                      "grey" : "#a3a3a3",
-                      "green" : "#67b03f",
-                      "blue" : "royalblue",
-                      "yellow" : "#e8d035"}
+from PlottingScripts.PlottingSettings import publication_colors
 
 
 # %% ################# SCENARIO COMPARISONS WITH COOPERATION ##################
@@ -47,9 +39,9 @@ output_vars = ["Resulting probability for food security",
                "Average yearly total cultivated area",
                "Total cultivation costs (sto. solution)"]
 
-ylabels = ["Resulting probability for food security, %",
+ylabels = ["Target probability for food security, %",
            r"Average food shortage per capita, $10^{3}\,$kcal",
-           "Resulting probability for solvency, %",
+           "Probability for solvency, %",
            r"Average debt after payout per capita, $10^9\,\$$",
            # or: "Average aggregate debt after payout per capita (including only samples with catastrophe)",
            r"Average yearly total cultivated area, $10^9\,$ha",
@@ -130,7 +122,7 @@ legend_elements = [Line2D([0], [0], color ='black', lw = 2,
                 Line2D([0], [0], color ='black', lw = 2, ls = "--",
                       label='best case'),
                 Patch(color ='royalblue', alpha = 0.6, label = 'equality grouping'),
-                Patch(color ='darkred', alpha = 0.6, label = 'medoid grouping')]
+                Patch(color ='darkred', alpha = 0.6, label = 'proximity grouping')]
 ax.legend(handles = legend_elements, fontsize = 18, bbox_to_anchor = (0.5, -0.06),
           loc = "upper center", ncol = 2)
 

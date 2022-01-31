@@ -24,15 +24,8 @@ from string import ascii_uppercase as letter
 if not os.path.isdir("Figures/PublicationPlots/SI"):
     os.mkdir("Figures/PublicationPlots/SI")
     
-publication_colors = {"purple" : "#5e0fb8",
-                      "red" : "darkred",
-                      "orange" : "#F38F1D",
-                      "lavender" : "#d9a5d4",
-                      "cyan" : "#52dedc",
-                      "grey" : "#a3a3a3",
-                      "green" : "#67b03f",
-                      "blue" : "royalblue",
-                      "yellow" : "#e8d035"}
+from PlottingScripts.PlottingSettings import publication_colors
+from PlottingScripts.PlottingSettings import cluster_letters
 
 
 # %% ################# FOOD PRODUCTION AND CULTIVATION COSTS ##################
@@ -83,7 +76,7 @@ for (cl, panel) in [(4, "(b)"), (5, "(a)")]:
     ax.tick_params(axis = "x", labelsize = 16)
     # ax = plt.gca()
     ax.yaxis.set_ticks([])
-    ax.set_title("    " + panel + r" Region " + letter[cl-1], pad = 20, fontsize = 28, loc = "left")
+    ax.set_title("    " + panel + r" Region " + cluster_letters[cl-1], pad = 20, fontsize = 28, loc = "left")
     ax.legend(fontsize = 20)
         
     # panelAB.savefig("Figures/PublicationPlots/Figure3_Panel" + panel + "_FoodProd.jpg", 
@@ -149,7 +142,8 @@ SI1 = plt.figure(figsize = (14, 8))
     
 SI1.subplots_adjust(hspace = 0.39)
 for cl in range(1, 10):
-    ax = SI1.add_subplot(3, 3, cl)
+    pos = letter.index(cluster_letters[cl-1]) + 1
+    ax = SI1.add_subplot(3, 3, pos)
     for (alpha, col) in [(0.5, "#5e0fb8"),
                          (0.7, "#C32C57"),
                          (0.9, "#F38F1D"), 
@@ -172,7 +166,7 @@ for cl in range(1, 10):
     plt.xticks(fontsize = 12)
     ax = plt.gca()
     ax.yaxis.set_ticks([])
-    plt.title(r"Region " + letter[cl-1], fontsize = 18)
+    plt.title(r"Region " + cluster_letters[cl-1], fontsize = 18)
         
 # add a big axis, hide frame
 SI1.add_subplot(111, frameon=False)

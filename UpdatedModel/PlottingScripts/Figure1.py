@@ -21,20 +21,14 @@ from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
 import cartopy.crs as ccrs
 
+from PlottingScripts.PlottingSettings import publication_colors
+from PlottingScripts.PlottingSettings import cluster_letters
+
 from ModelCode.PlotMaps import PlotClusterGroups
 
 if not os.path.isdir("Figures/PublicationPlots/SI"):
     os.mkdir("Figures/PublicationPlots/SI")
     
-publication_colors = {"purple" : "#5e0fb8",
-                      "red" : "darkred",
-                      "orange" : "#F38F1D",
-                      "lavender" : "#d9a5d4",
-                      "cyan" : "#52dedc",
-                      "grey" : "#a3a3a3",
-                      "green" : "#67b03f",
-                      "blue" : "royalblue",
-                      "yellow" : "#e8d035"}
     
 # %% ######################### FIG 1 - MAP OF CLUSTERS ########################
 
