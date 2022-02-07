@@ -73,11 +73,17 @@ for (cl, panel) in [(4, "(b)"), (5, "(a)")]:
     ax.axvline(100, color = "#003479", linestyle = "dashed", alpha = 0.6, label = "Food demand", linewidth = 2.5)
     ax.set_xlabel(r"Food production as percentage of demand (" + \
                str(np.round(args["demand"][0], 2)) + " $10^{12}\,kcal$" + ")", fontsize = 24)
-    ax.tick_params(axis = "x", labelsize = 16)
+    ax.tick_params(axis = "x", labelsize = 20)
     # ax = plt.gca()
+    if cl == 5:
+        ax.set_xlim(left = 30)
+    else:
+        ax.set_xlim(left = 15)
+        
+        
     ax.yaxis.set_ticks([])
     ax.set_title("    " + panel + r" Region " + cluster_letters[cl-1], pad = 20, fontsize = 28, loc = "left")
-    ax.legend(fontsize = 20)
+    ax.legend(fontsize = 22, loc = "upper left")
         
     # panelAB.savefig("Figures/PublicationPlots/Figure3_Panel" + panel + "_FoodProd.jpg", 
     #             bbox_inches = "tight", pad_inches = 1, format = "jpg")
@@ -120,9 +126,9 @@ for (y, p, scen, col) in [("fixed", "High", "worst case", publication_colors["re
 plt.title(r"    (c)", pad = 20, fontsize = 28, loc = "left")
 plt.xlabel("Input probability for food security, %", fontsize = 24)
 plt.ylabel(r"Total cultivation costs, $10^9\$$", fontsize = 24)
-plt.legend(fontsize = 20)
-plt.xticks(fontsize = 16)
-plt.yticks(fontsize = 16)
+plt.legend(fontsize = 22, loc = "upper left")
+plt.xticks(fontsize = 20)
+plt.yticks(fontsize = 20)
 # plt.title("Trade-off between food security probability and cultivation costs")
 
 fig.savefig("Figures/PublicationPlots/Figure3_FoodProdAndCosts.jpg", 
@@ -140,15 +146,15 @@ y = "fixed"
 
 SI1 = plt.figure(figsize = (14, 8))
     
-SI1.subplots_adjust(hspace = 0.39)
+SI1.subplots_adjust(hspace = 0.45, wspace = 0.1)
 for cl in range(1, 10):
     pos = letter.index(cluster_letters[cl-1]) + 1
     ax = SI1.add_subplot(3, 3, pos)
-    for (alpha, col) in [(0.5, "#5e0fb8"),
-                         (0.7, "#C32C57"),
-                         (0.9, "#F38F1D"), 
-                         (0.95, "#67D120"),
-                         (0.99, "#2E6FCC")]:
+    for (alpha, col) in [(0.5, publication_colors["purple"]),
+                          (0.7, publication_colors["red"]),
+                          (0.9, publication_colors["orange"]), 
+                          (0.95, publication_colors["yellow"]),
+                         (0.99, publication_colors["green"])]:
         # get results
         settings, args, yield_information, population_information, \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
@@ -163,45 +169,55 @@ for cl in range(1, 10):
                  density = True, color = col)
     
     plt.axvline(100, color = "#003479", linestyle = "dashed", alpha = 0.6, label = "Food demand", linewidth = 2.5)
-    plt.xticks(fontsize = 12)
+    plt.xticks(fontsize = 14)
     ax = plt.gca()
     ax.yaxis.set_ticks([])
     plt.title(r"Region " + cluster_letters[cl-1], fontsize = 18)
         
 # add a big axis, hide frame
-SI1.add_subplot(111, frameon=False)
+ax = SI1.add_subplot(111, frameon=False)
 # hide tick and tick label of the big axis
 plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
 plt.xlabel("Food production as percentage of demand", fontsize = 24, labelpad = 20)
     
+legend_elements = [Line2D([0], [0], color ='#003479', lw = 2, ls = "dashed",
+                          label="Food demand", alpha = 0.6),
+                    Patch(color = publication_colors["purple"], label=r'$\alpha$ = 50%', alpha = 0.6),
+                    Patch(color = publication_colors["red"], label=r'$\alpha$ = 70%', alpha = 0.6),
+                    Patch(color = publication_colors["orange"], label=r'$\alpha$ = 90%', alpha = 0.6),
+                    Patch(color = publication_colors["yellow"], label=r'\alpha$ = 95%', alpha = 0.6),
+                    Patch(color = publication_colors["green"], label=r'$\alpha$ = 99%', alpha = 0.6)
+                    ]
+
+ax.legend(handles = legend_elements, fontsize = 18, bbox_to_anchor = (1, 0.5), loc = "center left")
     
-SI1.savefig("Figures/PublicationPlots/SI/FoodProduction.jpg", 
-            bbox_inches = "tight", pad_inches = 1, format = "jpg")
+SI1.savefig("Figures/PublicationPlots/SI/SI_FoodProduction.jpg", 
+            bbox_inches = "tight", pad_inches = 0.2, format = "jpg")
         
 plt.close(SI1)
     
 # legend
-SI1legend = plt.figure(figsize  = (5, 3))
-legend_elements1 = [Line2D([0], [0], color ='#003479', lw = 2, ls = "dashed",
-                          label="Food demand", alpha = 0.6),
-                    Patch(color = "#5e0fb8", label=r'\alpha = 50%', alpha = 0.6),
-                    Patch(color = "#C32C57", label=r'\alpha = 70%', alpha = 0.6),
-                    Patch(color = "#F38F1D", label=r'\alpha = 90%', alpha = 0.6),
-                    Patch(color = "#67D120", label=r'\alpha = 95%', alpha = 0.6),
-                    Patch(color = "#2E6FCC", label=r'\alpha = 99%', alpha = 0.6)
-                    ]
+# SI1legend = plt.figure(figsize  = (5, 3))
+# legend_elements1 = [Line2D([0], [0], color ='#003479', lw = 2, ls = "dashed",
+#                           label="Food demand", alpha = 0.6),
+#                     Patch(color = publication_colors["purple"], label=r'\alpha = 50%', alpha = 0.6),
+#                     Patch(color = publication_colors["red"], label=r'\alpha = 70%', alpha = 0.6),
+#                     Patch(color = publication_colors["orange"], label=r'\alpha = 90%', alpha = 0.6),
+#                     Patch(color = publication_colors["yellow"], label=r'\alpha = 95%', alpha = 0.6),
+#                     Patch(color = publication_colors["green"], label=r'\alpha = 99%', alpha = 0.6)
+#                     ]
 
-ax = SI1legend.add_subplot(1, 1, 1)
-ax.set_yticks([])
-ax.set_xticks([])
-ax.spines['right'].set_visible(False)
-ax.spines['top'].set_visible(False)
-ax.spines['left'].set_visible(False)
-ax.spines['bottom'].set_visible(False)
-ax.legend(handles = legend_elements1, fontsize = 14, loc = 6)
+# ax = SI1legend.add_subplot(1, 1, 1)
+# ax.set_yticks([])
+# ax.set_xticks([])
+# ax.spines['right'].set_visible(False)
+# ax.spines['top'].set_visible(False)
+# ax.spines['left'].set_visible(False)
+# ax.spines['bottom'].set_visible(False)
+# ax.legend(handles = legend_elements1, fontsize = 14, loc = 6)
 
-SI1legend.savefig("Figures/PublicationPlots/SI/FoodProductionsLegend.jpg", 
-                bbox_inches = "tight", pad_inches = 1, format = "jpg")
-plt.close(SI1legend)
+# SI1legend.savefig("Figures/PublicationPlots/SI/FoodProductionsLegend.jpg", 
+#                 bbox_inches = "tight", pad_inches = 1, format = "jpg")
+# plt.close(SI1legend)
 
 

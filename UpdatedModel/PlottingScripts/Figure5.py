@@ -63,8 +63,8 @@ for cl in range(5, 6):
             miny = min(miny, np.min(solvency))
             
     plt.legend()
-    plt.xlabel("Input probability for food security, %", fontsize = 20)
-    plt.ylabel("Output probability for solvency, %", fontsize = 20)
+    plt.xlabel("Target probability for food security, %", fontsize = 20)
+    plt.ylabel("Probability for solvency, %", fontsize = 20)
     plt.title("Region " + cluster_letters[cl-1], fontsize = 24, pad = 16)
     plt.ylim(0.96 * miny, 101)
     plt.xlim(48, 101)
@@ -103,12 +103,13 @@ fig = plt.figure(figsize = (14, 9))
 
 fig.subplots_adjust(hspace = 0.39)
 for cl in range(1, 10):
-    ax = fig.add_subplot(3, 3, cl)
+    pos = letter.index(cluster_letters[cl-1]) + 1
+    ax = fig.add_subplot(3, 3, pos)
     
     for (risk, ls) in [(0.01, "solid"), (0.05, "dashed")]:
-        for (tax, mk, col) in [(0.01, "o", "#6F6058"),
-                               (0.05,  "X", "#BB7369"),
-                               (0.1, "s", "#E4C496")]:
+        for (tax, mk, col) in [(0.01, "o", publication_colors["yellow"]),
+                               (0.05,  "X", publication_colors["orange"]),
+                               (0.1, "s", publication_colors["red"])]:
             solvency = []
             
             for alpha in alphas:
@@ -130,46 +131,35 @@ for cl in range(1, 10):
     plt.ylim(-4, 101)
     plt.xlim(48, 101)
     ax = plt.gca()
-    ax.xaxis.set_tick_params(labelsize=12)
-    ax.yaxis.set_tick_params(labelsize=12)
+    ax.set_xticks([50,60,70,80,90,100])   
+    ax.xaxis.set_tick_params(labelsize=14)
+    ax.yaxis.set_tick_params(labelsize=14)
+    ax.yaxis.offsetText.set_fontsize(14)
+    ax.xaxis.offsetText.set_fontsize(14)
     
 
 # add a big axis, hide frame, ticks and tick labels of overall axis
-fig.add_subplot(111, frameon=False)
+ax = fig.add_subplot(111, frameon=False)
 plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
-plt.xlabel("Input probability for food security, %", fontsize = 24, labelpad = 20)
-plt.ylabel("Output probability for solvency, %", fontsize = 24, labelpad = 20)
+plt.xlabel("Target probability for food security, %", fontsize = 24, labelpad = 20)
+plt.ylabel("Probability for solvency, %", fontsize = 24, labelpad = 20)
    
-fig.savefig("Figures/PublicationPlots/SI/GovernmentLevers.jpg", 
-            bbox_inches = "tight", pad_inches = 1, format = "jpg")
+legend_elements = [Line2D([0], [0], color = publication_colors["yellow"], marker = "o", linestyle = "none", 
+                      label='Tax: 1%', ms = 10),
+                Line2D([0], [0], color = publication_colors["orange"], marker = "X", linestyle = "none", 
+                      label='Tax: 5%', ms = 10),
+                Line2D([0], [0], color = publication_colors["red"], marker = "s", linestyle = "none", 
+                      label='Tax: 10%', ms = 10),
+                Line2D([0], [0], color ='black', lw = 2, 
+                      label='Covered risk: 1%'),
+                Line2D([0], [0], color ='black', lw = 2, ls = "--",
+                      label='Covered risk: 5%')]
+ax.legend(handles = legend_elements, fontsize = 18, bbox_to_anchor = (0.5, -0.14),
+          loc = "upper center", ncol = 2)
+
+fig.savefig("Figures/PublicationPlots/SI/SI_GovernmentLevers.jpg", 
+            bbox_inches = "tight", format = "jpg")
 
 plt.close(fig)    
     
   
-# LEGEND IN SEPARATE PLOT
-legend = plt.figure(figsize  = (5, 3))
-legend_elements1 = [Line2D([0], [0], color ='black', lw = 2, 
-                      label='Covered risk: 1%'),
-                Line2D([0], [0], color ='black', lw = 2, ls = "--",
-                      label='Covered risk: 5%'),
-                Line2D([0], [0], color = "#6F6058", marker = "o", linestyle = "none", 
-                      label='Tax: 1%', ms = 10),
-                Line2D([0], [0], color = "#BB7369", marker = "X", linestyle = "none", 
-                      label='Tax: 5%', ms = 10),
-                Line2D([0], [0], color = "#E4C496", marker = "s", linestyle = "none", 
-                      label='Tax: 10%', ms = 10)]
-
-ax = legend.add_subplot(1, 1, 1)
-ax.set_yticks([])
-ax.set_xticks([])
-ax.spines['right'].set_visible(False)
-ax.spines['top'].set_visible(False)
-ax.spines['left'].set_visible(False)
-ax.spines['bottom'].set_visible(False)
-ax.legend(handles = legend_elements1, fontsize = 14, loc = 6)
-
-legend.savefig("Figures/PublicationPlots/SI/GovernmentLeversLegend.jpg", 
-                bbox_inches = "tight", pad_inches = 1, format = "jpg")
-plt.close(legend)
-    
-    

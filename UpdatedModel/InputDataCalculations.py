@@ -21,6 +21,7 @@ import seaborn as sns
 from termcolor import colored
 
 from matplotlib.patches import Patch
+from string import ascii_uppercase as letter
 from matplotlib.lines import Line2D
 
 import ModelCode.DataPreparation as DP
@@ -30,6 +31,9 @@ from ModelCode.PlotMaps import PlotClusterGroups
 
 if not os.path.isdir("InputData/Visualization"):
     os.mkdir("InputData/Visualization")
+
+from PlottingScripts.PlottingSettings import publication_colors
+from PlottingScripts.PlottingSettings import cluster_letters
 
 print("Preparing input data ...", flush = True)
 
@@ -242,60 +246,89 @@ with open("ProcessedData/YieldAverages_k" + str(k) + ".txt", "rb") as fp:
     yields_avg = pickle.load(fp)
     crops = pickle.load(fp)        
     
-cols = ["darkgreen", "darkred"]
+cols = [publication_colors["green"], publication_colors["yellow"]]
 start_year = 1981
 len_ts = yields_avg.shape[0]
 
-fig = plt.figure(figsize = (12, 8))
+fig = plt.figure(figsize = (16, 11))
 fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9,
-                wspace=0.2, hspace=0.45)
+                wspace=0.15, hspace=0.35)
+years = range(start_year, start_year + len_ts)
+ticks = np.arange(start_year + 2, start_year + len_ts + 0.1, 8)
 for cl in range(0, k):
+    pos = letter.index(cluster_letters[cl-1]) + 1
     if k > 6:
-        ax = fig.add_subplot(3, int(np.ceil(k/3)), cl + 1)
+        ax = fig.add_subplot(3, int(np.ceil(k/3)), pos)
     elif k > 2:
-        ax = fig.add_subplot(2, int(np.ceil(k/2)), cl + 1)
+        ax = fig.add_subplot(2, int(np.ceil(k/2)), pos)
     else:
-        ax = fig.add_subplot(1, k, cl + 1)
+        ax = fig.add_subplot(1, k, pos)
     dict_labels = {}
     for cr in [0, 1]:
         sns.regplot(x = np.array(range(start_year, \
               start_year + len_ts)), y = yields_avg[:, cr, cl], \
               color = cols[cr], ax = ax, marker = ".", truncate = True)
-        plt.plot(range(start_year, start_year + len_ts), \
-                 np.repeat(threshold[0], len_ts), ls = "--", alpha = 0.7)
-        plt.plot(range(start_year, start_year + len_ts), \
-                 np.repeat(threshold[1], len_ts), ls = "--", alpha = 0.7)
-    if cl > 5:
-        plt.xlabel("Years")
-    if cl%3 == 0:
-        plt.ylabel("Yield in t/ha")
-    plt.title("Cluster " + str(cl + 1))
+    plt.plot(range(start_year, start_year + len_ts), \
+             np.repeat(threshold[0], len_ts), ls = "--", 
+             color = cols[0], alpha = 0.85)
+    plt.plot(range(start_year, start_year + len_ts), \
+             np.repeat(threshold[1], len_ts), ls = "--", 
+             color = cols[1], alpha = 0.85)
+    val_max = np.max(yields_avg[:,0,cl])
+    ax.set_ylim(bottom = -0.05 * val_max)
+    ax.set_xlim(years[0] - 0.5, years[-1] + 0.5)
+    ax.set_xticks(ticks)   
+    ax.xaxis.set_tick_params(labelsize=14)
+    ax.yaxis.set_tick_params(labelsize=14)
+    ax.yaxis.offsetText.set_fontsize(14)
+    ax.xaxis.offsetText.set_fontsize(14)
+    # if cl > 5:
+    #     plt.xlabel("Years")
+    # if cl%3 == 0:
+    #     plt.ylabel("Yield in t/ha")
+    plt.title("Region "  + cluster_letters[cl-1], fontsize = 18)
     # plt.ylim([0, 5.5])
 # plt.suptitle("Cluster average of GDHY " + \
          # "yields (k = " + str(k) + ") and trend " + \
          # "with 95% confidence interval for " + crops[0] + " (" + \
          # cols[0] + ") and " + crops[1] + " (" + cols[1] + ")")
+         
+  
+# add a big axis, hide frame, ticks and tick labels of overall axis
+ax = fig.add_subplot(111, frameon=False)
+plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+plt.xlabel("Year", fontsize = 22, labelpad = 18)
+plt.ylabel("Crop yield, t/ha", fontsize = 22, labelpad = 18)
+
+
+legend_elements = [Line2D([0], [0], lw = 2, ls = "dashed", color= "black",
+                          label="Threshold for profitability"),
+                    Patch(color = publication_colors["green"], label='Rice', alpha = 0.6),
+                    Patch(color = publication_colors["yellow"], label='Maize', alpha = 0.6)]
+ax.legend(handles = legend_elements, fontsize = 18, bbox_to_anchor = (0.5, -0.1),
+          loc = "upper center")
+
+
 fig.savefig("InputData/Visualization/k" + str(k) + \
-        "AvgYieldTrends.png", bbox_inches = "tight", \
-        pad_inches = 0.5)   
+        "AvgYieldTrends.png", bbox_inches = "tight")   
 plt.close()
 
-legend = plt.figure(figsize  = (5, 3))
-legend_elements1 = [Line2D([0], [0], lw = 2, ls = "dashed", color= "black",
-                          label="Threshold for profitability"),
-                    Patch(color = "darkgreen", label='Rice', alpha = 0.6),
-                    Patch(color = "darkred", label='Maize', alpha = 0.6)
-                    ]
+# legend = plt.figure(figsize  = (5, 3))
+# legend_elements = [Line2D([0], [0], lw = 2, ls = "dashed", color= "black",
+#                           label="Threshold for profitability"),
+#                     Patch(color = "darkgreen", label='Rice', alpha = 0.6),
+#                     Patch(color = "darkred", label='Maize', alpha = 0.6)
+#                     ]
 
-ax = legend.add_subplot(1, 1, 1)
-ax.set_yticks([])
-ax.set_xticks([])
-ax.spines['right'].set_visible(False)
-ax.spines['top'].set_visible(False)
-ax.spines['left'].set_visible(False)
-ax.spines['bottom'].set_visible(False)
-ax.legend(handles = legend_elements1, fontsize = 14, loc = 6)
+# ax = legend.add_subplot(1, 1, 1)
+# ax.set_yticks([])
+# ax.set_xticks([])
+# ax.spines['right'].set_visible(False)
+# ax.spines['top'].set_visible(False)
+# ax.spines['left'].set_visible(False)
+# ax.spines['bottom'].set_visible(False)
+# ax.legend(handles = legend_elements1, fontsize = 14, loc = 6)
 
-legend.savefig("InputData/Visualization/YieldTrendsLegend.jpg", 
-                bbox_inches = "tight", pad_inches = 1, format = "jpg")
-plt.close(legend)
+# legend.savefig("InputData/Visualization/YieldTrendsLegend.jpg", 
+#                 bbox_inches = "tight", pad_inches = 1, format = "jpg")
+# plt.close(legend)

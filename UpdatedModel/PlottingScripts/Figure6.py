@@ -13,7 +13,6 @@ os.chdir(dir_path)
 import FoodSecurityModule as FS  
 from ModelCode.PandaPlotFunctions import PlotPandaAggregate
 import matplotlib.pyplot as plt
-import numpy as np
 from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
 
@@ -123,7 +122,7 @@ legend_elements = [Line2D([0], [0], color ='black', lw = 2,
                       label='best case'),
                 Patch(color ='royalblue', alpha = 0.6, label = 'equality grouping'),
                 Patch(color ='darkred', alpha = 0.6, label = 'proximity grouping')]
-ax.legend(handles = legend_elements, fontsize = 18, bbox_to_anchor = (0.5, -0.06),
+ax.legend(handles = legend_elements, fontsize = 24, bbox_to_anchor = (0.5, -0.06),
           loc = "upper center", ncol = 2)
 
 fig.savefig("Figures/PublicationPlots/Figure6_Cooperation.jpg", bbox_inches = "tight", pad_inches = 1)

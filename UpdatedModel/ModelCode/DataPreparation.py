@@ -18,6 +18,7 @@ from scipy import stats
 import random
 
 from ModelCode.PlotMaps import MapValues
+from PlottingScripts.PlottingSettings import publication_colors
 
 # ---------------------- FUNCTIONS FOR ReadingRawData.py ----------------------
 
@@ -373,7 +374,7 @@ def VisualizeAndPrepare_ProducerPrices():
     years = years[sorted(np.unique(years, return_index = True)[1])]
     
     # visualize raw data
-    col = ["indianred", "navy"]
+    col = [publication_colors["green"], publication_colors["yellow"]]
     fig = plt.figure(figsize = (24, 13.5))
     fig.subplots_adjust(wspace=0.25, hspace=0.5)
     for c, country in enumerate(countries):
@@ -391,8 +392,8 @@ def VisualizeAndPrepare_ProducerPrices():
             plt.title(country)
             
     plt.show()
-    plt.suptitle("Farm-gate prices in USD per tonne for maize (red)" + \
-                                         " and rice (blue)") 
+    plt.suptitle("Farm-gate prices in USD per tonne for maize (yellow)" + \
+                                         " and rice (green)") 
     fig.savefig("InputData/Visualization/ProducerPrices.png", \
                                 bbox_inches = "tight", pad_inches = 0.5)
     plt.close()
@@ -415,21 +416,23 @@ def VisualizeAndPrepare_ProducerPrices():
     prices = np.nanmean(prices, axis = 0)
     
     # visualize resulting average prices
-    x = np.arange(len(countries))  # the label locations
+    y = np.arange(len(countries))  # the label locations
     width = 0.35  # the width of the bars
     
-    fig, ax = plt.subplots(figsize = (24, 13.5))
-    rects1 = ax.bar(x - width/2, prices[:,0], width, label='Maize', \
+    fig, ax = plt.subplots(figsize = (16, 11))
+    rects1 = ax.barh(y - width/2, prices[:,0], width, label='Maize', \
                                             color = col[0], alpha = 0.5)
-    rects2 = ax.bar(x + width/2, prices[:,1], width, label='Rice', \
+    rects2 = ax.barh(y + width/2, prices[:,1], width, label='Rice', \
                                             color = col[1],  alpha = 0.5)
     
     # Add some text for labels, title and custom x-axis tick labels, etc.
-    ax.set_ylabel('Average farm-gate prices in USD/t')
-    ax.set_title('Average farm-gate prices per country and crop')
-    ax.set_xticks(x)
-    ax.set_xticklabels(countries)
-    ax.legend()
+    ax.set_xlabel('Average farm-gate prices, USD/t', fontsize = 20)
+    # ax.set_title('Average farm-gate prices per country and crop')
+    ax.set_yticks(y)
+    ax.xaxis.set_tick_params(labelsize=18)
+    ax.yaxis.set_tick_params(labelsize=18)
+    ax.set_yticklabels(countries, fontsize = 20)
+    ax.legend(fontsize = 24)
     plt.show()
     fig.savefig("InputData/Visualization/ProducerPrices_CountryAvg.png", \
                                 bbox_inches = "tight", pad_inches = 0.5)

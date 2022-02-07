@@ -807,7 +807,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
     if subplots:
         fig = plt.figure(figsize = figsize)
         fig.subplots_adjust(bottom=0.2, top=0.9, left=0.1, right=0.9,
-                    wspace=0.3, hspace=0.35)
+                    wspace=0.25, hspace=0.3)
         num_cols = int(np.floor(np.sqrt(len(output_var))))
         num_rows = int(np.ceil(len(output_var)/num_cols))
         
@@ -820,15 +820,15 @@ def PlotPandaAggregate(panda_file = "current_panda",
                 fig.add_subplot(num_rows, num_cols, idx + 1)
                 if plt_title is True:
                     if subplot_titles is not None:
-                        plt.suptitle(subplot_titles[idx], fontsize = 24)
+                        plt.suptitle(subplot_titles[idx], fontsize = 26)
                     else:
                         plt.suptitle("Development depending on colaboration of clusters" + agg_title, \
-                              fontsize = 24)
+                              fontsize = 26)
             else:
                 fig = plt.figure(figsize = figsize)
                 if plt_title is True:
                     plt.title("Development depending on colaboration of clusters" + agg_title, \
-                          fontsize = 24, pad = 15)
+                          fontsize = 26, pad = 15)
             scatters = []
             mins = []
             maxs = []
@@ -873,7 +873,7 @@ def PlotPandaAggregate(panda_file = "current_panda",
                 fig = plt.figure(figsize = figsize)
                 if plt_title is True:
                     plt.title("Development depending on colaboration of clusters" + agg_title, \
-                          fontsize = 20, pad = 15)
+                          fontsize = 24, pad = 15)
             lines = []
             mins = []
             maxs = []
@@ -904,14 +904,14 @@ def PlotPandaAggregate(panda_file = "current_panda",
                 maxs.append(res[scen1][var + " - Aggregated over all groups"].max()*1.1)
                 maxs.append(res[scen2][var + " - Aggregated over all groups"].max()*1.1)
                 maxs.append(res[scen3][var + " - Aggregated over all groups"].max()*1.1)
-            plt.xticks([1, 2, 3, 4, 5], [9, 5, 3, 2, 1], fontsize = 16)
+            plt.xticks([1, 2, 3, 4, 5], [9, 5, 3, 2, 1], fontsize = 18)
             plt.ylim((min(mins), max(maxs)))
-            plt.yticks(fontsize = 16)
-            plt.xlabel("Number of risk pools", fontsize = 20)
+            plt.yticks(fontsize = 18)
+            plt.xlabel("Number of risk pools", fontsize = 24)
             if ylabels is not None:
-                plt.ylabel("\n".join(wrap(ylabels[idx], width = 40)), fontsize = 20)
+                plt.ylabel("\n".join(wrap(ylabels[idx], width = 30)), fontsize = 24)
             else:
-                plt.ylabel("\n".join(wrap(var + " " + units[var], width = 50)), fontsize = 20)
+                plt.ylabel("\n".join(wrap(var + " " + units[var], width = 30)), fontsize = 24)
         if (scenarionames is not None) and (plt_legend):
             ax = fig.add_subplot(1, 1, 1, frameon=False)
             plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)

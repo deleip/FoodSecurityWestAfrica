@@ -15,6 +15,9 @@ import FoodSecurityModule as FS
 # import other modules
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
+from PlottingScripts.PlottingSettings import publication_colors
+from string import ascii_uppercase as letter
+from PlottingScripts.PlottingSettings import cluster_letters
 
 # %% PROFIT DISTRIBUTION - separate plots
 
@@ -104,14 +107,16 @@ for cl in range(1, 10):
 if not os.path.isdir("Figures/PublicationPlots/SI"):
     os.mkdir("Figures/PublicationPlots/SI")
 
-fig = plt.figure(figsize = (14, 8))
+fig = plt.figure(figsize = (16, 11))
 
-fig.subplots_adjust(hspace = 0.39)
+fig.subplots_adjust(wspace=0.15, hspace=0.35)
+
 for cl in range(1, 10):
-    ax = fig.add_subplot(3, 3, cl)
-    for (y, p, scen, col) in [("fixed", "High", "worst case", "#C53B21"), 
-                    ("fixed", "fixed", "stationary", "#C9AF8C"),
-                    ("trend", "fixed", "best case", "#4B9A8D")]:
+    pos = letter.index(cluster_letters[cl-1]) + 1
+    ax = fig.add_subplot(3, 3, pos)
+    for (y, p, scen, col) in [("fixed", "High", "worst case", publication_colors["red"]), 
+                ("fixed", "fixed", "stationary", publication_colors["yellow"]),
+                ("trend", "fixed", "best case", publication_colors["green"])]:
         
         settings, args, yield_information, population_information, \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
@@ -125,38 +130,45 @@ for cl in range(1, 10):
         with_catastrophe = (args["terminal_years"] != -1)
         plt.hist(meta_sol["final_fund"][with_catastrophe], bins = 200, alpha = 0.7,
                  density = True, color = col)
-    plt.xticks(fontsize = 12)
     ax.yaxis.set_ticks([])
-    plt.title(r"Region " + str(cl), fontsize = 18)
+    ax.set_title("Region " + cluster_letters[cl-1], fontsize = 18)
+    ax.xaxis.set_tick_params(labelsize=16)
+    ax.yaxis.set_tick_params(labelsize=16)
+    ax.yaxis.offsetText.set_fontsize(16)
+    ax.xaxis.offsetText.set_fontsize(16)
      
 # add a big axis, hide frame, ticks and tick labels from overall axis
-fig.add_subplot(111, frameon=False)
+ax = fig.add_subplot(111, frameon=False)
 plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
 plt.xlabel(r"Final fund after payouts, $10^{9}\,\$$", fontsize = 24, labelpad = 20)
    
-fig.savefig("Figures/PublicationPlots/SI/FinalFund.jpg", 
-            bbox_inches = "tight", pad_inches = 1, format = "jpg")
+legend_elements = [Patch(color = publication_colors["red"], label='worst case', alpha = 0.7),
+                    Patch(color = publication_colors["yellow"], label= "stationary", alpha = 0.7),
+                    Patch(color = publication_colors["green"], label='best case', alpha = 0.7)]
+
+ax.legend(handles = legend_elements, fontsize = 18, bbox_to_anchor = (0.5, -0.12),
+          loc = "upper center")
+
+fig.savefig("Figures/PublicationPlots/SI/SI_FinalFund.jpg", 
+            bbox_inches = "tight", format = "jpg")
         
 plt.close(fig)
 
 # LEGEND AS SEPARATE PLOT
-legend = plt.figure(figsize  = (5, 3))
-legend_elements1 = [Patch(color = "#C53B21", label='worst case', alpha = 0.7),
-                    Patch(color = "#C9AF8C", label= "stationary", alpha = 0.7),
-                    Patch(color = "#4B9A8D", label='best case', alpha = 0.7)]
+# legend = plt.figure(figsize  = (5, 3))
 
-ax = legend.add_subplot(1, 1, 1)
-ax.set_yticks([])
-ax.set_xticks([])
-ax.spines['right'].set_visible(False)
-ax.spines['top'].set_visible(False)
-ax.spines['left'].set_visible(False)
-ax.spines['bottom'].set_visible(False)
-ax.legend(handles = legend_elements1, fontsize = 14, loc = 6)
+# ax = legend.add_subplot(1, 1, 1)
+# ax.set_yticks([])
+# ax.set_xticks([])
+# ax.spines['right'].set_visible(False)
+# ax.spines['top'].set_visible(False)
+# ax.spines['left'].set_visible(False)
+# ax.spines['bottom'].set_visible(False)
+# ax.legend(handles = legend_elements1, fontsize = 14, loc = 6)
 
-legend.savefig("Figures/PublicationPlots/SI/FinalFundLegend.jpg", 
-                bbox_inches = "tight", pad_inches = 1, format = "jpg")
-plt.close(legend)
+# legend.savefig("Figures/PublicationPlots/SI/FinalFundLegend.jpg", 
+#                 bbox_inches = "tight", pad_inches = 1, format = "jpg")
+# plt.close(legend)
 
 # %% CALORIE PRODUCTION DISTRIBUTION - separate plots
 

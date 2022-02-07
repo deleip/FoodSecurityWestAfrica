@@ -135,10 +135,11 @@ plt.close(panelA)
 
 # %%  CROP AREAS  -- ALTERNATIVE
 
-# three yield/population scenarios
-# all 9 clusters as subplots to same figure
+# two yield/population scenarios as inner and outer pie chart
+# all 9 clusters as columns (separate pie charts)
+# two time steps as rows
 # default probability and government parameters
-# crop areas for maize and rice over time
+# crop areas for maize and rice, and unused area
 
 fig4 = plt.figure(figsize = (15, 5))
 
