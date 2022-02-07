@@ -74,10 +74,10 @@ crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
 
 # %% ########################### 2. READING RAW DATA ##########################
 
-# should take less than a minute
+# should take less than a minute (but needs rawData folder)
 import ReadingRawData
 
 # %% ########################## 3. PREPATING INPUT DATA ####################### 
 
-# takes wuite a long time, as clustering algorithm is run for k = 1, ..., 20
+# takes quite a long time, as clustering algorithm is run for k = 1, ..., 20
 import InputDataCalculations
