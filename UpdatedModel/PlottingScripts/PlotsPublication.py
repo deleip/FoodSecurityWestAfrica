@@ -89,7 +89,8 @@ for (cl, panel) in [(4, "(b)"), (5, "(a)")]:
     ax.axvline(100, color = "#003479", linestyle = "dashed", alpha = 0.6, label = "Food demand", linewidth = 2.5)
     ax.set_xlabel(r"Food production as percentage of demand (" + \
                str(np.round(args["demand"][0], 2)) + " $10^{12}\,kcal$" + ")", fontsize = 24)
-    ax.tick_params(axis = "x", labelsize = 20)
+    ax.set_ylabel(r"Probability density", fontsize = 24)
+    ax.tick_params(axis = "both", labelsize = 20)
     # ax = plt.gca()
     if cl == 5:
         ax.set_xlim(left = 30)
@@ -97,7 +98,7 @@ for (cl, panel) in [(4, "(b)"), (5, "(a)")]:
         ax.set_xlim(left = 15)
         
         
-    ax.yaxis.set_ticks([])
+    # ax.yaxis.set_ticks([])
     ax.set_title("    " + panel + r" Region " + cluster_letters[cl-1], pad = 20, fontsize = 28, loc = "left")
     ax.legend(fontsize = 22, loc = "upper left")
         
@@ -131,15 +132,14 @@ for (y, p, scen, col) in [("fixed", "High", "worst case", publication_colors["re
         costs.append(tmp.loc[:,"Total cultivation costs (sto. solution) - Aggregated over all groups"].values[0])
 
     
-    plt.scatter(alphas, costs, label = scen, color = col, s = 80)
-    plt.plot(alphas, costs, color = col, lw = 2.5)
+    ax.scatter(alphas, costs, label = scen, color = col, s = 80)
+    ax.plot(alphas, costs, color = col, lw = 2.5)
 
-plt.title(r"    (c)", pad = 20, fontsize = 28, loc = "left")
-plt.xlabel("Input probability for food security, %", fontsize = 24)
-plt.ylabel(r"Total cultivation costs, $10^9\$$", fontsize = 24)
-plt.legend(fontsize = 22, loc = "upper left")
-plt.xticks(fontsize = 20)
-plt.yticks(fontsize = 20)
+ax.set_title(r"    (c)", pad = 20, fontsize = 28, loc = "left")
+ax.set_xlabel("Target probability for food security, %", fontsize = 24)
+ax.set_ylabel(r"Total cultivation costs, $10^9\$$", fontsize = 24)
+ax.legend(fontsize = 22, loc = "upper left")
+ax.tick_params(axis = "both", labelsize = 20)
 
 fig.savefig("Figures/PublicationPlots/Figure3_FoodProdAndCosts.jpg", 
             bbox_inches = "tight", pad_inches = 0.2, format = "jpg")
@@ -330,9 +330,9 @@ output_vars = ["Resulting probability for food security",
                "Average yearly total cultivated area",
                "Total cultivation costs (sto. solution)"]
 
-ylabels = ["Target probability for food security, %",
+ylabels = ["Food security probability, %",
            r"Average food shortage per capita, $10^{3}\,$kcal",
-           "Probability for solvency, %",
+           "Solvency probabilityy, %",
            r"Average debt after payout per capita, $10^9\,\$$",
            # or: "Average aggregate debt after payout per capita (including only samples with catastrophe)",
            r"Average yearly total cultivated area, $10^9\,$ha",
