@@ -296,7 +296,10 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
         
       
     # 11 technincal variables   
-    panda["Validation value (deviation of total penalty costs)"] = validation_values["deviation_penalties"]
+    if len(validation_values) > 0:
+        panda["Validation value (deviation of total penalty costs)"] = validation_values["deviation_penalties"]
+    else:
+        panda["Validation value (deviation of total penalty costs)"] = 0
     panda["Seed (for yield generation)"]                         = settings["seed"]
     panda["Filename for full results"]                           = fn_fullresults
        

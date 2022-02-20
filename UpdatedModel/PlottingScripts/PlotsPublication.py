@@ -154,24 +154,30 @@ plt.close(fig)
 # default probability and government parameters
 # crop areas for maize and rice, and unused area
 
-fig4 = plt.figure(figsize = (15, 5))
+fig4 = plt.figure(figsize = (15, 7))
 
 fig4.subplots_adjust(wspace=0.005)
 
 colors = [publication_colors["green"], publication_colors["yellow"], publication_colors["grey"]]
 size = 0.5
 
-ax_tmp = fig4.add_subplot(3, 10, 1, frameon=False)
+ax_tmp = fig4.add_subplot(4, 10, 1, frameon=False)
 plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
 plt.xlim(0,2)
 plt.ylim(0,2)
-plt.text(-0.2, 0.85, "Year 2020  ", fontsize = 18)
+plt.text(-0.2, 0.62, "t = 2020 \n" + r"$\alpha$ = 99%", fontsize = 18)
     
-ax_tmp = fig4.add_subplot(3, 10, 11, frameon=False)
+ax_tmp = fig4.add_subplot(4, 10, 11, frameon=False)
 plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
 plt.xlim(0,2)
 plt.ylim(0,2)
-plt.text(-0.2, 0.85, "Year 2030  ", fontsize = 18)
+plt.text(-0.2, 0.62, "t = 2030 \n" + r"$\alpha$ = 99%", fontsize = 18)
+
+ax_tmp = fig4.add_subplot(4, 10, 21, frameon=False)
+plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+plt.xlim(0,2)
+plt.ylim(0,2)
+plt.text(-0.2, 0.62, "t = 2030 \n" + r"$\alpha$ = 90%", fontsize = 18)
 
 print("Plotting in progress ...", flush = True)
 for cl in range(1, 10):
@@ -179,7 +185,7 @@ for cl in range(1, 10):
 
     # get results
     settings, args, yield_information, population_information, \
-    status, all_durations, exp_incomes, crop_alloc_worst, meta_sol, \
+    status, all_durations, exp_incomes, crop_alloc_worst99, meta_sol, \
     crop_allocF, meta_solF, crop_allocS, meta_solS, \
     crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
                 FS.LoadFullResults(k_using = cl,
@@ -187,20 +193,37 @@ for cl in range(1, 10):
                                    pop_scenario = "High")
                 
     settings, args, yield_information, population_information, \
-    status, all_durations, exp_incomes, crop_alloc_best, meta_sol, \
+    status, all_durations, exp_incomes, crop_alloc_best99, meta_sol, \
     crop_allocF, meta_solF, crop_allocS, meta_solS, \
     crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
                 FS.LoadFullResults(k_using = cl,
                                    yield_projection = "trend",
                                    pop_scenario = "fixed")            
                     
+    settings, args, yield_information, population_information, \
+    status, all_durations, exp_incomes, crop_alloc_worst90, meta_sol, \
+    crop_allocF, meta_solF, crop_allocS, meta_solS, \
+    crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
+                FS.LoadFullResults(k_using = cl,
+                                   yield_projection = "fixed",
+                                   pop_scenario = "High",
+                                   probF = 0.9)
+                
+    settings, args, yield_information, population_information, \
+    status, all_durations, exp_incomes, crop_alloc_best90, meta_sol, \
+    crop_allocF, meta_solF, crop_allocS, meta_solS, \
+    crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
+                FS.LoadFullResults(k_using = cl,
+                                   yield_projection = "trend",
+                                   pop_scenario = "fixed",
+                                   probF = 0.9) 
     # settings, args, yield_information, population_information, \
     # status, all_durations, exp_incomes, crop_alloc_fixed, meta_sol, \
     # crop_allocF, meta_solF, crop_allocS, meta_solS, \
     # crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
     #             FS.LoadFullResults(k_using = cl,
-    #                                yield_projection = "fixed",
-    #                                pop_scenario = "fixed")    
+    #                                 yield_projection = "fixed",
+    #                                 pop_scenario = "fixed")    
                 
     def _getAreas(year, crops):
         year_rel = year - settings["sim_start"]
@@ -211,9 +234,9 @@ for cl in range(1, 10):
     
     pos = letter.index(cluster_letters[cl-1]) + 1
     
-    ax_tmp = fig4.add_subplot(3, 10, pos + 1)
-    areas_outer = _getAreas(2020, crop_alloc_worst)
-    areas_inner = _getAreas(2020, crop_alloc_best)
+    ax_tmp = fig4.add_subplot(4, 10, pos + 1)
+    areas_outer = _getAreas(2020, crop_alloc_worst99)
+    areas_inner = _getAreas(2020, crop_alloc_best99)
     ax_tmp.pie(areas_outer, radius = 1.2, colors = colors,
                wedgeprops = dict(width = size, edgecolor = "w"),
                startangle = 180, counterclock = False)
@@ -223,24 +246,34 @@ for cl in range(1, 10):
     ax_tmp.set_title(cluster_letters[cl-1], fontsize = 18)
         
     
-    ax_tmp = fig4.add_subplot(3, 10, pos + 11)
-    areas_outer = _getAreas(2030, crop_alloc_worst)
-    areas_inner = _getAreas(2030, crop_alloc_best)
+    ax_tmp = fig4.add_subplot(4, 10, pos + 11)
+    areas_outer = _getAreas(2030, crop_alloc_worst99)
+    areas_inner = _getAreas(2030, crop_alloc_best99)
     ax_tmp.pie(areas_outer, radius = 1.2, colors = colors,
                wedgeprops = dict(width = size, edgecolor = "w"), 
                startangle = 180, counterclock = False)
     ax_tmp.pie(areas_inner, radius = 1.2-size, colors = colors,
                wedgeprops = dict(width = size, edgecolor = "w", alpha = 0.8), 
                startangle = 180, counterclock = False)
-  
-ax = fig4.add_subplot(3, 1, 3, frameon=False)
+    
+    ax_tmp = fig4.add_subplot(4, 10, pos + 21)
+    areas_outer = _getAreas(2030, crop_alloc_worst90)
+    areas_inner = _getAreas(2030, crop_alloc_best90)
+    ax_tmp.pie(areas_outer, radius = 1.2, colors = colors,
+               wedgeprops = dict(width = size, edgecolor = "w"), 
+               startangle = 180, counterclock = False)
+    ax_tmp.pie(areas_inner, radius = 1.2-size, colors = colors,
+               wedgeprops = dict(width = size, edgecolor = "w", alpha = 0.8), 
+               startangle = 180, counterclock = False)
+    
+ax = fig4.add_subplot(4, 1, 4, frameon=False)
 plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
 
 legend_elements = [Patch(color = colors[0], alpha = 0.9, label='Rice'),
                    Patch(color = colors[1], alpha = 0.9, label='Maize'),
                    Patch(color = colors[2], alpha = 0.9, label='Not used'),
-                   Patch(color = "w", label='Inner circle: best case scenario'),
-                   Patch(color = "w", label='Outer circle: worst case scenario')]
+                   Patch(color = "w", label='Inner circle: best-case scenario'),
+                   Patch(color = "w", label='Outer circle: worst-case scenario')]
 ax.legend(handles = legend_elements, fontsize = 18,
           loc = "center", ncol = 2)
 
@@ -274,8 +307,8 @@ for cl in range(5, 6):
                               risk = risk,
                               tax = tax,
                               probF = alpha/100,
-                              yield_projection = "trend",
-                              pop_scenario = "Medium")
+                              yield_projection = "fixed",
+                              pop_scenario = "fixed")
                 
                 solvency.append(tmp.loc[:,"Resulting probability for solvency"].values[0]*100)
                 

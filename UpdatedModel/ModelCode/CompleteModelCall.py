@@ -348,6 +348,8 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
         validation_values = OutOfSampleVal(crop_alloc, settings, 
                     exp_incomes["sto. setting"], args["rhoF"], args["rhoS"], \
                     meta_sol, console_output, logs_on = logs_on)
+    else:
+        validation_values = []
     validation_end  = tm.time()
     all_durations["Validation"] = validation_end - validation_start
 

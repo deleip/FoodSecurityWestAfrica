@@ -241,7 +241,7 @@ legend_elements = [Line2D([0], [0], color ='#003479', lw = 2, ls = "dashed",
                     Patch(color = publication_colors["purple"], label=r'$\alpha$ = 50%', alpha = 0.6),
                     Patch(color = publication_colors["red"], label=r'$\alpha$ = 70%', alpha = 0.6),
                     Patch(color = publication_colors["orange"], label=r'$\alpha$ = 90%', alpha = 0.6),
-                    Patch(color = publication_colors["yellow"], label=r'\alpha$ = 95%', alpha = 0.6),
+                    Patch(color = publication_colors["yellow"], label=r'$\alpha$ = 95%', alpha = 0.6),
                     Patch(color = publication_colors["green"], label=r'$\alpha$ = 99%', alpha = 0.6)
                     ]
 
@@ -324,8 +324,8 @@ for cl in range(1, 10):
     pos = letter.index(cluster_letters[cl-1]) + 1
     
     ax_tmp = SI1.add_subplot(3, 10, pos + 1)
-    areas_outer = _getAreas(2030, crop_alloc_worst90)
-    areas_inner = _getAreas(2030, crop_alloc_best90)
+    areas_outer = _getAreas(2030, crop_alloc_worst99)
+    areas_inner = _getAreas(2030, crop_alloc_best99)
     ax_tmp.pie(areas_outer, radius = 1.2, colors = colors,
                wedgeprops = dict(width = size, edgecolor = "w"),
                startangle = 180, counterclock = False)
@@ -336,8 +336,8 @@ for cl in range(1, 10):
         
     
     ax_tmp = SI1.add_subplot(3, 10, pos + 11)
-    areas_outer = _getAreas(2030, crop_alloc_worst99)
-    areas_inner = _getAreas(2030, crop_alloc_best99)
+    areas_outer = _getAreas(2030, crop_alloc_worst90)
+    areas_inner = _getAreas(2030, crop_alloc_best90)
     ax_tmp.pie(areas_outer, radius = 1.2, colors = colors,
                wedgeprops = dict(width = size, edgecolor = "w"), 
                startangle = 180, counterclock = False)
