@@ -240,9 +240,11 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective,
                objective, file, accuracy_rho, accuracy_prob, nec_help, "GivenProb", 
                meta_zero, meta_max, max_crop_alloc, console_output, logs_on)
     # if probF cannot be reached but the maximum probability (or what is 
-    # assumed to be the maximum probability) is hgiher than for rho -> 0,
+    # assumed to be the maximum probability) is higher than for rho -> 0,
     # find the lowest penalty that gives the highest probability
-    elif maxProb > meta_zero["prob" + objective]:
+     # rounding to avoid using this method for max probab super close to zero
+     # (which would be only due to outlier high yields)
+    elif round(maxProb, 4) > meta_zero["prob" + objective]:
         _printing("     Finding penalty that leads to max. probability\n", console_output, logs_on = logs_on)
         rho, meta_sol, crop_alloc = _RhoProbability(args, maxProb, rhoIni, checkedGuess, \
                objective, file, accuracy_rho, accuracy_maxProb, nec_help, "MaxProb", 
@@ -602,20 +604,21 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
         return(testPassed)
     
     # check if rho from run with smaller N works here as well:
-    rho, meta_sol, crop_alloc = _checkIniGuess(rhoIni, 
-                                  args,
-                                  checkedGuess,
-                                  nec_help = nec_help,
-                                  objective = objective,
-                                  accuracy_rho = accuracy_rho,
-                                  accuracy = None,
-                                  accuracy_help = accuracy_help,
-                                  console_output = console_output,
-                                  logs_on = logs_on)
+    # rho, meta_sol, crop_alloc = _checkIniGuess(rhoIni, 
+    #                                         args,
+    #                                         checkedGuess,
+    #                                         nec_help = nec_help,
+    #                                         objective = objective,
+    #                                         accuracy_rho = accuracy_rho,
+    #                                         accuracy = None,
+    #                                         accuracy_help = accuracy_help,
+    #                                         console_output = console_output,
+    #                                         logs_on = logs_on)
+    # if rho is not None:
+    #     return(rho, meta_sol, crop_alloc)
+    ## WE DON'T USE RHOS FROM LOWER N FOR THE NECESSARY HELP METHOD, AS THIS 
+    ## APPARENTLY IS TOO SENSIBLE (??)
    
-    if rho is not None:
-        return(rho, meta_sol, crop_alloc)
-    
     # else we start from scratch
     if objective == "F":
         rhoIni = 1

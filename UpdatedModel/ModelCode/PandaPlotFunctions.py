@@ -1106,7 +1106,7 @@ def Panda_GetResultsSingScen(file = "current_panda",
         with open("InputData/Clusters/ClusterGroups/Grouping" + grouping_metric.capitalize() + 
                   "Size"  + str(size) + grouping_aim + add + ".txt", "rb") as fp:
                 BestGrouping = pickle.load(fp)
-    
+        
         panda_tmp = ReadFromPanda(file = file, \
                                   output_var = output_var, \
                                   k_using = BestGrouping, \
@@ -1152,6 +1152,7 @@ def Panda_GetResultsSingScen(file = "current_panda",
                                         out_type = output_dict_tmp["out_type"], 
                                         output_var = output_dict_tmp["output_var"],
                                         size = size)
+                    
                 if idx == 0:
                     tmp = tmp2
                 else:

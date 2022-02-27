@@ -229,7 +229,7 @@ for cl in range(1, 10):
         year_rel = year - settings["sim_start"]
         areas = [crops[year_rel,0,0], 
                 crops[year_rel,1,0], 
-                args["max_areas"][0] - np.sum(crops[year_rel,:,0])]
+                round(args["max_areas"][0] - np.sum(crops[year_rel,:,0]), 5)]
         return(areas)
     
     pos = letter.index(cluster_letters[cl-1]) + 1
@@ -237,6 +237,7 @@ for cl in range(1, 10):
     ax_tmp = fig4.add_subplot(4, 10, pos + 1)
     areas_outer = _getAreas(2020, crop_alloc_worst99)
     areas_inner = _getAreas(2020, crop_alloc_best99)
+    print("                 1. outer: " + str(areas_outer) + ", inner: " + str(areas_inner))
     ax_tmp.pie(areas_outer, radius = 1.2, colors = colors,
                wedgeprops = dict(width = size, edgecolor = "w"),
                startangle = 180, counterclock = False)
@@ -249,6 +250,7 @@ for cl in range(1, 10):
     ax_tmp = fig4.add_subplot(4, 10, pos + 11)
     areas_outer = _getAreas(2030, crop_alloc_worst99)
     areas_inner = _getAreas(2030, crop_alloc_best99)
+    print("                 2. outer: " + str(areas_outer) + ", inner: " + str(areas_inner))
     ax_tmp.pie(areas_outer, radius = 1.2, colors = colors,
                wedgeprops = dict(width = size, edgecolor = "w"), 
                startangle = 180, counterclock = False)
@@ -259,6 +261,7 @@ for cl in range(1, 10):
     ax_tmp = fig4.add_subplot(4, 10, pos + 21)
     areas_outer = _getAreas(2030, crop_alloc_worst90)
     areas_inner = _getAreas(2030, crop_alloc_best90)
+    print("                 3. outer: " + str(areas_outer) + ", inner: " + str(areas_inner))
     ax_tmp.pie(areas_outer, radius = 1.2, colors = colors,
                wedgeprops = dict(width = size, edgecolor = "w"), 
                startangle = 180, counterclock = False)

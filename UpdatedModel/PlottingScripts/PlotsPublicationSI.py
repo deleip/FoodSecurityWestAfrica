@@ -33,6 +33,8 @@ from ModelCode.PlotMaps import PlotClusterGroups
 if not os.path.isdir("Figures/PublicationPlots"):
     os.mkdir("Figures/PublicationPlots")
     
+if not os.path.isdir("Figures/PublicationPlots/SI"):
+    os.mkdir("Figures/PublicationPlots/SI")
     
 # %% INTER- AND INTRA CLUSTER SIMILARITY CLUSTERING
 
@@ -318,7 +320,7 @@ for cl in range(1, 10):
         year_rel = year - settings["sim_start"]
         areas = [crops[year_rel,0,0], 
                 crops[year_rel,1,0], 
-                args["max_areas"][0] - np.sum(crops[year_rel,:,0])]
+                round(args["max_areas"][0] - np.sum(crops[year_rel,:,0]), 5)]
         return(areas)
     
     pos = letter.index(cluster_letters[cl-1]) + 1
@@ -551,8 +553,8 @@ for cl in range(1, 10):
                               risk = risk,
                               tax = tax,
                               probF = alpha/100,
-                              yield_projection = "trend",
-                              pop_scenario = "Medium")
+                              yield_projection = "fixed",
+                              pop_scenario = "fixed")
                 
                 solvency.append(tmp.loc[:,"Resulting probability for solvency"].values[0]*100)
                 

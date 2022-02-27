@@ -146,6 +146,10 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
              "Sample size":                        settings["N"],
              "Sample size for validation":         settings["validation_size"],
              "Number of covered years":            settings["T"]}
+    if settings["validation_size"] is not None:
+        panda["Sample size for validation"] = settings["validation_size"]
+    else:
+        panda["Sample size for validation"] = 0
     
     # 2 resulting penalties and probabilities
     panda["Penalty for food shortage"]               = args["rhoF"]

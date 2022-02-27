@@ -19,23 +19,23 @@ import FoodSecurityModule as FS
 # %% SAMPLE SIZES TO USE
 
 # first runs
-N = 10000
+# N = 10000
 
-sample_sizes_cooperation = [(1, 10000),
-                            (2, 20000),
-                            (3, 50000),
-                            (5, 100000),
-                            ("all", 150000)]
+# sample_sizes_cooperation = [(1, 10000),
+#                             (2, 20000),
+#                             (3, 50000),
+#                             (5, 100000),
+#                             ("all", 150000)]
 
 
 # second runs
-# N = 100000
+N = 50000
 
-# sample_sizes_cooperation = [(1, 100000),
-#                             (2, 150000),
-#                             (3, 150000),
-#                             (5, 150000),
-#                             ("all", 200000)]
+sample_sizes_cooperation = [(1, 50000),
+                            (2, 100000),
+                            (3, 150000),
+                            (5, 150000),
+                            ("all", 200000)]
 
 # %% RUNS FOR FIGURE 3
 
@@ -45,8 +45,8 @@ sample_sizes_cooperation = [(1, 10000),
 # all clusters (no cooperation)
 # for worst, best and stationary case
 
-for (y, p) in [("trend", "fixed"),
-               ("fixed", "fixed"),
+for (y, p) in [#("trend", "fixed"),
+               #("fixed", "fixed"),
                ("fixed", "High")]:
     print("\u2017"*65, flush = True)
     print("Scenario: yield " + y + ", population " + p, flush = True)
@@ -105,11 +105,13 @@ for (y, p) in [("trend", "fixed"),
 
 for tax in [0.01, 0.05, 0.1]:
     for risk in [0.01, 0.05]:
+        print("\u2017"*65, flush = True)
+        print(str(tax*100) + "% tax, " + str(risk*100) + "% risk", flush = True)
+        print("\u033F "*65, flush = True)
         for alpha in [0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99]:
             for cl in range(1, 10):
-                print("\u2017"*65, flush = True)
-                print(str(tax*100) + "% tax, " + str(risk*100) + "% risk, " + str(alpha*100) + ": cluster " + str(cl), flush = True)
-                print("\u033F "*65, flush = True)
+                print("probability " + str(alpha*100) + ", cluster " + str(cl), flush = True)
+                print("-"*65, flush = True)
                 
                 settings, args, yield_information, population_information, \
                 status, durations, exp_incomes, crop_alloc, meta_sol, \
@@ -133,17 +135,19 @@ for tax in [0.01, 0.05, 0.1]:
 # equity and proximity grouping
 # for worst, best and stationary case
 
-for (metric, aim, adj, adj_text) in [("medoids", "Similar", "Adj", "True"),
-                                     ("equality", "Similar", "", "False")]:
-    print("COOPERATION PLOTS FOR " + metric + ", " + aim  + ", " + adj + "GROUPING" , flush = True)
-    for (y, p) in [("trend", "fixed"),
+for (metric, aim, adj, adj_text) in [#("medoids", "Similar", "Adj", "True"),
+                                     ("equality", "Similar", "", "False")
+                                     ]:
+    print("\u2017"*65, flush = True)
+    print("COOPERATION PLOTS FOR " + metric + ", " + aim  + ", " + adj + " GROUPING" , flush = True)
+    print("\u033F "*65, flush = True)
+    for (y, p) in [#("trend", "fixed"),
                    ("fixed", "fixed"),
                    ("fixed", "High")]:
         for size, N_size in sample_sizes_cooperation:
             if size == "all":
-                print("\u2017"*65)
-                print("Metric " + metric + ", aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: all")
-                print("\u033F "*65)
+                print("\nMetric " + metric + ", aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: all")
+                print("-"*65, flush = True)
                 settings, args, yield_information, population_information, \
                 status, durations, exp_incomes, crop_alloc, meta_sol, \
                 crop_allocF, meta_solF, crop_allocS, meta_solS, \
@@ -159,9 +163,8 @@ for (metric, aim, adj, adj_text) in [("medoids", "Similar", "Adj", "True"),
                         BestGrouping = pickle.load(fp)
                         
                 for cluster_active in BestGrouping:
-                    print("\u2017"*65)
                     print("Metric " + metric + ", aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: " + str(cluster_active))
-                    print("\u033F "*65)
+                    print("-"*65, flush = True)
                     
                     settings, args, yield_information, population_information, \
                     status, durations, exp_incomes, crop_alloc, meta_sol, \

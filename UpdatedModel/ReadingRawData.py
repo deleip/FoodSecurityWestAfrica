@@ -264,6 +264,8 @@ with open("InputData/Other/CultivationCosts.txt", "wb") as fp:
 
 # %% 8. Energy value of crops
 
+print("... energy value of crops", flush = True)
+
 # https://www.ars.usda.gov/northeast-area/beltsville-md-bhnrc/
 # beltsville-human-nutrition-research-center/methods-and-application-
 # of-food-composition-laboratory/mafcl-site-pages/sr11-sr28/
@@ -281,6 +283,8 @@ with open("InputData/Other/CalorieContentCrops.txt", "wb") as fp:
 # creates InputData/Other/CalorieContentCrops.txt
 
 # %% 9. Average calorie demand per person and day
+
+print("... average calorie demand per person", flush = True)
 
 # we use data from a paper on food waste 
 # (https://doi.org/10.1371/journal.pone.0228369) 

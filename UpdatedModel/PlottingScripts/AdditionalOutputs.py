@@ -27,6 +27,9 @@ import FoodSecurityModule as FS
 from string import ascii_uppercase as letter
 from PlottingScripts.PlottingSettings import publication_colors
 from PlottingScripts.PlottingSettings import cluster_letters
+    
+if not os.path.isdir("Figures/PublicationPlots/AdditionalInfo"):
+    os.mkdir("Figures/PublicationPlots/AdditionalInfo")
 
 # %% WHAT REGIONS CAN REACH THE FOOD SECURITY TARGET?
 
@@ -40,6 +43,9 @@ for (y, p, scen_name) in [("fixed", "High", "WorstCase"),
     
     maxProbabilities = dict(zip(cluster_letters, [round(p, 2) for p in maxProbabilities]))
     maxProbabilities = {key : value for key, value in sorted(maxProbabilities.items())}
+    
+    print(scen_name + ":")
+    print(maxProbabilities, flush = True)
     
     json.dump(maxProbabilities, open("Figures/PublicationPlots/AdditionalInfo/MaxProbabilities" + scen_name + ".json", "w"))
 
@@ -127,7 +133,8 @@ alphas = [50, 60, 70, 80, 90, 95, 99, 99.5]
 
 for (y, p, scen, col) in [("fixed", "High", "worst case", publication_colors["red"]), 
                 ("fixed", "fixed", "stationary", publication_colors["yellow"]),
-                ("trend", "fixed", "best case", publication_colors["green"])]:
+                ("trend", "fixed", "best case", publication_colors["green"])
+                ]:
     print("\u2017"*65, flush = True)
     print("Scenario: yield " + y + ", population " + p, flush = True)
     print("\u033F "*65, flush = True)
@@ -150,14 +157,14 @@ for (y, p, scen, col) in [("fixed", "High", "worst case", publication_colors["re
     plt.plot(alphas, shortages, color = col, lw = 2.5)
 
 plt.xlabel("Target probability for food security, %", fontsize = 24)
-plt.ylabel(r"Average expected food shortage, $10^{12}\,$kcal", fontsize = 24)
+plt.ylabel(r"Average expected food shortage per capita, $10^{12}\,$kcal", fontsize = 24)
 plt.legend(fontsize = 22, loc = "upper right")
 
 ax = plt.gca()
 ax.xaxis.set_tick_params(labelsize=16)
 ax.yaxis.set_tick_params(labelsize=16)
     
-fig.savefig("Figures/PublicationPlots/AdditionalInfo/AdditionalPlot1_AvgFoodShortage.jpg", 
+fig.savefig("Figures/PublicationPlots/AdditionalInfo/AdditionalPlot1_AvgFoodShortagePC.jpg", 
             bbox_inches = "tight", pad_inches = 0.2, format = "jpg")
 
 plt.close(fig)
@@ -200,14 +207,14 @@ for (y, p, scen, col) in [("fixed", "High", "worst case", publication_colors["re
     plt.plot(alphas, shortages, color = col, lw = 2.5)
 
 plt.xlabel("Target probability for food security, %", fontsize = 24)
-plt.ylabel("Average expected food shortage as share of \n expected shortage in risk-neutral strategy, %", fontsize = 24)
+plt.ylabel("Average expected food shortage per capita as share of \n expected shortage in risk-neutral strategy, %", fontsize = 24)
 plt.legend(fontsize = 22, loc = "upper right")
 
 ax = plt.gca()
 ax.xaxis.set_tick_params(labelsize=16)
 ax.yaxis.set_tick_params(labelsize=16)
     
-fig.savefig("Figures/PublicationPlots/AdditionalInfo/AdditionalPlot1_AvgFoodShortageRelativeToRiskNeutralStrategy.jpg", 
+fig.savefig("Figures/PublicationPlots/AdditionalInfo/AdditionalPlot1_AvgFoodShortagePC_RelativeToRiskNeutralStrategy.jpg", 
             bbox_inches = "tight", pad_inches = 0.2, format = "jpg")
 
 plt.close(fig)
@@ -251,7 +258,7 @@ for (y, p, scen, col) in [("fixed", "High", "worst case", publication_colors["re
     plt.plot(alphas, [p * 100 for p in probabilities], color = col, lw = 2.5)
 
 plt.xlabel("Target probability for food security, %", fontsize = 24)
-plt.ylabel(r"Average probabilities for food security, %", fontsize = 24)
+plt.ylabel(r"Average probability for food security, %", fontsize = 24)
 plt.legend(fontsize = 22, loc = "upper left")
 
 ax = plt.gca()
@@ -289,7 +296,7 @@ for (y, p, scen, col) in [("fixed", "High", "worst case", publication_colors["re
         print("Food security probability " + str(alpha) + "%", flush = True)
         
         shortages.append(FS.Panda_GetResultsSingScen(file = "current_panda", 
-                                   output_var = "Average aggregate food shortage per capita (including only samples that have shortage)",
+                                   output_var = "Average aggregate food shortage",
                                    out_type = "agg_sum", 
                                    sizes = 1,
                                    probF = alpha/100,
@@ -312,7 +319,7 @@ fig.savefig("Figures/PublicationPlots/AdditionalInfo/AdditionalPlot1_AggFoodShor
 
 plt.close(fig)
 
-# %% HOW DOES EXPECTED FOOD SHORTAGE DECREASE WITH FOOD SECURITY TARGET?
+ # %% HOW DOES EXPECTED FOOD SHORTAGE DECREASE WITH FOOD SECURITY TARGET?
 
 # for each scenario
 # over all clusters (whout coopreatoin) averaged using population as weight
@@ -337,7 +344,7 @@ for (y, p, scen, col) in [("fixed", "High", "worst case", publication_colors["re
         print("Food security probability " + str(alpha) + "%", flush = True)
         
         shortages.append(FS.Panda_GetResultsSingScen(file = "current_panda", 
-                                   output_var = "Average aggregate food shortage per capita (including only samples that have shortage)",
+                                   output_var = "Average aggregate food shortage",
                                    out_type = "agg_sum", 
                                    sizes = 1,
                                    probF = alpha/100,
@@ -356,7 +363,7 @@ ax = plt.gca()
 ax.xaxis.set_tick_params(labelsize=16)
 ax.yaxis.set_tick_params(labelsize=16)
     
-fig.savefig("Figures/PublicationPlots/AdditionalInfo/AdditionalPlot1_AggFoodShortageRelativeToRiskNeutralStrategy.jpg", 
+fig.savefig("Figures/PublicationPlots/AdditionalInfo/AdditionalPlot1_AggFoodShortage_RelativeToRiskNeutralStrategy.jpg", 
             bbox_inches = "tight", pad_inches = 0.2, format = "jpg")
 
 plt.close(fig)
