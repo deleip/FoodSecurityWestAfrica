@@ -81,7 +81,8 @@ for (cl, panel) in [(4, "(b)"), (5, "(a)")]:
                     FS.LoadFullResults(k_using = cl,
                                        yield_projection = y,
                                        pop_scenario = p,
-                                       probF = alpha)
+                                       probF = alpha,
+                                       N = 25000)
                     
         ax.hist(meta_sol["food_supply"].flatten()/args["demand"][0] * 100, bins = 200, alpha = 0.6,
                  density = True, color = col, label = r"$\alpha$ = " + str(alpha * 100) + "%")
@@ -136,7 +137,7 @@ for (y, p, scen, col) in [("fixed", "High", "worst case", publication_colors["re
     ax.plot(alphas, costs, color = col, lw = 2.5)
 
 ax.set_title(r"    (c)", pad = 20, fontsize = 28, loc = "left")
-ax.set_xlabel("Target probability for food security, %", fontsize = 24)
+ax.set_xlabel("Reliability target for food security, %", fontsize = 24)
 ax.set_ylabel(r"Total cultivation costs, $10^9\$$", fontsize = 24)
 ax.legend(fontsize = 22, loc = "upper left")
 ax.tick_params(axis = "both", labelsize = 20)
@@ -322,7 +323,7 @@ for cl in range(5, 6):
             miny = min(miny, np.min(solvency))
             
     plt.legend()
-    plt.xlabel("Target probability for food security, %", fontsize = 20)
+    plt.xlabel("Reliability target for food security, %", fontsize = 20)
     plt.ylabel("Probability for solvency, %", fontsize = 20)
     plt.title("Region " + cluster_letters[cl-1], fontsize = 24, pad = 16)
     plt.ylim(0.96 * miny, 101)

@@ -124,8 +124,8 @@ def ModifyGeneralSettings(accuracyF_demandedProb = None,
 
     """
     
-    from ModelCode.GeneralSettings import accuracyF_targetProb as accuracyF_demandedProbFbefore
-    from ModelCode.GeneralSettings import accuracyS_targetProb as accuracyS_demandedProbFbefore
+    from ModelCode.GeneralSettings import accuracyF_demandedProb as accuracyF_demandedProbFbefore
+    from ModelCode.GeneralSettings import accuracyS_demandedProb as accuracyS_demandedProbFbefore
     from ModelCode.GeneralSettings import accuracyF_maxProb as accuracyF_maxProbFbefore
     from ModelCode.GeneralSettings import accuracyS_maxProb as accuracyS_maxProbFbefore
     from ModelCode.GeneralSettings import accuracyF_rho as accuracyF_rhobefore

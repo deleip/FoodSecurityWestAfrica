@@ -19,13 +19,13 @@ import FoodSecurityModule as FS
 # %% SAMPLE SIZES TO USE
 
 # first runs
-# N = 10000
+N = 25000
 
-# sample_sizes_cooperation = [(1, 10000),
-#                             (2, 20000),
-#                             (3, 50000),
-#                             (5, 100000),
-#                             ("all", 150000)]
+sample_sizes_cooperation = [(1, 25000),
+                            (2, 50000),
+                            (3, 100000),
+                            (5, 100000),
+                            ("all", 150000)]
 
 
 # second runs
@@ -45,26 +45,42 @@ sample_sizes_cooperation = [(1, 50000),
 # all clusters (no cooperation)
 # for worst, best and stationary case
 
+force_recalculation = False
+
 for (y, p) in [#("trend", "fixed"),
                #("fixed", "fixed"),
-               ("fixed", "High")]:
+               ("fixed", "High")
+               ]:
     print("\u2017"*65, flush = True)
     print("Scenario: yield " + y + ", population " + p, flush = True)
     print("\u033F "*65, flush = True)
-    for alpha in [0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99, 0.995]: 
-       for cl in range(1, 10):
+    for alpha in [#0.5, 0.6,
+                  #0.7, 0.8, 
+                  #0.9, 0.95,
+                  0.99, 0.995
+                  ]: 
+       for cl in range(6, 7):
            print("Food security probability " + str(alpha * 100) + "%: cluster " + str(cl), flush = True)
-            
+           
+           if cl in [6,7]:
+               FS.ModifyGeneralSettings(accuracyF_maxProb = 0.002)
+               force_recalculation = True
+             
            settings, args, yield_information, population_information, \
             status, durations, exp_incomes, crop_alloc, meta_sol, \
             crop_allocF, meta_solF, crop_allocS, meta_solS, \
             crop_alloc_vs, meta_sol_vss, VSS_value, validation_values, fn = \
                 FS.FoodSecurityProblem(k_using = cl,
-                                       # plotTitle = "Food security probability " + str(alpha * 100) + "%: cluster " + str(cl),
+                                       plotTitle = "Food security probability " + str(alpha * 100) + "%: cluster " + str(cl),
                                        N = N,
                                        probF = alpha,
                                        yield_projection = y,
-                                       pop_scenario = p)
+                                       pop_scenario = p,
+                                       force_recalculation = force_recalculation)
+            
+           if cl == [6,7]:
+               FS.ResetGeneralSettings()
+               force_recalculation = False
 
 # %% RUNS FOR FIGURE 4
 
@@ -101,18 +117,29 @@ for (y, p) in [("trend", "fixed"),
 # tax = 1, 5, 10%; covered risk = 1, 5% (covered risk default)
 # different food security probabilties
 # all clusters (no cooperation)
-# TODO: only one scenario, but which one???
+# stationary scenario
 
-for tax in [0.01, 0.05, 0.1]:
+force_recalculation = False
+
+for tax in [0.01,
+            0.05,
+            0.1
+            ]:
     for risk in [0.01, 0.05]:
         print("\u2017"*65, flush = True)
         print(str(tax*100) + "% tax, " + str(risk*100) + "% risk", flush = True)
         print("\u033F "*65, flush = True)
-        for alpha in [0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99]:
-            for cl in range(1, 10):
+        for alpha in [#0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 
+                      0.99]:
+            for cl in range(7, 8):
                 print("probability " + str(alpha*100) + ", cluster " + str(cl), flush = True)
                 print("-"*65, flush = True)
                 
+                
+                if cl == 7:
+                   FS.ModifyGeneralSettings(accuracyF_maxProb = 0.002)
+                   force_recalculation = True
+               
                 settings, args, yield_information, population_information, \
                 status, durations, exp_incomes, crop_alloc, meta_sol, \
                 crop_allocF, meta_solF, crop_allocS, meta_solS, \
@@ -124,7 +151,12 @@ for tax in [0.01, 0.05, 0.1]:
                                            risk = risk,
                                            probF = alpha,
                                            yield_projection = "fixed",
-                                           pop_scenario = "fixed")
+                                           pop_scenario = "fixed",
+                                           force_recalculation = force_recalculation)
+                
+                if cl == 7:
+                   FS.ResetGeneralSettings()
+                   force_recalculation = False
                     
 # %% RUNS FOR FIGURE 6
 
@@ -135,19 +167,22 @@ for tax in [0.01, 0.05, 0.1]:
 # equity and proximity grouping
 # for worst, best and stationary case
 
-for (metric, aim, adj, adj_text) in [#("medoids", "Similar", "Adj", "True"),
+for (metric, aim, adj, adj_text) in [("medoids", "Similar", "Adj", "True"),
                                      ("equality", "Similar", "", "False")
                                      ]:
     print("\u2017"*65, flush = True)
     print("COOPERATION PLOTS FOR " + metric + ", " + aim  + ", " + adj + " GROUPING" , flush = True)
     print("\u033F "*65, flush = True)
-    for (y, p) in [#("trend", "fixed"),
+    for (y, p) in [("trend", "fixed"),
                    ("fixed", "fixed"),
-                   ("fixed", "High")]:
-        for size, N_size in sample_sizes_cooperation:
+                   ("fixed", "High")
+                   ]:
+        for size, N_size in [sample_sizes_cooperation[2]]:
             if size == "all":
-                print("\nMetric " + metric + ", aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: all")
                 print("-"*65, flush = True)
+                print("-"*65, flush = True)
+                print("\nMetric " + metric + ", aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: all")
+                
                 settings, args, yield_information, population_information, \
                 status, durations, exp_incomes, crop_alloc, meta_sol, \
                 crop_allocF, meta_solF, crop_allocS, meta_solS, \
@@ -163,9 +198,10 @@ for (metric, aim, adj, adj_text) in [#("medoids", "Similar", "Adj", "True"),
                         BestGrouping = pickle.load(fp)
                         
                 for cluster_active in BestGrouping:
-                    print("Metric " + metric + ", aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: " + str(cluster_active))
                     print("-"*65, flush = True)
-                    
+                    print("-"*65, flush = True)
+                    print("Metric " + metric + ", aim: " + aim + ", adjacent: " + adj_text + ", size: " + str(size) + ", clusters: " + str(cluster_active))
+                  
                     settings, args, yield_information, population_information, \
                     status, durations, exp_incomes, crop_alloc, meta_sol, \
                     crop_allocF, meta_solF, crop_allocS, meta_solS, \

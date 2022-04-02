@@ -32,7 +32,8 @@ from ModelCode.VSSandValidation import OutOfSampleVal
 
 def FoodSecurityProblem(console_output = None, logs_on = None, \
                         save = True, plotTitle = None, close_plots = None, 
-                        panda_file = "current_panda", **kwargs):
+                        panda_file = "current_panda", force_recalculation = False,
+                        **kwargs):
     """
     Setting up and solving the food security problem. Returns model output
     and additional information on the solution, as well as the VSS and a 
@@ -62,6 +63,10 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
         Name of the csv file used to append the results of the model run for
         plotting and easy accessibility. If None, results are not saved to 
         panda csv. Default is "current_panda"
+    force_recalculation : boolean
+        If the model run already exists, should it be recalculated anyway?
+        For example relevant if settings in GeneralSettings.py have been 
+        changed, as this is not checked. Default is False.
     **kwargs
         settings for the model, passed to DefaultSettingsExcept()
         
@@ -128,6 +133,11 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
     
     # get filename for model results
     fn = GetFilename(settings)
+    
+    # force recalculation?
+    if force_recalculation is True:
+          if os.path.isfile("ModelOutput/SavedRuns/" + fn + ".txt"):
+              os.remove("ModelOutput/SavedRuns/" + fn + ".txt")
     
     # if model output does not exist yet it is calculated
     if not os.path.isfile("ModelOutput/SavedRuns/" + fn + ".txt"):

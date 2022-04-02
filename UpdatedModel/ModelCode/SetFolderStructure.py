@@ -120,6 +120,12 @@ def CheckFolderStructure():
     if not os.path.exists("PenaltiesAndIncome/crop_allocS.txt"):
         with open("PenaltiesAndIncome/crop_allocS.txt", "wb") as fp:
             pickle.dump({}, fp) 
+    
+    if not os.path.isdir("PenaltiesAndIncome/ProbF"):
+            os.mkdir("PenaltiesAndIncome/ProbFs")
+    if not os.path.isdir("PenaltiesAndIncome/ProbS"):
+            os.mkdir("PenaltiesAndIncome/ProbSs")
+            
             
     if not os.path.exists("PenaltiesAndIncome/ExpectedIncomes.txt"):
         with open("PenaltiesAndIncome/ExpectedIncomes.txt", "wb") as fp:
