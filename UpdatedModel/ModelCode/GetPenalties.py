@@ -259,7 +259,7 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective, fileProb,
         from ModelCode.GeneralSettings import accuracyS_rho as accuracy_rho
     
     # check model output for a very high penalty (as proxy for infinity)
-    maxProb, meta_max, meta_zero, max_crop_alloc = _CheckOptimalProb(args, prob, objective,
+    maxProb, meta_max, meta_zero, max_crop_alloc = _CheckOptimalProb(args, prob, objective, fileProb,
                       console_output = console_output, logs_on = logs_on)
     nec_help = _get_necessary_help(meta_max)    
     
@@ -404,6 +404,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, fileProb,
     rho, meta_sol, crop_alloc = _checkIniGuess(rhoIni, 
                                   args,
                                   checkedGuess,
+                                  fileProb,
                                   prob = prob,
                                   min_prob = min_prob,
                                   objective = objective,
@@ -434,7 +435,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, fileProb,
     
     # calculate initial guess
     crop_alloc, currentProb, currentNecHelp, durations, meta_sol = \
-        _getResultsForRho(args, rhoFini, rhoSini, fileProb, console_output = False, logs_on = False)
+        _getResultsForRho(args, rhoFini, rhoSini, objective, fileProb, console_output = False, logs_on = False)
     crop_allocs.append(crop_alloc)
     rhos_tried.append(rhoIni)
     probabilities.append(currentProb)
@@ -472,7 +473,7 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, fileProb,
        
         # solve model for guess
         crop_alloc, currentProb, currentNecHelp, durations, meta_sol = \
-            _getResultsForRho(args, rhoFnew, rhoSnew, fileProb, console_output = False, logs_on = False)
+            _getResultsForRho(args, rhoFnew, rhoSnew, objective, fileProb, console_output = False, logs_on = False)
         crop_allocs.append(crop_alloc)
         rhos_tried.append(rhoNew)
         probabilities.append(currentProb)
@@ -650,6 +651,7 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
     # rho, meta_sol, crop_alloc = _checkIniGuess(rhoIni, 
     #                                         args,
     #                                         checkedGuess,
+    #                                         fileProb,  
     #                                         nec_help = nec_help,
     #                                         objective = objective,
     #                                         accuracy_rho = accuracy_rho,
@@ -682,7 +684,7 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
     
     # calculate initial guess
     crop_alloc, currentProb, currentNecHelp, durations, meta_sol = \
-        _getResultsForRho(args, rhoFini, rhoSini, fileProb, console_output = False, logs_on = False)
+        _getResultsForRho(args, rhoFini, rhoSini, objective, fileProb, console_output = False, logs_on = False)
     # status, crop_alloc, meta_sol, sto_prob, durations = \
     #             SolveReducedLinearProblemGurobiPy(args, rhoFini, rhoSini, objective, \
     #                                               console_output = False, logs_on = False)
@@ -718,7 +720,7 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
         
         # solve model for guess
         crop_alloc, currentProb, currentNecHelp, durations, meta_sol = \
-            _getResultsForRho(args, rhoFnew, rhoSnew, fileProb, console_output = False, logs_on = False)
+            _getResultsForRho(args, rhoFnew, rhoSnew, objective, fileProb, console_output = False, logs_on = False)
         # status, crop_alloc, meta_sol, sto_prob, durations = \
         #         SolveReducedLinearProblemGurobiPy(args, rhoFnew, rhoSnew,
         #                              console_output = False, logs_on = False)
@@ -831,7 +833,7 @@ def _getResultsForRho(args, rhoF, rhoS, objective, fileProb,
         
     fullFile = "PenaltiesAndIncome/Prob" + objective + "/" + fileProb + ".txt"
     
-    if os.path.isdir(fullFile):
+    if os.path.exists(fullFile):
         with open(fullFile, "rb") as fp:    
             dict_prob = pickle.load(fp)
     else:
@@ -909,7 +911,7 @@ def _CheckOptimalProb(args, prob, objective, fileProb,
         
     # try for rho = 1e12 (as a proxy for rho -> inf)
     crop_alloc, maxProb, minNecHelp, durations, meta_sol = \
-        _getResultsForRho(args, rhoF, rhoS, fileProb, console_output = False, logs_on = False)
+        _getResultsForRho(args, rhoF, rhoS, objective, fileProb, console_output = False, logs_on = False)
     # status, crop_alloc, meta_max, sto_prob, durations = \
     #      SolveReducedLinearProblemGurobiPy(args, rhoF, rhoS, console_output = False, logs_on = False)  
      
@@ -1422,7 +1424,7 @@ def _checkIniGuess(rhoIni,
         # check if rhoF from run with smaller N works here as well:
         _printing("     Checking guess from run with other N", console_output = console_output, logs_on = logs_on)
         crop_alloc, currentProb, currentNecHelp, durations, meta_sol = \
-            _getResultsForRho(args, rhoFguess, rhoSguess, fileProb, console_output = False, logs_on = False)
+            _getResultsForRho(args, rhoFguess, rhoSguess, objective, fileProb, console_output = False, logs_on = False)
         # status, crop_alloc, meta_sol, sto_prob, durations = \
         #         SolveReducedLinearProblemGurobiPy(args, rhoFguess, rhoSguess, console_output = False, logs_on = False) 
         testPassed = _test(crop_alloc, currentProb, currentNecHelp)
@@ -1431,17 +1433,10 @@ def _checkIniGuess(rhoIni,
                                  logs_on = logs_on)
         if checkedGuess:
             _printing("     We have a rho from a different N that was already double-checked!", console_output = console_output, logs_on = logs_on)
-            # if final rho was already pre-calculated, meta_sol will not yet be available
-            if meta_sol is False:
-                _printing("     Running model for pre-determined rho to get meta_sol",
-                           console_output = console_output, logs_on = logs_on)
-                status, crop_alloc, meta_sol, sto_prob, durations = \
-                         SolveReducedLinearProblemGurobiPy(args, rhoFguess, rhoSguess, 
-                                                           console_output = False, logs_on = False)
             return(rhoIni, meta_sol, crop_alloc)
         elif testPassed:    
             crop_alloc_check, currentProb_check, currentNecHelp_check, durations, meta_sol_check = \
-                _getResultsForRho(args, rhoFcheck, rhoScheck, fileProb, console_output = False, logs_on = False)
+                _getResultsForRho(args, rhoFcheck, rhoScheck, objective, fileProb, console_output = False, logs_on = False)
             # status, crop_alloc_check, meta_sol_check, sto_prob, durations = \
             #         SolveReducedLinearProblemGurobiPy(args, rhoFcheck, rhoScheck,
             #                                            console_output = False, logs_on = False) 
@@ -1451,13 +1446,6 @@ def _checkIniGuess(rhoIni,
                                  logs_on = logs_on)
             if not testPassed:
                 _printing("     Cool, that worked!", console_output = console_output, logs_on = logs_on)
-                # if final rho was already pre-calculated, meta_sol will not yet be available
-                if meta_sol is False:
-                    _printing("     Running model for pre-determined rho to get meta_sol",
-                               console_output = console_output, logs_on = logs_on)
-                    status, crop_alloc, meta_sol, sto_prob, durations = \
-                             SolveReducedLinearProblemGurobiPy(args, rhoFguess, rhoSguess, 
-                                                               console_output = False, logs_on = False)
                 return(rhoIni, meta_sol, crop_alloc)
             
         _printing("     Oops, that guess didn't work - starting from scratch\n", \
@@ -1550,12 +1538,12 @@ def _ReportProgressFindingRho(rho,
     
     # either duration of solving model for this rho, or statment that result was already available
     if durations != "pre-calculated":
-        durations = str(np.round(durations[2], 2))
+        durations = str(np.round(durations[2], 2)) + "s"
     
     # print information (if console_output = True)
     _printing("     " + prefix + "rho" + objective + ": " + str(rho) + unit + \
           ", prob" + objective + ": " + str(np.round(currentProb * 100, 2)) + \
-          "%" + help_text + ", time: " + durations + "s" + accuracy_text, \
+          "%" + help_text + ", time: " + durations + accuracy_text, \
               console_output = console_output, logs_on = logs_on)
         
     return(None)

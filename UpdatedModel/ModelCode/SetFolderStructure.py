@@ -122,9 +122,9 @@ def CheckFolderStructure():
             pickle.dump({}, fp) 
     
     if not os.path.isdir("PenaltiesAndIncome/ProbF"):
-            os.mkdir("PenaltiesAndIncome/ProbFs")
+            os.mkdir("PenaltiesAndIncome/ProbF")
     if not os.path.isdir("PenaltiesAndIncome/ProbS"):
-            os.mkdir("PenaltiesAndIncome/ProbSs")
+            os.mkdir("PenaltiesAndIncome/ProbS")
             
             
     if not os.path.exists("PenaltiesAndIncome/ExpectedIncomes.txt"):

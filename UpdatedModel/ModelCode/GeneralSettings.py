@@ -13,12 +13,12 @@ accuracyS_maxProb = 0.001
 
 # accuracy of the penalties given thorugh size of the accuracy interval:
 # the size needs to be smaller than final rho * shareDiff
-accuracyF_rho = 0.001
-accuracyS_rho = 0.001
+accuracyF_rho = 0.01
+accuracyS_rho = 0.01
 
 # if penalty is found according to import/debt, what accuracy should be used 
 # (share of diff between max and min import/debt)
-accuracy_help = 0.001
+accuracy_help = 0.002
 
 # should model progress be logged?
 logs_on = True

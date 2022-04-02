@@ -120,9 +120,12 @@ def _CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
                 "Yield" + str(settings_ExpIn["yield_projection"]).capitalize() + \
                 "Start" + str(settings_ExpIn["sim_start"]) + \
                 "Pop" + str(settings_ExpIn["pop_scenario"]).capitalize() + \
-                "T" + str(settings_ExpIn["T"])
+                "T" + str(settings_ExpIn["T"]) + \
+                "Import" + str(settings["import"]) + \
+                "Seed" + str(settings["seed"])
     SettingsFirstGuess =  SettingsBasics + "ProbF" + str(probF)
-    SettingsAffectingRhoF = SettingsFirstGuess + "N" + str(settings_ExpIn["N"])
+    SettingsProbF = SettingsBasics + "N" + str(settings["N"])
+    SettingsFinalRhoF = SettingsFirstGuess + "N" + str(settings_ExpIn["N"])
     
     # first guess
     with open("PenaltiesAndIncome/RhoFs.txt", "rb") as fp:    
@@ -139,11 +142,11 @@ def _CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     args, yield_information, population_information = \
         SetParameters(settings_ExpIn, console_output = False, logs_on = False)
     
-    rhoF, meta_solF, crop_allocF = _GetRhoWrapper(args, probF, rhoFini, checkedGuess, "F",
-                  SettingsAffectingRhoF, console_output = False, logs_on = False)
+    rhoF, meta_solF, crop_allocF = _GetRhoWrapper(args, probF, rhoFini, checkedGuess, "F", SettingsProbF,
+                  SettingsFinalRhoF, console_output = False, logs_on = False)
           
-    dict_rhoFs[SettingsAffectingRhoF] = rhoF
-    dict_crop_allocF[SettingsAffectingRhoF] = crop_allocF
+    dict_rhoFs[SettingsFinalRhoF] = rhoF
+    dict_crop_allocF[SettingsFinalRhoF] = crop_allocF
     
     # saving updated dicts
     with open("PenaltiesAndIncome/RhoFs.txt", "wb") as fp:    
