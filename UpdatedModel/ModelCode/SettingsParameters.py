@@ -36,7 +36,14 @@ def DefaultSettingsExcept(PenMet = "default",
                           tax = "default",
                           perc_guaranteed = "default",
                           ini_fund = "default",
-                          food_import = "default"):     
+                          food_import = "default",
+                          accuracyF_demandedProb = "default", 
+                          accuracyS_demandedProb = "default",
+                          accuracyF_maxProb = "default", 
+                          accuracyS_maxProb = "default",
+                          accuracyF_rho = "default",
+                          accuracyS_rho = "default", 
+                          accuracy_help = "default"):     
     """
     Using the default for all settings not specified, this creates a 
     dictionary of all settings.
@@ -128,7 +135,35 @@ def DefaultSettingsExcept(PenMet = "default",
     food_import : float, optional
         Amount of food that is imported (and therefore substracted from the
         food demand). The default is defined in ModelCode/DefaultModelSettings.py.
-        
+    accuracyF_demandedProb : float, optional
+        Accuracy demanded from the food availability probability as share of 
+        demanded probability (for target prob method). The default is defined in
+        ModelCode/DefaultModelSettings.py.
+    accuracyS_demandedProb : float, optional
+        Accuracy demanded from the solvency probability as share of demanded
+        probability (for target prob method). The default is defined in
+        ModelCode/DefaultModelSettings.py.
+    accuracyF_maxProb : float, optional
+        Accuracy demanded from the food demand probability as share of maximum
+        probability (for maxProb method). The default is defined in
+        ModelCode/DefaultModelSettings.py.
+    accuracyS_maxProb : float, optional
+        Accuracy demanded from the solvency probability as share of maximum
+        probability (for maxProb method). The default is defined in 
+        ModelCode/DefaultModelSettings.py.
+    accuracyF_rho : float, optional
+        Accuracy of the food security penalty given thorugh size of the accuracy
+        interval: the size needs to be smaller than final rhoF * accuracyF_rho. 
+        The default is defined in ModelCode/DefaultModelSettings.py.
+    accuracyS_rho : float, optional
+        Accuracy of the solvency penalty given thorugh size of the accuracy
+        interval: the size needs to be smaller than final rhoS * accuracyS_rho. 
+        The default is defined in ModelCode/DefaultModelSettings.py.
+    accuracy_help : float, optional
+        If method "MinHelp" is used to find the correct penalty, this defines the 
+        accuracy demanded from the resulting necessary help in terms of distance
+        to the minimal necessary help (given as share of the minimum nevessary
+        help). The default is defined in ModelCode/DefaultModelSettings.py.
         
     Returns
     -------
@@ -140,10 +175,15 @@ def DefaultSettingsExcept(PenMet = "default",
     PenMet, probF, probS, rhoF, rhoS, solv_const, k, k_using, \
     num_crops, yield_projection, sim_start, pop_scenario, \
     risk, N, validation_size, T, seed, tax, perc_guaranteed, \
-    ini_fund, food_import = _GetDefaults(PenMet, probF, probS, rhoF, rhoS,
+    ini_fund, food_import, accuracyF_demandedProb, accuracyS_demandedProb, \
+    accuracyF_maxProb, accuracyS_maxProb, accuracyF_rho, \
+    accuracyS_rho, accuracy_help = _GetDefaults(PenMet, probF, probS, rhoF, rhoS,
                 solv_const, k, k_using, num_crops, yield_projection, 
                 sim_start, pop_scenario, risk, N, validation_size, T, 
-                seed, tax, perc_guaranteed, ini_fund, food_import)
+                seed, tax, perc_guaranteed, ini_fund, food_import,
+                accuracyF_demandedProb, accuracyS_demandedProb,
+                accuracyF_maxProb, accuracyS_maxProb, accuracyF_rho,
+                accuracyS_rho, accuracy_help)
 
     # making sure the current clusters are given as a list
     if type(k_using) is int:
@@ -168,8 +208,9 @@ def DefaultSettingsExcept(PenMet = "default",
         probS = None
         probF = None
     elif PenMet != "prob":
-        sys.exit("A non-valid penalty method was chosen (PenMet must " + \
-                 "be either \"prob\" or \"penalties\").")     
+        if PenMet != "NotApplicable":
+            sys.exit("A non-valid penalty method was chosen (PenMet must " + \
+                     "be either \"prob\" or \"penalties\").")     
         
     # create dictionary of settings
     settings =  {"PenMet": PenMet,
@@ -192,7 +233,14 @@ def DefaultSettingsExcept(PenMet = "default",
                  "tax": tax,
                  "perc_guaranteed": perc_guaranteed,
                  "ini_fund": ini_fund,
-                 "import": food_import}   
+                 "import": food_import,
+                 "accuracyF_demandedProb": accuracyF_demandedProb,
+                 "accuracyS_demandedProb": accuracyS_demandedProb,
+                 "accuracyF_maxProb": accuracyF_maxProb,
+                 "accuracyS_maxProb": accuracyS_maxProb,
+                 "accuracyF_rho": accuracyF_rho,
+                 "accuracyS_rho": accuracyS_rho,
+                 "accuracy_help": accuracy_help}   
      
     return(settings)
 

@@ -187,7 +187,33 @@ def GetFilename(settings, groupSize = "", groupAim = "", \
     fn = fn + "Tax" + '_'.join(str(n) for n in settingsTmp["tax"]) + \
         "PercIgov" + '_'.join(str(n) for n in settingsTmp["perc_guaranteed"])
     
+    # add info on penalty accuracy if not on default setting
+    from ModelCode.DefaultModelSettings import accuracyF_demandedProb
+    from ModelCode.DefaultModelSettings import accuracyS_demandedProb
+    from ModelCode.DefaultModelSettings import accuracyF_maxProb
+    from ModelCode.DefaultModelSettings import accuracyS_maxProb
+    from ModelCode.DefaultModelSettings import accuracyF_rho
+    from ModelCode.DefaultModelSettings import accuracyS_rho
+    from ModelCode.DefaultModelSettings import accuracy_help
+    acc = ""
+    if settings["accuracyF_demandedProb"] != accuracyF_demandedProb:
+        acc = acc + "aFtar" + str(settings["accuracyF_demandedProb"] * 1000)
+    if settings["accuracyS_demandedProb"] != accuracyS_demandedProb:
+        acc = acc + "aStar" + str(settings["accuracyS_demandedProb"] * 1000)
+    if settings["accuracyF_maxProb"] != accuracyF_maxProb:
+        acc = acc + "aFmax" + str(settings["accuracyF_maxProb"] * 1000)
+    if settings["accuracyS_maxProb"] != accuracyS_maxProb:
+        acc = acc + "aSmax" + str(settings["accuracyS_maxProb"] * 1000)
+    if settings["accuracyF_rho"] != accuracyF_rho:
+        acc = acc + "aFrho" + str(settings["accuracyF_rho"] * 1000)
+    if settings["accuracyS_rho"] != accuracyS_rho:
+        acc = acc + "aSrho" + str(settings["accuracyS_rho"] * 1000)
+    if settings["accuracy_help"] != accuracy_help:
+        acc = acc + "aHelp" + str(settings["accuracy_help"] * 1000)
+    if acc != "":
+        fn = fn + "_" + acc
     
+
     if allNames:
         # all settings that affect the calculation of rhoF
         SettingsBasics = "k" + str(settings["k"]) + \
@@ -218,7 +244,9 @@ def GetFilename(settings, groupSize = "", groupAim = "", \
 def _GetDefaults(PenMet, probF, probS, rhoF, rhoS, solv_const, k, k_using,
                 num_crops, yield_projection, sim_start, pop_scenario,
                 risk, N, validation_size, T, seed, tax, perc_guaranteed,
-                ini_fund, food_import):
+                ini_fund, food_import, accuracyF_demandedProb,
+                accuracyS_demandedProb, accuracyF_maxProb, accuracyS_maxProb, 
+                accuracyF_rho, accuracyS_rho, accuracy_help):
     """
     Getting the default values for model settings that are not specified.
 
@@ -310,6 +338,37 @@ def _GetDefaults(PenMet, probF, probS, rhoF, rhoS, solv_const, k, k_using,
     food_import : float, or "default"
         Amount of food that is imported (and therefore substracted from the
         food demand). The default is defined in ModelCode/DefaultModelSettings.py.
+    accuracyF_demandedProb : float, optional
+        Accuracy demanded from the food demand probability as share of demanded
+        probability (for probability method). The default is defined in
+        ModelCode/DefaultModelSettings.py.
+    accuracyS_demandedProb : float, optional
+        Accuracy demanded from the solvency probability as share of demanded
+        probability (for probability method). The default is defined in
+        ModelCode/DefaultModelSettings.py.
+    accuracyF_maxProb : float, optional
+        Accuracy demanded from the food demand probability as share of maximum
+        probability (for maxProb method). The default is defined in
+        ModelCode/DefaultModelSettings.py.
+    accuracyS_maxProb : float, optional
+        Accuracy demanded from the solvency probability as share of maximum
+        probability (for maxProb method). The default is defined in 
+        ModelCode/DefaultModelSettings.py.
+    accuracyF_rho : float, optional
+        Accuracy of the food security penalty given thorugh size of the accuracy
+        interval: the size needs to be smaller than final rhoF * accuracyF_rho. 
+        The default is defined in ModelCode/DefaultModelSettings.py.
+    accuracyS_rho : float, optional
+        Accuracy of the solvency penalty given thorugh size of the accuracy
+        interval: the size needs to be smaller than final rhoS * accuracyS_rho. 
+        The default is defined in ModelCode/DefaultModelSettings.py.
+    accuracy_help : float, optional
+        If method "MinHelp" is used to find the correct penalty, this defines the 
+        accuracy demanded from the resulting necessary help in terms distance
+        to the minimal necessary help, given this should be the accuracy demanded from the 
+        final average necessary help (given as share of the difference between 
+        final necessary help and the minimum nevessary help). The default is 
+        defined in ModelCode/DefaultModelSettings.py.
 
     Returns
     -------
@@ -381,9 +440,33 @@ def _GetDefaults(PenMet, probF, probS, rhoF, rhoS, solv_const, k, k_using,
         the government.
     ini_fund : float
         Initial fund size.
-    food_import : float, or "default"
+    food_import : float
         Amount of food that is imported (and therefore substracted from the
         food demand).
+    accuracyF_demandedProb : float, optional
+        Accuracy demanded from the food demand probability as share of demanded
+        probability (for probability method).
+    accuracyS_demandedProb : float, optional
+        Accuracy demanded from the solvency probability as share of demanded
+        probability (for probability method).
+    accuracyF_maxProb : float, optional
+        Accuracy demanded from the food demand probability as share of maximum
+        probability (for maxProb method).
+    accuracyS_maxProb : float, optional
+        Accuracy demanded from the solvency probability as share of maximum
+        probability (for maxProb method).
+    accuracyF_rho : float, optional
+        Accuracy of the food security penalty given thorugh size of the accuracy
+        interval: the size needs to be smaller than final rhoF * accuracyF_rho.
+    accuracyS_rho : float, optional
+        Accuracy of the solvency penalty given thorugh size of the accuracy
+        interval: the size needs to be smaller than final rhoS * accuracyS_rho.
+    accuracy_help : float, optional
+        If method "MinHelp" is used to find the correct penalty, this defines the 
+        accuracy demanded from the resulting necessary help in terms distance
+        to the minimal necessary help, given this should be the accuracy demanded from the 
+        final average necessary help (given as share of the difference between 
+        final necessary help and the minimum nevessary help).
     """
                                     
     if PenMet == "default":
@@ -428,8 +511,24 @@ def _GetDefaults(PenMet, probF, probS, rhoF, rhoS, solv_const, k, k_using,
         from ModelCode.DefaultModelSettings import ini_fund
     if food_import == "default":
         from ModelCode.DefaultModelSettings import food_import
+    if accuracyF_demandedProb == "default":
+        from ModelCode.DefaultModelSettings import accuracyF_demandedProb
+    if accuracyS_demandedProb == "default":
+        from ModelCode.DefaultModelSettings import accuracyS_demandedProb
+    if accuracyF_maxProb == "default":
+        from ModelCode.DefaultModelSettings import accuracyF_maxProb
+    if accuracyS_maxProb == "default":
+        from ModelCode.DefaultModelSettings import accuracyS_maxProb
+    if accuracyF_rho == "default":
+        from ModelCode.DefaultModelSettings import accuracyF_rho
+    if accuracyS_rho == "default":
+        from ModelCode.DefaultModelSettings import accuracyS_rho
+    if accuracy_help == "default":
+        from ModelCode.DefaultModelSettings import accuracy_help
         
     return(PenMet, probF, probS, rhoF, rhoS, solv_const, k, k_using,
           num_crops, yield_projection, sim_start, pop_scenario,
           risk, N, validation_size, T, seed, tax, perc_guaranteed,
-          ini_fund, food_import)
+          ini_fund, food_import, accuracyF_demandedProb,
+          accuracyS_demandedProb, accuracyF_maxProb, accuracyS_maxProb, 
+          accuracyF_rho, accuracyS_rho, accuracy_help)

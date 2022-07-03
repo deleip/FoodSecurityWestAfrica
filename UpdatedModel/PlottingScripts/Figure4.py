@@ -48,7 +48,7 @@ for cl in range(1, 10):
     ax_tmp = panelA.add_subplot(3, 3, pos)
 
     # get results
-    settings, args, yield_information, population_information, \
+    settings, args, yield_information, population_information, penalty_methods, \
     status, all_durations, exp_incomes, crop_alloc_worst, meta_sol, \
     crop_allocF, meta_solF, crop_allocS, meta_solS, \
     crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -56,7 +56,7 @@ for cl in range(1, 10):
                                    yield_projection = "fixed",
                                    pop_scenario = "High")
                 
-    settings, args, yield_information, population_information, \
+    settings, args, yield_information, population_information, penalty_methods, \
     status, all_durations, exp_incomes, crop_alloc_best, meta_sol, \
     crop_allocF, meta_solF, crop_allocS, meta_solS, \
     crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -64,7 +64,7 @@ for cl in range(1, 10):
                                    yield_projection = "trend",
                                    pop_scenario = "fixed")            
                     
-    settings, args, yield_information, population_information, \
+    settings, args, yield_information, population_information, penalty_methods, \
     status, all_durations, exp_incomes, crop_alloc_fixed, meta_sol, \
     crop_allocF, meta_solF, crop_allocS, meta_solS, \
     crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -165,7 +165,7 @@ for cl in range(1, 10):
     print("             ... cluster " + str(cl))
 
     # get results
-    settings, args, yield_information, population_information, \
+    settings, args, yield_information, population_information, penalty_methods, \
     status, all_durations, exp_incomes, crop_alloc_worst, meta_sol, \
     crop_allocF, meta_solF, crop_allocS, meta_solS, \
     crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -173,7 +173,7 @@ for cl in range(1, 10):
                                    yield_projection = "fixed",
                                    pop_scenario = "High")
                 
-    settings, args, yield_information, population_information, \
+    settings, args, yield_information, population_information, penalty_methods, \
     status, all_durations, exp_incomes, crop_alloc_best, meta_sol, \
     crop_allocF, meta_solF, crop_allocS, meta_solS, \
     crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -181,7 +181,7 @@ for cl in range(1, 10):
                                    yield_projection = "trend",
                                    pop_scenario = "fixed")            
                     
-    # settings, args, yield_information, population_information, \
+    # settings, args, yield_information, population_information, penalty_methods, \
     # status, all_durations, exp_incomes, crop_alloc_fixed, meta_sol, \
     # crop_allocF, meta_solF, crop_allocS, meta_solS, \
     # crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \

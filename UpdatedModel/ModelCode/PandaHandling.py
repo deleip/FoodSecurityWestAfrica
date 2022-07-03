@@ -19,6 +19,7 @@ from ModelCode.SettingsParameters import DefaultSettingsExcept
 from ModelCode.Auxiliary import GetFilename
 from ModelCode.Auxiliary import _printing
 
+
 # %% ####### FUNCTIONS UPDATING AND ACCESSING THE RESULTS PANDA OBJECT #########
 
 def UpdatePandaWithAddInfo(OldFile = "current_panda", console_output = None):
@@ -63,13 +64,14 @@ def UpdatePandaWithAddInfo(OldFile = "current_panda", console_output = None):
     
     # going through the object row for row
     for i in range(0, len(oldPanda)):
-        if console_output:
-            sys.stdout.write("\r     Updating row " + str(i + 1) + " of " + str(len(oldPanda)))
             
         filename = oldPanda.at[i,'Filename for full results']
         
+        if console_output:
+            sys.stdout.write("\r     Updating row " + str(i + 1) + " of " + str(len(oldPanda)))
+        
         # loading full results
-        settings, args, yield_information, population_information, \
+        settings, args, yield_information, population_information, penalty_methods, \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \
@@ -78,9 +80,10 @@ def UpdatePandaWithAddInfo(OldFile = "current_panda", console_output = None):
         # applying updated write_to_pandas
         _WriteToPandas(settings, args, yield_information, population_information, \
                        status, all_durations, exp_incomes, crop_alloc, meta_sol, \
-                       crop_allocF, meta_solF, crop_allocS, meta_solS, \
-                       crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, \
-                       filename, console_output = False, logs_on = False, file = OldFile + "_updating")
+                       crop_allocF, meta_solF, crop_allocS, meta_solS, penalty_methods, \
+                       crop_alloc_vss, meta_sol_vss, VSS_value,\
+                       validation_values, filename, console_output = False, \
+                       logs_on = False, file = OldFile + "_updating")
 
     # remove old panda file
     os.remove("ModelOutput/Pandas/" + OldFile + ".csv")
@@ -111,7 +114,14 @@ def _ReadFromPandaSingleClusterGroup(file = "current_panda",
                                     N = None, 
                                     validation_size = None,
                                     T = "default",
-                                    seed = "default"):
+                                    seed = None,
+                                    accuracyF_demandedProb = None, 
+                                    accuracyS_demandedProb = None,
+                                    accuracyF_maxProb = None, 
+                                    accuracyS_maxProb = None,
+                                    accuracyF_rho = None,
+                                    accuracyS_rho = None, 
+                                    accuracy_help = None):
     """
     Function returning a specific line (depending on the settings) of the 
     given panda csv for specific output variables. If N is not specified, it 
@@ -185,6 +195,35 @@ def _ReadFromPandaSingleClusterGroup(file = "current_panda",
     seed : int, optional
         Seed used for yield generation. The default is defined in 
         ModelCode/DefaultModelSettings.py.
+    accuracyF_demandedProb : float, optional
+        Accuracy demanded from the food availability probability as share of 
+        demanded probability (for target prob method). The default is defined in
+        ModelCode/DefaultModelSettings.py.
+    accuracyS_demandedProb : float, optional
+        Accuracy demanded from the solvency probability as share of demanded
+        probability (for target prob method). The default is defined in
+        ModelCode/DefaultModelSettings.py.
+    accuracyF_maxProb : float, optional
+        Accuracy demanded from the food demand probability as share of maximum
+        probability (for maxProb method). The default is defined in
+        ModelCode/DefaultModelSettings.py.
+    accuracyS_maxProb : float, optional
+        Accuracy demanded from the solvency probability as share of maximum
+        probability (for maxProb method). The default is defined in 
+        ModelCode/DefaultModelSettings.py.
+    accuracyF_rho : float, optional
+        Accuracy of the food security penalty given thorugh size of the accuracy
+        interval: the size needs to be smaller than final rhoF * accuracyF_rho. 
+        The default is defined in ModelCode/DefaultModelSettings.py.
+    accuracyS_rho : float, optional
+        Accuracy of the solvency penalty given thorugh size of the accuracy
+        interval: the size needs to be smaller than final rhoS * accuracyS_rho. 
+        The default is defined in ModelCode/DefaultModelSettings.py.
+    accuracy_help : float, optional
+        If method "MinHelp" is used to find the correct penalty, this defines the 
+        accuracy demanded from the resulting necessary help in terms of distance
+        to the minimal necessary help (given as share of the minimum nevessary
+        help). The default is defined in ModelCode/DefaultModelSettings.py.
         
     Returns
     -------
@@ -197,15 +236,28 @@ def _ReadFromPandaSingleClusterGroup(file = "current_panda",
     if output_var is None:
         sys.exit("Please provide an output variable.")
         
-    # fill up missing settings with defaults
+    
+    # fill up missing settings with defaults (both as dict and as separate variables)
+    settings = DefaultSettingsExcept("NotApplicable", probF, probS, rhoF, rhoS,
+                solv_const, k, k_using, num_crops, yield_projection, 
+                sim_start, pop_scenario, risk, N, validation_size, T, 
+                seed, tax, perc_guaranteed, ini_fund, food_import,
+                accuracyF_demandedProb, accuracyS_demandedProb,
+                accuracyF_maxProb, accuracyS_maxProb, accuracyF_rho,
+                accuracyS_rho, accuracy_help)
+    
     PenMet, probF, probS, rhoF, rhoS, solv_const, k, k_using, \
     num_crops, yield_projection, sim_start, pop_scenario, \
     risk, N, validation_size, T, seed, tax, perc_guaranteed, \
-    ini_fund, food_import = _GetDefaults(None, probF, probS, rhoF, rhoS, 
+    ini_fund, food_import, accuracyF_demandedProb, accuracyS_demandedProb, \
+    accuracyF_maxProb, accuracyS_maxProb, accuracyF_rho, \
+    accuracyS_rho, accuracy_help = _GetDefaults(None, probF, probS, rhoF, rhoS,
                 solv_const, k, k_using, num_crops, yield_projection, 
-                sim_start, pop_scenario, risk, N, validation_size, 
-                T, seed, tax, perc_guaranteed,  ini_fund, food_import)
-    
+                sim_start, pop_scenario, risk, N, validation_size, T, 
+                seed, tax, perc_guaranteed, ini_fund, food_import,
+                accuracyF_demandedProb, accuracyS_demandedProb,
+                accuracyF_maxProb, accuracyS_maxProb, accuracyF_rho,
+                accuracyS_rho, accuracy_help)
     
     # open data frame
     panda = OpenPanda(file = file)
@@ -241,10 +293,20 @@ def _ReadFromPandaSingleClusterGroup(file = "current_panda",
     output_var_fct = output_var.copy()
     output_var_fct.insert(0, "Used clusters")
     tmp = output_var_fct.copy()
-    if "Sample size" not in tmp:
-        tmp.append("Sample size")
-    if "Sample size for validation" not in tmp:
-        tmp.append("Sample size for validation")
+    
+    add_vars = ["N", "validation_size", "seed",
+                "accuracyF_demandedProb", "accuracyS_demandedProb",
+                "accuracyF_maxProb", "accuracyS_maxProb",
+                "accuracyF_rho", "accuracyS_rho", "accuracy_help"]
+    add_names = ["Sample size", "Sample size for validation", 
+                "Seed (for yield generation)",
+                "Accuracy for demanded probF", "Accuracy for demanded probS",
+                "Accuracy for maximum probF", "Accuracy for maximum probS",
+                "Accuracy for rhoF", "Accuracy for rhoS", "Accuracy for necessary help"]
+    for v in add_names:
+        if v not in tmp:
+            tmp.append(v)
+            
     sub_panda = panda[tmp]\
                     [list((panda.loc[:, "Number of clusters"] == k) & \
                      (panda.loc[:, "Used clusters"] == str(k_using)) & \
@@ -263,27 +325,43 @@ def _ReadFromPandaSingleClusterGroup(file = "current_panda",
     if sub_panda.empty:
         sys.exit("Requested data is not available.")
         
-    # ... subset sample size here if given ...
-    if N is not None:
-        sub_panda = sub_panda[output_var_fct][sub_panda["Sample size"] == N]
-        # no results for right sample size?
+    # ... subset optional variables here ...
+    for idx, v in enumerate(add_vars):
+        if settings[v] is not None:
+            sub_panda = sub_panda[:][sub_panda[add_names[idx]] == settings[v]]
+        # no results for this setting?
         if sub_panda.empty:
-            sys.exit("Requested data is not available for this sample size.")
-        return(sub_panda)
-        
-    # ... else use the results for highest sample size for these settings
+            sys.exit("Requested data is not available for this " + add_names[idx])
+    
+    # # ... subset sample size here if given ...
+    # if N is not None:
+    #     sub_panda = sub_panda[:][sub_panda["Sample size"] == N]
+    #     # no results for right sample size?
+    #     if sub_panda.empty:
+    #         sys.exit("Requested data is not available for this sample size.")
+    #     return(sub_panda)
+    
+    # # ... subset validation sample size here if given ...
+    # if validation_size is not None:
+    #     sub_panda = sub_panda[:][sub_panda["Sample size for validation"] == \
+    #                                                           validation_size]
+    #     if sub_panda.empty:
+    #         sys.exit("Requested data is not available.")
+    
+    # ... if multiple runs left, use the results for highest sample size for these settings
     sub_panda = sub_panda[sub_panda["Sample size"] == max(sub_panda["Sample size"])]
-    # if multiple runs for highest sample size, find highest validation sample size
+    # ... if multiple runs for highest sample size, find highest validation sample size
     if (len(sub_panda) > 1) and (validation_size is None):
-        sub_panda = sub_panda[output_var_fct][sub_panda["Sample size for validation"] == \
+        sub_panda = sub_panda[:][sub_panda["Sample size for validation"] == \
                                           max(sub_panda["Sample size for validation"])]
-    elif validation_size is not None:
-        sub_panda = sub_panda[output_var_fct][sub_panda["Sample size for validation"] == \
-                                                              validation_size]
-        if sub_panda.empty:
-            sys.exit("Requested data is not available.")
-    else:
-        sub_panda = sub_panda[output_var_fct]
+    # if multiple runs with highest sample size and highest validation size
+    # we assume the newest one should be run (probably with different penalty accuracies?)
+    if sub_panda.shape[0] > 1:
+        last = [False] * (sub_panda.shape[0] - 1)
+        last.append(True)
+        sub_panda = sub_panda[:][last]
+        
+    sub_panda = sub_panda[output_var_fct]
                        
     # turn used clusters back from strings to lists
     def _ConvertListsInts(arg):
@@ -375,13 +453,13 @@ def LoadFullResults(file = "current_panda", **kwargs):
                        output_var = "Filename for full results",
                        **kwargs)
     
-    settings, args, yield_information, population_information, \
+    settings, args, yield_information, population_information, penalty_methods, \
     status, all_durations, exp_incomes, crop_alloc, meta_sol, \
     crop_allocF, meta_solF, crop_allocS, meta_solS, \
     crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \
                 LoadModelResults(fn["Filename for full results"].iloc[0])
                 
-    return(settings, args, yield_information, population_information, \
+    return(settings, args, yield_information, population_information, penalty_methods, \
            status, all_durations, exp_incomes, crop_alloc, meta_sol, \
            crop_allocF, meta_solF, crop_allocS, meta_solS, \
            crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn)

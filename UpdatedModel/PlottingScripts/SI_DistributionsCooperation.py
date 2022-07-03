@@ -91,7 +91,7 @@ for idx, size in enumerate([1, 2, 3, 5, 9]):
         collast = tmp["collast"][tmp.loc[:, "group"] == cl].values[0]
         
         # get results
-        settings, args, yield_information, population_information, \
+        settings, args, yield_information, population_information, penalty_methods, \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \

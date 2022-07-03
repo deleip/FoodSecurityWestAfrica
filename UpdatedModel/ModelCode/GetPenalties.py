@@ -16,6 +16,7 @@ from ModelCode.SettingsParameters import DefaultSettingsExcept
 from ModelCode.MetaInformation import GetMetaInformation
 
 # %% ########################## WRAPPING FUNCTIONS ############################
+    
 
 def GetPenalties(settings, args, console_output = None,  logs_on = None):
     """
@@ -63,12 +64,15 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
     
     if probF == 0:
         rhoF = 0
+        meta_solF = None
+        crop_allocF = None
+        methodF = "notApplicable"
     else:   
         
-        from ModelCode.GeneralSettings import accuracyF_demandedProb as accuracy_probF
-        from ModelCode.GeneralSettings import accuracyF_maxProb as accuracy_maxProbF
-        from ModelCode.GeneralSettings import accuracyF_rho as accuracy_rhoF
-        from ModelCode.GeneralSettings import accuracy_help as accuracy_helpF
+        accuracy_probF = settings["accuracyF_demandedProb"]
+        accuracy_maxProbF = settings["accuracyF_maxProb"]
+        accuracy_rhoF = settings["accuracyF_rho"]
+        accuracy_helpF = settings["accuracy_help"]
         
         # all settings that affect the calculation of rhoF
         SettingsBasics = "k" + str(settings["k"]) + \
@@ -94,12 +98,15 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
             dict_rhoFs = pickle.load(fp)
         with open("PenaltiesAndIncome/crop_allocF.txt", "rb") as fp:    
             dict_crop_allocF = pickle.load(fp)
+        with open("PenaltiesAndIncome/methodsF.txt", "rb") as fp:    
+            dict_methodsF = pickle.load(fp)
             
         # if this setting was already calculated, fetch rhoF
         if SettingsFinalRhoF in dict_rhoFs.keys():
             rhoF = dict_rhoFs[SettingsFinalRhoF]
-            _printing("Fetching rhoF: " + str(rhoF), console_output = console_output, logs_on = logs_on)
+            _printing("\nFetching rhoF: " + str(rhoF), console_output = console_output, logs_on = logs_on)
             crop_allocF = dict_crop_allocF[SettingsFinalRhoF]
+            methodF = dict_methodsF[SettingsFinalRhoF]
             meta_solF = GetMetaInformation(crop_allocF, args, rhoF, 0)
         else:
             # if this setting was calculated for a lower N and no initial
@@ -111,18 +118,28 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
                 
             # calculating rhoF
             _printing("Calculating rhoF and import", console_output = console_output, logs_on = logs_on)
-            rhoF, meta_solF, crop_allocF = \
+            rhoF, meta_solF, crop_allocF, methodF = \
                 _GetRhoWrapper(args, probF, rhoFini, checkedGuess, "F", SettingsProbF,
-                  SettingsFinalRhoF, console_output = None, logs_on = None)
+                  SettingsFinalRhoF, accuracy_probF, accuracy_maxProbF, accuracy_rhoF,
+                  accuracy_helpF, console_output = None, logs_on = None)
+            
+            # get dictionaries again in case they changed in the meantime (from other model run)
+            with open("PenaltiesAndIncome/RhoFs.txt", "rb") as fp:    
+                dict_rhoFs = pickle.load(fp)
+            with open("PenaltiesAndIncome/crop_allocF.txt", "rb") as fp:    
+                dict_crop_allocF = pickle.load(fp)
             
             dict_rhoFs[SettingsFinalRhoF] = rhoF
             dict_crop_allocF[SettingsFinalRhoF] = crop_allocF
+            dict_methodsF[SettingsFinalRhoF] = methodF
         
         # saving updated dicts
         with open("PenaltiesAndIncome/RhoFs.txt", "wb") as fp:    
              pickle.dump(dict_rhoFs, fp)
         with open("PenaltiesAndIncome/crop_allocF.txt", "wb") as fp:     
              pickle.dump(dict_crop_allocF, fp)
+        with open("PenaltiesAndIncome/methodsF.txt", "wb") as fp:     
+             pickle.dump(dict_methodsF, fp)
             
             
             
@@ -130,12 +147,13 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
         rhoS = 0
         meta_solS = None
         crop_allocS = None
+        methodS = "notApplicable"
     else:         
         
-        from ModelCode.GeneralSettings import accuracyS_demandedProb as accuracy_probS
-        from ModelCode.GeneralSettings import accuracyS_maxProb as accuracy_maxProbS
-        from ModelCode.GeneralSettings import accuracyS_rho as accuracy_rhoS
-        from ModelCode.GeneralSettings import accuracy_help as accuracy_helpS
+        accuracy_probS = settings["accuracyS_demandedProb"]
+        accuracy_maxProbS = settings["accuracyS_maxProb"]
+        accuracy_rhoS = settings["accuracyS_rho"]
+        accuracy_helpS = settings["accuracy_help"]
         
         # all settings that affect the calculation of rhoS
         SettingsBasics = "k" + str(settings["k"]) + \
@@ -155,22 +173,25 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
         SettingsProbS = SettingsBasics + "N" + str(settings["N"])
         SettingsFinalRhoS = SettingsFirstGuess + \
                     "N" + str(settings["N"]) + \
-                    "AccFtarg" + str(accuracy_probS * 1000) + \
-                    "AccFmax" + str(accuracy_maxProbS * 1000) + \
-                    "AccFrho" + str(accuracy_rhoS * 1000) + \
-                    "AccFhelp" + str(accuracy_helpS * 1000)
+                    "AccStarg" + str(accuracy_probS * 1000) + \
+                    "AccSmax" + str(accuracy_maxProbS * 1000) + \
+                    "AccSrho" + str(accuracy_rhoS * 1000) + \
+                    "AccShelp" + str(accuracy_helpS * 1000)
                      
         # get dictionary of settings for which rhoS has been calculated already
         with open("PenaltiesAndIncome/RhoSs.txt", "rb") as fp:    
             dict_rhoSs = pickle.load(fp)
         with open("PenaltiesAndIncome/crop_allocS.txt", "rb") as fp:    
             dict_crop_allocS = pickle.load(fp)
+        with open("PenaltiesAndIncome/methodsS.txt", "rb") as fp:    
+            dict_methodsS = pickle.load(fp)
            
         # if this setting was already calculated, fetch rhoS
         if SettingsFinalRhoS in dict_rhoSs.keys():
             rhoS = dict_rhoSs[SettingsFinalRhoS]
             _printing("\nFetching rhoS: " + str(rhoS), console_output = console_output, logs_on = logs_on)
             crop_allocS = dict_crop_allocS[SettingsFinalRhoS]    
+            methodS = dict_methodsS[SettingsFinalRhoS]
             meta_solS = GetMetaInformation(crop_allocS, args, 0, rhoS)
         else:
             # if this setting was calculated for a lower N and no initial
@@ -182,23 +203,34 @@ def GetPenalties(settings, args, console_output = None,  logs_on = None):
                 
             # calculating rhoS
             _printing("\nCalculating rhoS", console_output = console_output, logs_on = logs_on)
-            rhoS, meta_solS, crop_allocS = \
+            rhoS, meta_solS, crop_allocS, methodS = \
                 _GetRhoWrapper(args, probS, rhoSini, checkedGuess, "S", SettingsProbS,
-                  SettingsFinalRhoS, console_output = None, logs_on = None)
+                  SettingsFinalRhoS, accuracy_probS, accuracy_maxProbS, accuracy_rhoS,
+                  accuracy_helpS, console_output = None, logs_on = None)
    
+            # get dictionaries again in case they changed in the meantime (from other model run)
+            with open("PenaltiesAndIncome/RhoSs.txt", "rb") as fp:    
+                dict_rhoSs = pickle.load(fp)
+            with open("PenaltiesAndIncome/crop_allocS.txt", "rb") as fp:    
+                dict_crop_allocS = pickle.load(fp)
+                
             dict_rhoSs[SettingsFinalRhoS] = rhoS
             dict_crop_allocS[SettingsFinalRhoS] = crop_allocS
+            dict_methodsS[SettingsFinalRhoS] = methodS
         
         # saving updated dict
         with open("PenaltiesAndIncome/RhoSs.txt", "wb") as fp:    
              pickle.dump(dict_rhoSs, fp)
         with open("PenaltiesAndIncome/crop_allocS.txt", "wb") as fp:     
              pickle.dump(dict_crop_allocS, fp)
+        with open("PenaltiesAndIncome/methodsS.txt", "wb") as fp:     
+             pickle.dump(dict_methodsS, fp)
              
-    return(rhoF, rhoS, meta_solF, meta_solS, crop_allocF, crop_allocS)
+    return(rhoF, rhoS, meta_solF, meta_solS, crop_allocF, crop_allocS, methodF, methodS)
 
 def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective, fileProb,
-                  fileFinalRho, console_output = None, logs_on = None):
+                  fileFinalRho, accuracy_prob, accuracy_maxProb, accuracy_rho,
+                  accuracy_help, console_output = None, logs_on = None):
     """
     Finding the correct rhoS given the probability probS, based on a bisection
     search algorithm.
@@ -231,6 +263,21 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective, fileProb,
     logs_on : boolean, optional
         Specifying whether the progress should be documented in a log file.
         The default is defined in ModelCode/GeneralSettings.
+    accuracy_prob : float
+        Accuracy demanded from the food demand probability as share of demanded
+        probability (for probability method).
+    accuracy_maxProb : float
+        Accuracy demanded from the food demand probability as share of maximum
+        probability (for maxProb method).
+    accuracy_rho : float
+        Accuracy of the food security penalty given thorugh size of the accuracy
+        interval: the size needs to be smaller than final rhoF * accuracyF_rho.
+    accuracy_help : float, optional
+        If method "MinHelp" is used to find the correct penalty, this defines the 
+        accuracy demanded from the resulting necessary help in terms distance
+        to the minimal necessary help, given this should be the accuracy demanded from the 
+        final average necessary help (given as share of the difference between 
+        final necessary help and the minimum nevessary help).
 
     Returns
     -------
@@ -247,16 +294,6 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective, fileProb,
             return(meta_sol["avg_nec_import"])
         elif objective == "S":
             return(meta_sol["avg_nec_debt"])
-        
-    # import accuracy settings
-    if objective == "F":
-        from ModelCode.GeneralSettings import accuracyF_demandedProb as accuracy_prob
-        from ModelCode.GeneralSettings import accuracyF_maxProb as accuracy_maxProb
-        from ModelCode.GeneralSettings import accuracyF_rho as accuracy_rho
-    elif objective == "S":
-        from ModelCode.GeneralSettings import accuracyS_demandedProb as accuracy_prob
-        from ModelCode.GeneralSettings import accuracyS_maxProb as accuracy_maxProb
-        from ModelCode.GeneralSettings import accuracyS_rho as accuracy_rho
     
     # check model output for a very high penalty (as proxy for infinity)
     maxProb, meta_max, meta_zero, max_crop_alloc = _CheckOptimalProb(args, prob, objective, fileProb,
@@ -267,8 +304,9 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective, fileProb,
     if maxProb >= prob:
         _printing("     Finding corresponding penalty\n", console_output, logs_on = logs_on)
         rho, meta_sol, crop_alloc = _RhoProbability(args, prob, rhoIni, checkedGuess, \
-               objective, fileProb, fileFinalRho, accuracy_rho, accuracy_prob, nec_help, "GivenProb", 
-               meta_zero, meta_max, max_crop_alloc, console_output, logs_on)
+               objective, fileProb, fileFinalRho, accuracy_rho, accuracy_prob, accuracy_help, 
+               nec_help, "GivenProb", meta_zero, meta_max, max_crop_alloc, console_output, logs_on)
+        method = "GivenProb"
     # if probF cannot be reached but the maximum probability (or what is 
     # assumed to be the maximum probability) is higher than for rho -> 0,
     # find the lowest penalty that gives the highest probability
@@ -277,8 +315,9 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective, fileProb,
     elif round(maxProb, 4) > meta_zero["prob" + objective]:
         _printing("     Finding penalty that leads to max. probability\n", console_output, logs_on = logs_on)
         rho, meta_sol, crop_alloc = _RhoProbability(args, maxProb, rhoIni, checkedGuess, \
-               objective, fileProb, fileFinalRho, accuracy_rho, accuracy_maxProb, nec_help, "MaxProb", 
-               meta_zero, meta_max, max_crop_alloc, console_output, logs_on)
+               objective, fileProb, fileFinalRho, accuracy_rho, accuracy_maxProb, accuracy_help,
+               nec_help, "MaxProb", meta_zero, meta_max, max_crop_alloc, console_output, logs_on)
+        method = "MaxProb"
     # if the max. probability is zero, find the lowest penalty that minimizes the
     # average import/debt that is needed to cover food demand/government payouts
     else:
@@ -289,21 +328,22 @@ def _GetRhoWrapper(args, prob, rhoIni, checkedGuess, objective, fileProb,
             _printing(f"     Finding lowest penalty minimizing average total debt ({nec_help:.2e} 10^9 $)\n", 
                      console_output, logs_on = logs_on)
         rho, meta_sol, crop_alloc = _RhoMinHelp(args, prob, rhoIni,
-                checkedGuess, objective, nec_help, accuracy_rho, 
+                checkedGuess, objective, nec_help, accuracy_rho, accuracy_help,
                 meta_zero, meta_max, max_crop_alloc, fileProb, fileFinalRho, \
                 console_output = console_output, logs_on = logs_on)
+        method = "MinHelp"
             
     _printing("\n     Final rho" + objective + ": " + str(rho), console_output = console_output, logs_on = logs_on)
     
-    return(rho, meta_sol, crop_alloc)
+    return(rho, meta_sol, crop_alloc, method)
 
     
 # %% ##################### TWO PENALTY CALCULATION ALGORITHMS ######################
  
 def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, fileProb,
-                    fileFinalRho, accuracy_rho, accuracy, nec_help, method,
-                    meta_zero, meta_max, max_crop_alloc, console_output = None, 
-                    logs_on = None):
+                    fileFinalRho, accuracy_rho, accuracy, accuracy_help_perc, 
+                    nec_help, method, meta_zero, meta_max, max_crop_alloc, 
+                    console_output = None, logs_on = None):
     """
     Finding the correct rho given the probability prob, based on a bisection
     search algorithm.
@@ -334,7 +374,10 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, fileProb,
         size (i.e. if size(accuracy interval) < accuracy_rho * rho, for rho
         the current best guess for the correct penalty, then we use rho).
     accuracy : float
-        Accuracy of final probability as share of target - min probability. 
+        Accuracy of final probability as share of target - min probability.
+    accuracy_help_perc : float
+        Accuracy demanded from the resulting necessary help in terms distance
+        to the minimal necessary help.
     nec_help: float
         The minimum average necessary import/debt (as calculated for the case 
         with a very high penalty).   
@@ -531,8 +574,6 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, fileProb,
    
     # ploting of information
     if args["T"] > 1:
-        #information on necessary import/debt for plotting
-        from ModelCode.GeneralSettings import accuracy_help as accuracy_help_perc
         if objective == "F":
             nec_help_zero = meta_zero["avg_nec_import"]
             prob_zero = meta_zero["probF"]
@@ -550,8 +591,9 @@ def _RhoProbability(args, prob, rhoIni, checkedGuess, objective, fileProb,
 
          
 def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
-                nec_help, accuracy_rho, meta_zero, meta_max, max_crop_alloc, \
-                fileProb, fileFinalRho, console_output = None, logs_on = None):
+                nec_help, accuracy_rho, accuracy_help_perc, meta_zero, meta_max, \
+                max_crop_alloc, fileProb, fileFinalRho, console_output = None, \
+                logs_on = None):
     """
     In cases where the given probability cannot be reached, we instead look
     for the lowest penalty that minimizes the average necessary import/debt 
@@ -579,6 +621,9 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
         The share of the final rho that the accuracy interval can have as 
         size (i.e. if size(accuracy interval) < accuracy_rho * rho, for rho
         the current best guess for the correct penalty, then we use rho).
+    accuracy_help_perc : float
+        Accuracy demanded from the resulting necessary help in terms distance
+        to the minimal necessary help.
     meta_zero : float
         Meta information from running the model for rhoF = rhoS = 0.
     meta_max : float
@@ -609,8 +654,6 @@ def _RhoMinHelp(args, prob, rhoIni, checkedGuess, objective, \
     crop_alloc_out : np.array
         Optimal crop allocation for the resulting penalty.
     """   
-    
-    from ModelCode.GeneralSettings import accuracy_help as accuracy_help_perc
     
     # accuracy information    
     if objective == "F":
@@ -1200,8 +1243,9 @@ def _GetInitialGuess(dictGuesses, name, N):
     
     # check for cases with same settings but different N
     for file in dictGuesses.keys():
-        if file.startswith(name + "N"):
-            Ns.append(int(file[len(name)+1:]))
+        filestart = file.split("Acc")[0]
+        if filestart.startswith(name + "N"):
+            Ns.append(int(filestart[len(name)+1:]))
             Files.append(file)
             rhos.append(dictGuesses[file])
                 
@@ -1413,7 +1457,7 @@ def _checkIniGuess(rhoIni,
         elif nec_help is not None:
             method = "nec_help"
         
-        def _test(crop_alloc, currentProb, method = method, nec_help = nec_help, prob = prob, min_prob = min_prob, objective = objective):
+        def _test(crop_alloc, currentProb, currentNecHelp, method = method, nec_help = nec_help, prob = prob, min_prob = min_prob, objective = objective):
             if method == "prob":
                 tol = (prob - min_prob) * accuracy
                 testPassed = (abs(currentProb - prob) < tol)

@@ -74,22 +74,21 @@ for (cl, panel) in [(4, "(b)"), (5, "(a)")]:
                           (0.95, publication_colors["yellow"]),
                          (0.99, publication_colors["green"])]:
         # get results
-        settings, args, yield_information, population_information, \
+        settings, args, yield_information, population_information, penalty_methods, \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
                     FS.LoadFullResults(k_using = cl,
                                        yield_projection = y,
                                        pop_scenario = p,
-                                       probF = alpha,
-                                       N = 25000)
+                                       probF = alpha)
                     
         ax.hist(meta_sol["food_supply"].flatten()/args["demand"][0] * 100, bins = 200, alpha = 0.6,
                  density = True, color = col, label = r"$\alpha$ = " + str(alpha * 100) + "%")
     
     ax.axvline(100, color = "#003479", linestyle = "dashed", alpha = 0.6, label = "Food demand", linewidth = 2.5)
     ax.set_xlabel(r"Food production as percentage of demand (" + \
-               str(np.round(args["demand"][0], 2)) + " $10^{12}\,kcal$" + ")", fontsize = 24)
+               str(np.round(args["demand"][0])) + " $10^{12}\,kcal$" + ")", fontsize = 24)
     ax.set_ylabel(r"Probability density", fontsize = 24)
     ax.tick_params(axis = "both", labelsize = 20)
     # ax = plt.gca()
@@ -112,9 +111,9 @@ for (cl, panel) in [(4, "(b)"), (5, "(a)")]:
 ax = axd["right"]
 alphas = [50, 60, 70, 80, 90, 95, 99, 99.5]
 
-for (y, p, scen, col) in [("fixed", "High", "worst case", publication_colors["red"]), 
+for (y, p, scen, col) in [("fixed", "High", "worst-case", publication_colors["red"]), 
                 ("fixed", "fixed", "stationary", publication_colors["yellow"]),
-                ("trend", "fixed", "best case", publication_colors["green"])
+                ("trend", "fixed", "best-case", publication_colors["green"])
                 ]:
 
     costs = []
@@ -185,7 +184,7 @@ for cl in range(1, 10):
     print("             ... cluster " + str(cl))
 
     # get results
-    settings, args, yield_information, population_information, \
+    settings, args, yield_information, population_information, penalty_methods,  \
     status, all_durations, exp_incomes, crop_alloc_worst99, meta_sol, \
     crop_allocF, meta_solF, crop_allocS, meta_solS, \
     crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -193,7 +192,7 @@ for cl in range(1, 10):
                                    yield_projection = "fixed",
                                    pop_scenario = "High")
                 
-    settings, args, yield_information, population_information, \
+    settings, args, yield_information, population_information, penalty_methods,  \
     status, all_durations, exp_incomes, crop_alloc_best99, meta_sol, \
     crop_allocF, meta_solF, crop_allocS, meta_solS, \
     crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -201,7 +200,7 @@ for cl in range(1, 10):
                                    yield_projection = "trend",
                                    pop_scenario = "fixed")            
                     
-    settings, args, yield_information, population_information, \
+    settings, args, yield_information, population_information, penalty_methods,  \
     status, all_durations, exp_incomes, crop_alloc_worst90, meta_sol, \
     crop_allocF, meta_solF, crop_allocS, meta_solS, \
     crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -210,7 +209,7 @@ for cl in range(1, 10):
                                    pop_scenario = "High",
                                    probF = 0.9)
                 
-    settings, args, yield_information, population_information, \
+    settings, args, yield_information, population_information, penalty_methods,  \
     status, all_durations, exp_incomes, crop_alloc_best90, meta_sol, \
     crop_allocF, meta_solF, crop_allocS, meta_solS, \
     crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -218,7 +217,7 @@ for cl in range(1, 10):
                                    yield_projection = "trend",
                                    pop_scenario = "fixed",
                                    probF = 0.9) 
-    # settings, args, yield_information, population_information, \
+    # settings, args, yield_information, population_information, penalty_methods,  \
     # status, all_durations, exp_incomes, crop_alloc_fixed, meta_sol, \
     # crop_allocF, meta_solF, crop_allocS, meta_solS, \
     # crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -283,6 +282,144 @@ ax.legend(handles = legend_elements, fontsize = 18,
 
 
 fig4.savefig("Figures/PublicationPlots/Figure4_CropAreas.jpg", 
+                bbox_inches = "tight", pad_inches = 0.2, format = "jpg")
+
+# %% ####################### FIG 4 - CROP AREASVS 2 ###########################
+
+# two yield/population scenarios as inner and outer pie chart
+# all 9 clusters as columns (separate pie charts)
+# two time steps as rows
+# default probability and government parameters
+# crop areas for maize and rice, and unused area
+
+fig4 = plt.figure(figsize = (15, 7))
+
+fig4.subplots_adjust(wspace=0.005)
+
+colors = [publication_colors["green"], publication_colors["yellow"], publication_colors["grey"]]
+size = 0.5
+
+ax_tmp = fig4.add_subplot(4, 10, 1, frameon=False)
+plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+plt.xlim(0,2)
+plt.ylim(0,2)
+plt.text(-0.2, 0.62, "t = 2020 \n" + r"$\alpha$ = 90%", fontsize = 18)
+    
+ax_tmp = fig4.add_subplot(4, 10, 11, frameon=False)
+plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+plt.xlim(0,2)
+plt.ylim(0,2)
+plt.text(-0.2, 0.62, "t = 2030 \n" + r"$\alpha$ = 90%", fontsize = 18)
+
+ax_tmp = fig4.add_subplot(4, 10, 21, frameon=False)
+plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+plt.xlim(0,2)
+plt.ylim(0,2)
+plt.text(-0.2, 0.62, "t = 2030 \n" + r"$\alpha$ = 99%", fontsize = 18)
+
+print("Plotting in progress ...", flush = True)
+for cl in range(1, 10):
+    print("             ... cluster " + str(cl))
+
+    # get results
+    settings, args, yield_information, population_information, penalty_methods,  \
+    status, all_durations, exp_incomes, crop_alloc_worst99, meta_sol, \
+    crop_allocF, meta_solF, crop_allocS, meta_solS, \
+    crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
+                FS.LoadFullResults(k_using = cl,
+                                   yield_projection = "fixed",
+                                   pop_scenario = "High")
+                
+    settings, args, yield_information, population_information, penalty_methods,  \
+    status, all_durations, exp_incomes, crop_alloc_best99, meta_sol, \
+    crop_allocF, meta_solF, crop_allocS, meta_solS, \
+    crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
+                FS.LoadFullResults(k_using = cl,
+                                   yield_projection = "trend",
+                                   pop_scenario = "fixed")            
+                    
+    settings, args, yield_information, population_information, penalty_methods,  \
+    status, all_durations, exp_incomes, crop_alloc_worst90, meta_sol, \
+    crop_allocF, meta_solF, crop_allocS, meta_solS, \
+    crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
+                FS.LoadFullResults(k_using = cl,
+                                   yield_projection = "fixed",
+                                   pop_scenario = "High",
+                                   probF = 0.9)
+                
+    settings, args, yield_information, population_information, penalty_methods,  \
+    status, all_durations, exp_incomes, crop_alloc_best90, meta_sol, \
+    crop_allocF, meta_solF, crop_allocS, meta_solS, \
+    crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
+                FS.LoadFullResults(k_using = cl,
+                                   yield_projection = "trend",
+                                   pop_scenario = "fixed",
+                                   probF = 0.9) 
+    # settings, args, yield_information, population_information, penalty_methods,  \
+    # status, all_durations, exp_incomes, crop_alloc_fixed, meta_sol, \
+    # crop_allocF, meta_solF, crop_allocS, meta_solS, \
+    # crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
+    #             FS.LoadFullResults(k_using = cl,
+    #                                 yield_projection = "fixed",
+    #                                 pop_scenario = "fixed")    
+                
+    def _getAreas(year, crops):
+        year_rel = year - settings["sim_start"]
+        areas = [crops[year_rel,0,0], 
+                crops[year_rel,1,0], 
+                round(args["max_areas"][0] - np.sum(crops[year_rel,:,0]), 5)]
+        return(areas)
+    
+    pos = letter.index(cluster_letters[cl-1]) + 1
+    
+    ax_tmp = fig4.add_subplot(4, 10, pos + 1)
+    areas_outer = _getAreas(2020, crop_alloc_worst90)
+    areas_inner = _getAreas(2020, crop_alloc_best90)
+    print("                 1. outer: " + str(areas_outer) + ", inner: " + str(areas_inner))
+    ax_tmp.pie(areas_outer, radius = 1.2, colors = colors,
+               wedgeprops = dict(width = size, edgecolor = "w"),
+               startangle = 180, counterclock = False)
+    ax_tmp.pie(areas_inner, radius = 1.2-size, colors = colors,
+               wedgeprops = dict(width = size, edgecolor = "w", alpha = 0.8),
+               startangle = 180, counterclock = False)
+    ax_tmp.set_title(cluster_letters[cl-1], fontsize = 18)
+        
+    
+    ax_tmp = fig4.add_subplot(4, 10, pos + 11)
+    areas_outer = _getAreas(2030, crop_alloc_worst90)
+    areas_inner = _getAreas(2030, crop_alloc_best90)
+    print("                 2. outer: " + str(areas_outer) + ", inner: " + str(areas_inner))
+    ax_tmp.pie(areas_outer, radius = 1.2, colors = colors,
+               wedgeprops = dict(width = size, edgecolor = "w"), 
+               startangle = 180, counterclock = False)
+    ax_tmp.pie(areas_inner, radius = 1.2-size, colors = colors,
+               wedgeprops = dict(width = size, edgecolor = "w", alpha = 0.8), 
+               startangle = 180, counterclock = False)
+    
+    ax_tmp = fig4.add_subplot(4, 10, pos + 21)
+    areas_outer = _getAreas(2030, crop_alloc_worst99)
+    areas_inner = _getAreas(2030, crop_alloc_best99)
+    print("                 3. outer: " + str(areas_outer) + ", inner: " + str(areas_inner))
+    ax_tmp.pie(areas_outer, radius = 1.2, colors = colors,
+               wedgeprops = dict(width = size, edgecolor = "w"), 
+               startangle = 180, counterclock = False)
+    ax_tmp.pie(areas_inner, radius = 1.2-size, colors = colors,
+               wedgeprops = dict(width = size, edgecolor = "w", alpha = 0.8), 
+               startangle = 180, counterclock = False)
+    
+ax = fig4.add_subplot(4, 1, 4, frameon=False)
+plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+
+legend_elements = [Patch(color = colors[0], alpha = 0.9, label='Rice'),
+                   Patch(color = colors[1], alpha = 0.9, label='Maize'),
+                   Patch(color = colors[2], alpha = 0.9, label='Not used'),
+                   Patch(color = "w", label='Inner circle: best-case scenario'),
+                   Patch(color = "w", label='Outer circle: worst-case scenario')]
+ax.legend(handles = legend_elements, fontsize = 18,
+          loc = "center", ncol = 2)
+
+
+fig4.savefig("Figures/PublicationPlots/Figure4_CropAreas_new.jpg", 
                 bbox_inches = "tight", pad_inches = 0.2, format = "jpg")
 
 # %% ####################### FIG 5 - GOVERNMENT LEVERS ########################
@@ -444,11 +581,11 @@ fig = FS.PlotPandaAggregate(panda_file = panda_file,
 ax = fig.add_subplot(111, frameon=False)
 plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
 legend_elements = [Line2D([0], [0], color ='black', lw = 2, 
-                      label='worst case'),
+                      label='worst-case'),
                 Line2D([0], [0], color ='black', lw = 2, ls = "dashdot",
                       label='stationary'),
                 Line2D([0], [0], color ='black', lw = 2, ls = "--",
-                      label='best case'),
+                      label='best-case'),
                 Patch(color ='royalblue', alpha = 0.6, label = 'equality grouping'),
                 Patch(color ='darkred', alpha = 0.6, label = 'proximity grouping')]
 ax.legend(handles = legend_elements, fontsize = 24, bbox_to_anchor = (0.5, -0.06),

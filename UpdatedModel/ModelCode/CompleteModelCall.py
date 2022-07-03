@@ -80,6 +80,8 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
         Information on the yield distributions for the considered clusters.
     population_information : dict
         Information on the population in the considered area.
+    penalty_methods : dict
+        Methods used to find rhoF and rhoS.
     status : int
         status of solver (optimal: 2)
     all_durations :  dict
@@ -142,7 +144,7 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
     # if model output does not exist yet it is calculated
     if not os.path.isfile("ModelOutput/SavedRuns/" + fn + ".txt"):
         try:
-           settings, args, yield_information, population_information, \
+           settings, args, yield_information, population_information, penalty_methods, \
            status, all_durations, exp_incomes, crop_alloc, meta_sol, \
            crop_allocF, meta_solF, crop_allocS, meta_solS, \
            crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \
@@ -165,7 +167,7 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
     else:            
         _printing("Loading results", console_output = console_output, logs_on = False)
         
-        settings, args, yield_information, population_information, \
+        settings, args, yield_information, population_information, penalty_methods, \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \
@@ -177,7 +179,7 @@ def FoodSecurityProblem(console_output = None, logs_on = None, \
                        k_using = settings["k_using"],  max_areas = args["max_areas"], \
                        close_plots = close_plots, title = plotTitle, file = fn)
     
-    return(settings, args, yield_information, population_information, \
+    return(settings, args, yield_information, population_information, penalty_methods, \
            status, all_durations, exp_incomes, crop_alloc, meta_sol, \
            crop_allocF, meta_solF, crop_allocS, meta_solS, \
            crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn)          
@@ -307,11 +309,13 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
     # get the right penalties
     penalties_start  = tm.time()
     if settings["PenMet"] == "prob":
-        rhoF, rhoS, meta_solF, meta_solS, crop_allocF, crop_allocS = \
-            GetPenalties(settings, args, console_output = console_output, \
-                         logs_on = logs_on)
+        rhoF, rhoS, meta_solF, meta_solS, crop_allocF, crop_allocS, \
+        methodF, methodS = GetPenalties(settings, args,
+                        console_output = console_output, logs_on = logs_on)
         args["rhoF"] = rhoF
         args["rhoS"] = rhoS
+        penalty_methods = {"methodF": methodF,
+                           "methodS": methodS}
     else:
         args["rhoF"] = settings["rhoF"]
         if settings["solv_const"] == "on":
@@ -322,6 +326,8 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
         meta_solS = None
         crop_allocF = None
         crop_allocS = None
+        penalty_methods = {"methodF": "notApplicable",
+                           "methodS": "notApplicable"}
         
     penalties_end  = tm.time()
     all_durations["GetPenalties"] = penalties_end - penalties_start
@@ -368,8 +374,8 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
         _WriteToPandas(settings, args, yield_information, population_information, \
                        status, all_durations, exp_incomes, crop_alloc, meta_sol, \
                        crop_allocF, meta_solF, crop_allocS, meta_solS, \
-                       crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, \
-                       fn, console_output, logs_on, panda_file)               
+                       penalty_methods, crop_alloc_vss, meta_sol_vss, VSS_value, \
+                       validation_values, fn, console_output, logs_on, panda_file)               
             
     # timing
     all_end  = tm.time()   
@@ -382,8 +388,8 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
     # saving results
     if save:
         info = ["settings", "args", "yield_information", "population_information", \
-                "status", "durations", "crop_alloc", "crop_allocF", "crop_allocS", \
-                "crop_alloc_vss", "VSS_value", "validation_values"]
+                "penalty_methods", "status", "durations", "crop_alloc", "crop_allocF", \
+                "crop_allocS", "crop_alloc_vss", "VSS_value", "validation_values"]
             
         with open("ModelOutput/SavedRuns/" + fn + ".txt", "wb") as fp:
             pickle.dump(info, fp)
@@ -391,6 +397,7 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
             pickle.dump(args, fp)
             pickle.dump(yield_information, fp)
             pickle.dump(population_information, fp)
+            pickle.dump(penalty_methods, fp)
             pickle.dump(status, fp)
             pickle.dump(all_durations, fp)
             pickle.dump(exp_incomes, fp)
@@ -405,7 +412,7 @@ def _OptimizeModel(settings, panda_file, console_output = None, logs_on = None, 
     if logs_on:
         del GS.fn_log
         
-    return(settings, args, yield_information, population_information, \
+    return(settings, args, yield_information, population_information, penalty_methods, \
            status, all_durations, exp_incomes, crop_alloc, meta_sol, \
            crop_allocF, meta_solF, crop_allocS, meta_solS, \
            crop_alloc_vss, meta_sol_vss, VSS_value, validation_values)          
@@ -431,6 +438,8 @@ def LoadModelResults(filename):
         Information on the yield distributions for the considered clusters.
     population_information : dict
         Information on the population in the considered area.
+    penalty_methods : dict
+        Methods used to find rhoF and rhoS.
     status : int
         status of solver (optimal: 2)
     all_durations :  dict
@@ -480,6 +489,7 @@ def LoadModelResults(filename):
         args = pickle.load(fp)
         yield_information = pickle.load(fp)
         population_information = pickle.load(fp)
+        penalty_methods = pickle.load(fp)
         status = pickle.load(fp)
         all_durations = pickle.load(fp)
         exp_incomes = pickle.load(fp)
@@ -514,7 +524,7 @@ def LoadModelResults(filename):
         meta_solF = None
         meta_solS = None
     
-    return(settings, args, yield_information, population_information, \
+    return(settings, args, yield_information, population_information, penalty_methods, \
            status, all_durations, exp_incomes, crop_alloc, meta_sol, \
            crop_allocF, meta_solF, crop_allocS, meta_solS, \
            crop_alloc_vss, meta_sol_vss, VSS_value, validation_values)      

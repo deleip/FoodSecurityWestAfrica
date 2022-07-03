@@ -33,9 +33,9 @@ if not os.path.isdir("Figures/PublicationPlots/AdditionalInfo"):
 
 # %% WHAT REGIONS CAN REACH THE FOOD SECURITY TARGET?
 
-for (y, p, scen_name) in [("fixed", "High", "WorstCase"), 
+for (y, p, scen_name) in [("fixed", "High", "Worst-case"), 
                 ("fixed", "fixed", "Stationary"),
-                ("trend", "fixed", "Best Case")]:
+                ("trend", "fixed", "Best-case")]:
     maxProbabilities = FS.Panda_GetResultsSingScen(file = "current_panda",
                                output_var = "Max. possible probability for food security (excluding solvency constraint)",
                                out_type = "all", 
@@ -62,9 +62,9 @@ fig = plt.figure(figsize = (14, 9))
 
 alphas = [50, 60, 70, 80, 90, 95, 99, 99.5]
 
-for (y, p, scen, col) in [("fixed", "High", "worst case", publication_colors["red"]), 
+for (y, p, scen, col) in [("fixed", "High", "worst-case", publication_colors["red"]), 
                 ("fixed", "fixed", "stationary", publication_colors["yellow"]),
-                ("trend", "fixed", "best case", publication_colors["green"])
+                ("trend", "fixed", "best-case", publication_colors["green"])
                 ]:
     print("\u2017"*65, flush = True)
     print("Scenario: yield " + y + ", population " + p, flush = True)
@@ -112,9 +112,9 @@ fig = plt.figure(figsize = (14, 9))
 
 alphas = [50, 60, 70, 80, 90, 95, 99, 99.5]
 
-for (y, p, scen, col) in [("fixed", "High", "worst case", publication_colors["red"]), 
+for (y, p, scen, col) in [("fixed", "High", "worst-case", publication_colors["red"]), 
                 ("fixed", "fixed", "stationary", publication_colors["yellow"]),
-                ("trend", "fixed", "best case", publication_colors["green"])]:
+                ("trend", "fixed", "best-case", publication_colors["green"])]:
     print("\u2017"*65, flush = True)
     print("Scenario: yield " + y + ", population " + p, flush = True)
     print("\u033F "*65, flush = True)
@@ -164,9 +164,9 @@ fig = plt.figure(figsize = (14, 9))
 
 alphas = [50, 60, 70, 80, 90, 95, 99, 99.5]
 
-for (y, p, scen, col) in [("fixed", "High", "worst case", publication_colors["red"]), 
+for (y, p, scen, col) in [("fixed", "High", "worst-case", publication_colors["red"]), 
                 ("fixed", "fixed", "stationary", publication_colors["yellow"]),
-                ("trend", "fixed", "best case", publication_colors["green"])]:
+                ("trend", "fixed", "best-case", publication_colors["green"])]:
     print("\u2017"*65, flush = True)
     print("Scenario: yield " + y + ", population " + p, flush = True)
     print("\u033F "*65, flush = True)
@@ -214,9 +214,9 @@ fig = plt.figure(figsize = (14, 9))
 
 alphas = [50, 60, 70, 80, 90, 95, 99, 99.5]
 
-for (y, p, scen, col) in [("fixed", "High", "worst case", publication_colors["red"]), 
+for (y, p, scen, col) in [("fixed", "High", "worst-case", publication_colors["red"]), 
                 ("fixed", "fixed", "stationary", publication_colors["yellow"]),
-                ("trend", "fixed", "best case", publication_colors["green"])]:
+                ("trend", "fixed", "best-case", publication_colors["green"])]:
     print("\u2017"*65, flush = True)
     print("Scenario: yield " + y + ", population " + p, flush = True)
     print("\u033F "*65, flush = True)
@@ -262,9 +262,9 @@ fig = plt.figure(figsize = (14, 9))
 
 alphas = [50, 60, 70, 80, 90, 95, 99, 99.5]
 
-for (y, p, scen, col) in [("fixed", "High", "worst case", publication_colors["red"]), 
+for (y, p, scen, col) in [("fixed", "High", "worst-case", publication_colors["red"]), 
                 ("fixed", "fixed", "stationary", publication_colors["yellow"]),
-                ("trend", "fixed", "best case", publication_colors["green"])]:
+                ("trend", "fixed", "best-case", publication_colors["green"])]:
     print("\u2017"*65, flush = True)
     print("Scenario: yield " + y + ", population " + p, flush = True)
     print("\u033F "*65, flush = True)

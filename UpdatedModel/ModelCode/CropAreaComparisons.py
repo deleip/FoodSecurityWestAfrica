@@ -432,7 +432,7 @@ def _GetResultsToCompare(ResType = "k_using", panda_file = "current_panda", \
         _printing("     " + ResType + ": " + str(val), 
                  console_output = console_output, logs_on = False)
         
-        settings, args, yield_information, population_information, \
+        settings, args, yield_information, population_information, penalty_methods, \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values = \

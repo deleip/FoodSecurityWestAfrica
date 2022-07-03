@@ -142,8 +142,9 @@ def _CalcExpectedIncome(settings, SettingsAffectingGuaranteedIncome,
     args, yield_information, population_information = \
         SetParameters(settings_ExpIn, console_output = False, logs_on = False)
     
-    rhoF, meta_solF, crop_allocF = _GetRhoWrapper(args, probF, rhoFini, checkedGuess, "F", SettingsProbF,
-                  SettingsFinalRhoF, console_output = False, logs_on = False)
+    rhoF, meta_solF, crop_allocF, methodF = _GetRhoWrapper(args, probF, \
+                 rhoFini, checkedGuess, "F", SettingsProbF, SettingsFinalRhoF,
+                 console_output = False, logs_on = False)
           
     dict_rhoFs[SettingsFinalRhoF] = rhoF
     dict_crop_allocF[SettingsFinalRhoF] = crop_allocF

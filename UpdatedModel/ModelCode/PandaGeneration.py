@@ -17,10 +17,10 @@ from ModelCode.Auxiliary import _printing
 
 def _WriteToPandas(settings, args, yield_information, population_information, \
                 status, all_durations, exp_incomes, crop_alloc, \
-                meta_sol, crop_allocF, meta_solF, crop_allocS, meta_solS, \
-                crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, \
-                fn_fullresults, console_output = None, logs_on = None,
-                file = "current_panda"):
+                meta_sol, crop_allocF, meta_solF, crop_allocS, meta_solS, 
+                penalty_methods, crop_alloc_vss, meta_sol_vss, VSS_value, \
+                validation_values, fn_fullresults, console_output = None, \
+                logs_on = None, file = "current_panda"):
     """
     Adds information on the model run to the given pandas csv.
     
@@ -63,6 +63,9 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
     meta_solS : dict
         additional information on model output for scenario with only solvency
         objective
+    penalty_methods : dict
+        Which methods were used to find the penalty for food shortages and
+        insolvency.
     crop_alloc_vss : np.array
         deterministic solution for optimal crop areas    
     meta_sol_vss : dict
@@ -146,9 +149,7 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
              "Sample size":                        settings["N"],
              "Sample size for validation":         settings["validation_size"],
              "Number of covered years":            settings["T"]}
-    if settings["validation_size"] is not None:
-        panda["Sample size for validation"] = settings["validation_size"]
-    else:
+    if settings["validation_size"] is None:
         panda["Sample size for validation"] = 0
     
     # 2 resulting penalties and probabilities
@@ -304,8 +305,17 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
         panda["Validation value (deviation of total penalty costs)"] = validation_values["deviation_penalties"]
     else:
         panda["Validation value (deviation of total penalty costs)"] = 0
-    panda["Seed (for yield generation)"]                         = settings["seed"]
-    panda["Filename for full results"]                           = fn_fullresults
+    panda["Seed (for yield generation)"]   = settings["seed"]
+    panda["Filename for full results"]     = fn_fullresults
+    panda["Method for finding rhoF"]       = penalty_methods["methodF"]
+    panda["Method for finding rhoS"]       = penalty_methods["methodS"]
+    panda["Accuracy for demanded probF"]   = settings["accuracyF_demandedProb"]
+    panda["Accuracy for demanded probS"]   = settings["accuracyS_demandedProb"]
+    panda["Accuracy for maximum probF"]    = settings["accuracyF_maxProb"]
+    panda["Accuracy for maximum probS"]    = settings["accuracyS_maxProb"]
+    panda["Accuracy for rhoF"]             = settings["accuracyF_rho"]
+    panda["Accuracy for rhoS"]             = settings["accuracyS_rho"]
+    panda["Accuracy for necessary help"]   = settings["accuracy_help"]
        
        
     # load panda object
@@ -540,8 +550,16 @@ def _SetUpPandaDicts():
         
         "Validation value (deviation of total penalty costs)": "",
         "Seed (for yield generation)": "",
-        "Filename for full results": ""}   
-    
+        "Filename for full results": "",
+        "Method for finding rhoF": "",
+        "Method for finding rhoS": "",
+        "Accuracy for demanded probF": "",
+        "Accuracy for demanded probS": "",
+        "Accuracy for maximum probF": "",
+        "Accuracy for maximum probS": "",
+        "Accuracy for rhoF": "",
+        "Accuracy for rhoS": "",
+        "Accuracy for necessary help": ""}
     
     
     convert =  {"Penalty method": str,
@@ -632,7 +650,16 @@ def _SetUpPandaDicts():
         
          "Validation value (deviation of total penalty costs)": float,
          "Seed (for yield generation)": int,
-         "Filename for full results": str}
+         "Filename for full results": str,
+         "Method for finding rhoF": str,
+         "Method for finding rhoS": str,
+         "Accuracy for demanded probF": float,
+         "Accuracy for demanded probS": float,
+         "Accuracy for maximum probF": float,
+         "Accuracy for maximum probS": float,
+         "Accuracy for rhoF": float,
+         "Accuracy for rhoS": float,
+         "Accuracy for necessary help": float}
         
     colnames = ["Penalty method",
         "Input probability food security",
@@ -722,7 +749,16 @@ def _SetUpPandaDicts():
         
         "Validation value (deviation of total penalty costs)",
         "Seed (for yield generation)",
-        "Filename for full results"]
+        "Filename for full results",
+        "Method for finding rhoF",
+        "Method for finding rhoS",
+        "Accuracy for demanded probF",
+        "Accuracy for demanded probS",
+        "Accuracy for maximum probF",
+        "Accuracy for maximum probS",
+        "Accuracy for rhoF",
+        "Accuracy for rhoS",
+        "Accuracy for necessary help"]
     
     
     with open("ModelOutput/Pandas/ColumnUnits.txt", "wb") as fp:

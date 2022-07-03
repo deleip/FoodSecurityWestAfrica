@@ -58,38 +58,119 @@ for k in range(2, kmax + 1):
     between_closest.append(np.nanmean(closest_dist))
     within_cluster.append(costs/(np.sum(~np.isnan(clusters))))
     
-title = ["a. Comparison using all clusters for SPEI", \
-         "Comparison using closest clusters for SPEI"]
+# title = ["a. Comparison using all clusters for SPEI", \
+#          "Comparison using closest clusters for SPEI"]
 
 # plot distances for different numbers of clusters
-fig = plt.figure(figsize = (18, 9))
+fig = plt.figure(figsize = (24, 9))
 ax = fig.add_subplot(1,2,1) 
-ax.scatter(within_cluster, between_closest,  c=range(2, kmax + 1))
-plt.title("a. Inter- and intra-cluster similarity", fontsize = 22)
-plt.xlabel("Similarity within clusters", fontsize = 16)
-plt.ylabel("Similarity between clusters", fontsize = 16)
-plt.xticks(fontsize =14)
-plt.yticks(fontsize =14)
+ax.scatter(within_cluster, between_closest,  c = range(4, kmax + 3), s = 80)
+plt.title("    (a) Inter- and intra-cluster similarity", pad = 20, fontsize = 28, loc = "left")
+plt.xlabel("Similarity within clusters", fontsize = 22)
+plt.ylabel("Similarity between clusters", fontsize = 22)
+plt.xticks(fontsize = 18)
+plt.yticks(fontsize = 18)
 for t, txt in enumerate(np.arange(2, kmax + 1, 4)):
     ax.annotate(txt, (within_cluster[3*t] - 0.0024, \
-                      between_closest[3*t] + 0.0029)) 
+                      between_closest[3*t] + 0.0029), fontsize = 16) 
 fig.add_subplot(1,2,2) 
 metric, cl_order = DP.MetricClustering(within_cluster, between_closest, \
                                     refX = 0, refY = max(between_closest)) 
-plt.scatter(cl_order, metric)
-plt.xticks(range(2, kmax + 1), fontsize =14)
-plt.yticks(fontsize =14)
-plt.title("b. Quantification of tradeoff", fontsize = 22)
-plt.xlabel("Number of clusters", fontsize = 16)
+plt.scatter(cl_order, metric, s = 80)
+plt.xticks(range(2, kmax + 1), fontsize = 18)
+plt.yticks(fontsize = 18)
+plt.title("    (b) Quantification of tradeoff", pad = 20, fontsize = 28, loc = "left")
+plt.xlabel("Number of clusters", fontsize = 22)
 plt.ylabel("Euclidean distance to (0, "+ \
                               str(np.round(max(between_closest), 2)) + \
-                              ") in figure a.", fontsize = 16)
+                              ") in figure a.", fontsize = 22)
 # plt.suptitle("Tradeoff of distances within and between cluster")
     
 fig.savefig("Figures/PublicationPlots/SI/SI_IntraAndInterClusterSimilarity.jpg", 
             bbox_inches = "tight", pad_inches = 0.2)     
     
-# %% YIELD TRENDS
+# %% YILED TRENDS
+
+k = 9
+with open("InputData/YieldTrends/DetrYieldAvg_k" + str(k) + ".txt", "rb") as fp:   
+         yields_avg = pickle.load(fp) 
+         pickle.load(fp) # avg_pred
+         pickle.load(fp) # residuals
+         pickle.load(fp) # residual_means
+         residual_stds = pickle.load(fp)
+         pickle.load(fp) # fstat
+         constants = pickle.load(fp)
+         slopes = pickle.load(fp)
+         crops = pickle.load(fp) # crops
+         years_data = pickle.load(fp) # years
+     
+cols = [publication_colors["green"], publication_colors["yellow"]]
+
+
+start_year = years_data[0]
+years = list(range(2016, 2031))
+years_rel = [y - start_year for y in years]
+
+ticks = np.arange(years[0] + 2, years[-1] + 0.1, 5)
+
+fig = plt.figure(figsize = (16, 11))
+fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9,
+                wspace=0.15, hspace=0.35)
+
+yield_means = np.zeros((len(crops), k, len(years)))
+yield_upper = np.zeros((len(crops), k, len(years)))
+yield_lower = np.zeros((len(crops), k, len(years)))
+for idx, y in enumerate(years_rel):
+    yield_means[:, :, idx] = slopes * y + constants 
+    yield_upper[:, :, idx] = slopes * y + constants + residual_stds
+    yield_lower[:, :, idx] = slopes * y + constants - residual_stds
+    
+for cl in range(0, k):
+    pos = letter.index(cluster_letters[cl]) + 1
+    if k > 6:
+        ax = fig.add_subplot(3, int(np.ceil(k/3)), pos)
+    elif k > 2:
+        ax = fig.add_subplot(2, int(np.ceil(k/2)), pos)
+    else:
+        ax = fig.add_subplot(1, k, pos)
+        
+    for cr in [0, 1]:
+        
+        plt.plot(years, yield_means[cr, cl, :], color = cols[cr])
+        plt.fill_between(years, yield_lower[cr, cl, :], yield_upper[cr, cl, :], color = cols[cr], alpha = 0.4)
+   
+    ax.set_xticks(ticks)   
+    ax.set_ylim(bottom = 0, top = 7)
+    ax.xaxis.set_tick_params(labelsize=14)
+    ax.yaxis.set_tick_params(labelsize=14)
+    ax.yaxis.offsetText.set_fontsize(14)
+    ax.xaxis.offsetText.set_fontsize(14)
+    plt.title("Region "  + cluster_letters[cl], fontsize = 18)
+    
+  
+# add a big axis, hide frame, ticks and tick labels of overall axis
+ax = fig.add_subplot(111, frameon=False)
+plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+plt.xlabel("Year", fontsize = 22, labelpad = 18)
+plt.ylabel("Crop yield, t/ha", fontsize = 22, labelpad = 18)
+
+
+legend_elements = [Line2D([0], [0], lw = 2, color = publication_colors["green"],
+                          label="Rice"),
+                   Line2D([0], [0], lw = 2, color = publication_colors["yellow"],
+                          label="Maize"),
+                    Patch(color = "grey", label='One standard deviation in both directions', alpha = 0.4)]
+ax.legend(handles = legend_elements, fontsize = 18, bbox_to_anchor = (0.5, -0.1),
+          loc = "upper center")
+
+fig.savefig("Figures/PublicationPlots/SI/SI_YieldTrends.jpg",
+            bbox_inches = "tight", pad_inches = 0.2)   
+plt.close()
+
+
+
+
+# %% YIELD REGRESSION
 
 
 with open("InputData/Other/CultivationCosts.txt", "rb") as fp:
@@ -101,11 +182,10 @@ with open("InputData//Prices/RegionFarmGatePrices.txt", "rb") as fp:
 threshold = costs / prices
 # 1.83497285, 1.03376958     
 
-# plot yield trends
+# plot yield regressions
 k = 9
-with open("ProcessedData/YieldAverages_k" + str(k) + ".txt", "rb") as fp:    
-    yields_avg = pickle.load(fp)
-    crops = pickle.load(fp)        
+with open("InputData/YieldTrends/DetrYieldAvg_k" + str(k) + ".txt", "rb") as fp:   
+     yields_avg = pickle.load(fp) # yields_avg  
     
 cols = [publication_colors["green"], publication_colors["yellow"]]
 start_year = 1981
@@ -160,7 +240,7 @@ legend_elements = [Line2D([0], [0], lw = 2, ls = "dashed", color= "black",
 ax.legend(handles = legend_elements, fontsize = 18, bbox_to_anchor = (0.5, -0.1),
           loc = "upper center")
 
-fig.savefig("Figures/PublicationPlots/SI/SI_YieldTrends.jpg",
+fig.savefig("Figures/PublicationPlots/SI/SI_YieldRegressions.jpg",
             bbox_inches = "tight", pad_inches = 0.2)   
 plt.close()
 
@@ -283,7 +363,7 @@ for cl in range(1, 10):
                           (0.95, publication_colors["yellow"]),
                          (0.99, publication_colors["green"])]:
         # get results
-        settings, args, yield_information, population_information, \
+        settings, args, yield_information, population_information, penalty_methods,  \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -350,7 +430,7 @@ for cl in range(1, 10):
     print("             ... cluster " + str(cl))
 
     # get results
-    settings, args, yield_information, population_information, \
+    settings, args, yield_information, population_information, penalty_methods,  \
     status, all_durations, exp_incomes, crop_alloc_worst99, meta_sol, \
     crop_allocF, meta_solF, crop_allocS, meta_solS, \
     crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -358,7 +438,7 @@ for cl in range(1, 10):
                                    yield_projection = "fixed",
                                    pop_scenario = "High")
                 
-    settings, args, yield_information, population_information, \
+    settings, args, yield_information, population_information, penalty_methods,  \
     status, all_durations, exp_incomes, crop_alloc_best99, meta_sol, \
     crop_allocF, meta_solF, crop_allocS, meta_solS, \
     crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -366,7 +446,7 @@ for cl in range(1, 10):
                                    yield_projection = "trend",
                                    pop_scenario = "fixed")            
                     
-    settings, args, yield_information, population_information, \
+    settings, args, yield_information, population_information, penalty_methods,  \
     status, all_durations, exp_incomes, crop_alloc_worst90, meta_sol, \
     crop_allocF, meta_solF, crop_allocS, meta_solS, \
     crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -375,7 +455,7 @@ for cl in range(1, 10):
                                    pop_scenario = "High",
                                    probF = 0.9)
                 
-    settings, args, yield_information, population_information, \
+    settings, args, yield_information, population_information, penalty_methods,  \
     status, all_durations, exp_incomes, crop_alloc_best90, meta_sol, \
     crop_allocF, meta_solF, crop_allocS, meta_solS, \
     crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -422,8 +502,8 @@ plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=F
 legend_elements = [Patch(color = colors[0], alpha = 0.9, label='Rice'),
                    Patch(color = colors[1], alpha = 0.9, label='Maize'),
                    Patch(color = colors[2], alpha = 0.9, label='Not used'),
-                   Patch(color = "w", label='Inner circle: best case scenario'),
-                   Patch(color = "w", label='Outer circle: worst case scenario')]
+                   Patch(color = "w", label='Inner circle: best-case scenario'),
+                   Patch(color = "w", label='Outer circle: worst-case scenario')]
 ax.legend(handles = legend_elements, fontsize = 18,
           loc = "center", ncol = 2)
 
@@ -458,7 +538,7 @@ for alpha in [0.99, 0.9]:
         ax_tmp = SI2.add_subplot(3, 3, pos)
     
         # get results
-        settings, args, yield_information, population_information, \
+        settings, args, yield_information, population_information, penalty_methods,  \
         status, all_durations, exp_incomes, crop_alloc_worst, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -467,7 +547,7 @@ for alpha in [0.99, 0.9]:
                                        pop_scenario = "High",
                                        probF = alpha)
                     
-        settings, args, yield_information, population_information, \
+        settings, args, yield_information, population_information, penalty_methods,  \
         status, all_durations, exp_incomes, crop_alloc_best, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -476,7 +556,7 @@ for alpha in [0.99, 0.9]:
                                        pop_scenario = "fixed",
                                        probF = alpha)            
                         
-        settings, args, yield_information, population_information, \
+        settings, args, yield_information, population_information, penalty_methods,  \
         status, all_durations, exp_incomes, crop_alloc_fixed, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -499,7 +579,7 @@ for alpha in [0.99, 0.9]:
         ax_tmp.plot(years, (crop_alloc_fixed[:,1,0]/args["max_areas"]) * 100, color = col2, lw = 3, ls = "dashdot")
         ax_tmp.plot(years, (crop_alloc_best[:,1,0]/args["max_areas"]) * 100, color = col2, lw = 3, ls = "--")
         
-        # shade area between worst and best case
+        # shade area between worst- and best-case
         ax_tmp.fill_between(years, (crop_alloc_worst[:,0,0]/args["max_areas"]) * 100,
                             (crop_alloc_best[:,0,0]/args["max_areas"]) * 100,
                           color = col1, alpha = 0.5, label = "Range of rice")
@@ -527,11 +607,11 @@ for alpha in [0.99, 0.9]:
     plt.ylabel("Crop area as percentage of available arable area", fontsize = 24, labelpad = 20)
     
     legend_elements = [Line2D([0], [0], color ='black', lw = 2, 
-                              label='worst case'),
+                              label='worst-case'),
                         Line2D([0], [0], color ='black', lw = 2, ls = "dashdot",
                               label='stationary'),
                         Line2D([0], [0], color ='black', lw = 2, ls = "--",
-                              label='best case'),
+                              label='best-case'),
                         Patch(color = col1, label='Rice'),
                         Patch(color = col2,  label='Maize')]
     ax.legend(handles = legend_elements, fontsize = 18, bbox_to_anchor = (0.5, -0.15),
@@ -555,14 +635,16 @@ fig = plt.figure(figsize = (16, 11))
 
 fig.subplots_adjust(wspace=0.15, hspace=0.35)
 
+print("Plotting in progress ...", flush = True)
 for cl in range(1, 10):
+    print("             ... cluster " + str(cl))
     pos = letter.index(cluster_letters[cl-1]) + 1
     ax = fig.add_subplot(3, 3, pos)
-    for (y, p, scen, col) in [("fixed", "High", "worst case", publication_colors["red"]), 
+    for (y, p, scen, col) in [("fixed", "High", "worst-case", publication_colors["red"]), 
                 ("fixed", "fixed", "stationary", publication_colors["yellow"]),
-                ("trend", "fixed", "best case", publication_colors["green"])]:
+                ("trend", "fixed", "best-case", publication_colors["green"])]:
         
-        settings, args, yield_information, population_information, \
+        settings, args, yield_information, population_information, penalty_methods,  \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -572,7 +654,7 @@ for cl in range(1, 10):
                     
         year_rel = 2030 - settings["sim_start"]
         with_catastrophe = (args["terminal_years"] != -1)
-        plt.hist(meta_sol["final_fund"][with_catastrophe], bins = 200, alpha = 0.7,
+        plt.hist(meta_sol["final_fund"][with_catastrophe], bins = 200, alpha = 0.6,
                  density = True, color = col)
     ax.yaxis.set_ticks([])
     ax.set_title("Region " + cluster_letters[cl-1], fontsize = 18)
@@ -586,9 +668,9 @@ ax = fig.add_subplot(111, frameon=False)
 plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
 plt.xlabel(r"Final fund after payouts, $10^{9}\,\$$", fontsize = 24, labelpad = 20)
    
-legend_elements = [Patch(color = publication_colors["red"], label='worst case', alpha = 0.7),
+legend_elements = [Patch(color = publication_colors["red"], label='worst-case', alpha = 0.7),
                     Patch(color = publication_colors["yellow"], label= "stationary", alpha = 0.7),
-                    Patch(color = publication_colors["green"], label='best case', alpha = 0.7)]
+                    Patch(color = publication_colors["green"], label='best-case', alpha = 0.7)]
 
 ax.legend(handles = legend_elements, fontsize = 18, bbox_to_anchor = (0.5, -0.12),
           loc = "upper center")
@@ -598,7 +680,7 @@ fig.savefig("Figures/PublicationPlots/SI/SI_FinalFund.jpg",
         
 plt.close(fig)
 
-# %% REVENUE DISTRIBUTIONS
+# %% REVENUE DISTRIBUTIONS VS 1
 
 # distribution of revenues (profits pre tax + costs + payouts)
 # for the three population/yield scenarios
@@ -612,14 +694,16 @@ fig = plt.figure(figsize = (16, 11))
 
 fig.subplots_adjust(wspace=0.15, hspace=0.35)
 
+print("Plotting in progress ...", flush = True)
 for cl in range(1, 10):
+    print("             ... cluster " + str(cl), flush = True)
     pos = letter.index(cluster_letters[cl-1]) + 1
     ax = fig.add_subplot(3, 3, pos)
-    for (y, p, scen, col) in [("fixed", "High", "worst case", publication_colors["red"]), 
+    for (y, p, scen, col) in [("fixed", "High", "worst-case", publication_colors["red"]), 
                 ("fixed", "fixed", "stationary", publication_colors["yellow"]),
-                ("trend", "fixed", "best case", publication_colors["green"])]:
+                ("trend", "fixed", "best-case", publication_colors["green"])]:
         
-        settings, args, yield_information, population_information, \
+        settings, args, yield_information, population_information, penalty_methods,  \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -627,11 +711,16 @@ for cl in range(1, 10):
                                        yield_projection = y,
                                        pop_scenario = p)
                     
-        guaranteed = (1 - args["tax"]) * args["cat_clusters"] * meta_sol["guaranteed_income"]
-        guaranteed[guaranteed == 0] = -np.inf
-        income = np.maximum(meta_sol["profits_afterTax"], guaranteed)
-        plt.hist(income.flatten(), bins = 200, alpha = 0.7,
+        # guaranteed = (1 - args["tax"]) * args["cat_clusters"] * meta_sol["guaranteed_income"]
+        # guaranteed[guaranteed == 0] = -np.inf
+        # income = np.maximum(meta_sol["profits_afterTax"], guaranteed)
+        guaranteed = (1 - args["tax"]) * meta_sol["guaranteed_income"]
+        income = meta_sol["profits_afterTax"]
+        income[args["cat_clusters"] == 1] = np.nan
+        
+        plt.hist(income.flatten(), bins = 200, alpha = 0.6,
                   density = True, color = col)
+        
     ax.yaxis.set_ticks([])
     ax.set_title("Region " + cluster_letters[cl-1], fontsize = 18)
     ax.xaxis.set_tick_params(labelsize=16)
@@ -642,16 +731,149 @@ for cl in range(1, 10):
 # add a big axis, hide frame, ticks and tick labels from overall axis
 ax = fig.add_subplot(111, frameon=False)
 plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
-plt.xlabel(r"Revenue distribution incl. payouts, $10^{9}\,\$$", fontsize = 24, labelpad = 20)
+plt.xlabel(r"Revenue distribution w/o catastrophic years $10^{9}\,\$$", fontsize = 24, labelpad = 20)
    
-legend_elements = [Patch(color = publication_colors["red"], label='worst case', alpha = 0.7),
-                    Patch(color = publication_colors["yellow"], label= "stationary", alpha = 0.7),
-                    Patch(color = publication_colors["green"], label='best case', alpha = 0.7)]
+legend_elements = [Patch(color = publication_colors["red"], label='worst-case', alpha = 0.6),
+                    Patch(color = publication_colors["yellow"], label= "stationary", alpha = 0.6),
+                    Patch(color = publication_colors["green"], label='best-case', alpha = 0.6)]
 
 ax.legend(handles = legend_elements, fontsize = 18, bbox_to_anchor = (0.5, -0.12),
           loc = "upper center")
 
-fig.savefig("Figures/PublicationPlots/SI/SI_RevenueDistribution.jpg", 
+fig.savefig("Figures/PublicationPlots/SI/SI_RevenueDistribution_woCatYears.jpg", 
+            bbox_inches = "tight", format = "jpg")
+        
+plt.close(fig)
+
+# %% REVENUE DISTRIBUTIONS VS 2
+
+# distribution of revenues (profits pre tax + costs + payouts)
+# for the three population/yield scenarios
+# default input probability and government parameters
+# a single figure with each cluster as a subplot
+
+if not os.path.isdir("Figures/PublicationPlots/SI"):
+    os.mkdir("Figures/PublicationPlots/SI")
+
+fig = plt.figure(figsize = (16, 11))
+
+fig.subplots_adjust(wspace=0.15, hspace=0.35)
+
+print("Plotting in progress ...", flush = True)
+for cl in range(1, 10):
+    print("             ... cluster " + str(cl), flush = True)
+    pos = letter.index(cluster_letters[cl-1]) + 1
+    ax = fig.add_subplot(3, 3, pos)
+    for (y, p, scen, col) in [("fixed", "High", "worst-case", publication_colors["red"]), 
+                ("fixed", "fixed", "stationary", publication_colors["yellow"]),
+                ("trend", "fixed", "best-case", publication_colors["green"])]:
+        
+        settings, args, yield_information, population_information, penalty_methods,  \
+        status, all_durations, exp_incomes, crop_alloc, meta_sol, \
+        crop_allocF, meta_solF, crop_allocS, meta_solS, \
+        crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
+                    FS.LoadFullResults(k_using = cl,
+                                       yield_projection = y,
+                                       pop_scenario = p)
+                    
+        guaranteed = (1 - args["tax"]) * args["cat_clusters"] * meta_sol["guaranteed_income"]
+        guaranteed[guaranteed == 0] = -np.inf
+        income = np.maximum(meta_sol["profits_afterTax"], guaranteed)
+        
+        plt.hist(income.flatten(), bins = 200, alpha = 0.6,
+                  density = True, color = col)
+        
+    ax.yaxis.set_ticks([])
+    ax.set_title("Region " + cluster_letters[cl-1], fontsize = 18)
+    ax.xaxis.set_tick_params(labelsize=16)
+    ax.yaxis.set_tick_params(labelsize=16)
+    ax.yaxis.offsetText.set_fontsize(16)
+    ax.xaxis.offsetText.set_fontsize(16)
+     
+# add a big axis, hide frame, ticks and tick labels from overall axis
+ax = fig.add_subplot(111, frameon=False)
+plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+plt.xlabel(r"Revenue distribution including payouts $10^{9}\,\$$", fontsize = 24, labelpad = 20)
+   
+legend_elements = [Patch(color = publication_colors["red"], label='worst-case', alpha = 0.6),
+                    Patch(color = publication_colors["yellow"], label= "stationary", alpha = 0.6),
+                    Patch(color = publication_colors["green"], label='best-case', alpha = 0.6)]
+
+ax.legend(handles = legend_elements, fontsize = 18, bbox_to_anchor = (0.5, -0.12),
+          loc = "upper center")
+
+fig.savefig("Figures/PublicationPlots/SI/SI_RevenueDistribution_inclPayouts.jpg", 
+            bbox_inches = "tight", format = "jpg")
+        
+plt.close(fig)
+
+# %% REVENUE DISTRIBUTIONS VS 3
+
+# distribution of revenues (profits pre tax + costs + payouts)
+# for the three population/yield scenarios
+# default input probability and government parameters
+# a single figure with each cluster as a subplot
+
+if not os.path.isdir("Figures/PublicationPlots/SI"):
+    os.mkdir("Figures/PublicationPlots/SI")
+
+fig = plt.figure(figsize = (16, 11))
+
+fig.subplots_adjust(wspace=0.15, hspace=0.35)
+
+print("Plotting in progress ...", flush = True)
+for cl in range(1, 10):
+    print("             ... cluster " + str(cl), flush = True)
+    pos = letter.index(cluster_letters[cl-1]) + 1
+    ax = fig.add_subplot(3, 3, pos)
+    for (y, p, scen, col) in [("fixed", "High", "worst-case", publication_colors["red"]), 
+                ("fixed", "fixed", "stationary", publication_colors["yellow"]),
+                ("trend", "fixed", "best-case", publication_colors["green"])]:
+        
+        settings, args, yield_information, population_information, penalty_methods,  \
+        status, all_durations, exp_incomes, crop_alloc, meta_sol, \
+        crop_allocF, meta_solF, crop_allocS, meta_solS, \
+        crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
+                    FS.LoadFullResults(k_using = cl,
+                                       yield_projection = y,
+                                       pop_scenario = p)
+                    
+        # guaranteed = (1 - args["tax"]) * args["cat_clusters"] * meta_sol["guaranteed_income"]
+        # guaranteed[guaranteed == 0] = -np.inf
+        # income = np.maximum(meta_sol["profits_afterTax"], guaranteed)
+        guaranteed = (1 - args["tax"]) * meta_sol["guaranteed_income"]
+        guaranteed = (guaranteed[:,0] / population_information["population"])[0] * 1e9
+        
+        income = meta_sol["profits_afterTax"]
+        income[args["cat_clusters"] == 1] = np.nan
+        income = (income[:,:,0] / population_information["population"]) * 1e9
+        
+        plt.hist(income.flatten(), bins = 200, alpha = 0.6,
+                  density = True, color = col)
+        plt.axvline(guaranteed, color = "#003479", linestyle = "dashed")
+        
+    ax.yaxis.set_ticks([])
+    ax.set_title("Region " + cluster_letters[cl-1], fontsize = 18)
+    ax.xaxis.set_tick_params(labelsize=16)
+    ax.yaxis.set_tick_params(labelsize=16)
+    ax.yaxis.offsetText.set_fontsize(16)
+    ax.xaxis.offsetText.set_fontsize(16)
+     
+# add a big axis, hide frame, ticks and tick labels from overall axis
+ax = fig.add_subplot(111, frameon=False)
+plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+plt.xlabel(r"Revenue distribution including payouts, per capita, $", fontsize = 24, labelpad = 20)
+   
+legend_elements = [Line2D([0], [0], color ='black', lw = 2, 
+                              label='guaranteed income'),
+                   Patch(color = publication_colors["red"], label='worst-case', alpha = 0.6),
+                    Patch(color = publication_colors["yellow"], label= "stationary", alpha = 0.6),
+                    Patch(color = publication_colors["green"], label='best-case', alpha = 0.6)]
+
+ax.legend(handles = legend_elements, fontsize = 18, bbox_to_anchor = (0.5, -0.12),
+          loc = "upper center")
+
+fig.savefig("Figures/PublicationPlots/SI/SI_RevenueDistribution_inclPayoutPC.jpg", 
             bbox_inches = "tight", format = "jpg")
         
 plt.close(fig)
@@ -663,7 +885,9 @@ alphas = [50, 60, 70, 80, 90, 95, 99]
 fig = plt.figure(figsize = (14, 9))
 
 fig.subplots_adjust(hspace = 0.39)
+print("Plotting in progress ...", flush = True)
 for cl in range(1, 10):
+    print("             ... cluster " + str(cl), flush = True)
     pos = letter.index(cluster_letters[cl-1]) + 1
     ax = fig.add_subplot(3, 3, pos)
     
@@ -722,4 +946,53 @@ fig.savefig("Figures/PublicationPlots/SI/SI_GovernmentLevers.jpg",
             bbox_inches = "tight", format = "jpg")
 
 plt.close(fig)    
+    
+# %% HOW DOES EXPECTED FOOD SHORTAGE DECREASE WITH FOOD SECURITY TARGET?
+
+# for each scenario
+# over all clusters (whout coopreatoin) averaged using population as weight
+# for different food security probabilites
+# default government levers
+
+
+fig = plt.figure(figsize = (14, 9))
+
+alphas = [50, 60, 70, 80, 90, 95, 99, 99.5]
+
+for (y, p, scen, col) in [("fixed", "High", "worst-case", publication_colors["red"]), 
+                ("fixed", "fixed", "stationary", publication_colors["yellow"]),
+                ("trend", "fixed", "best-case", publication_colors["green"])]:
+    print("\u2017"*65, flush = True)
+    print("Scenario: yield " + y + ", population " + p, flush = True)
+    print("\u033F "*65, flush = True)
+    
+    shortages = []
+    
+    for alpha in alphas: 
+        print("Food security probability " + str(alpha) + "%", flush = True)
+        
+        shortages.append(FS.Panda_GetResultsSingScen(file = "current_panda", 
+                                   output_var = "Average aggregate food shortage",
+                                   out_type = "agg_sum", 
+                                   sizes = 1,
+                                   probF = alpha/100,
+                                   yield_projection = y,
+                                   pop_scenario = p).iloc[0,1])
+        
+    shortages = (shortages / np.float64(shortages[0])) * 100
+    plt.scatter(alphas, shortages, label = scen, color = col, s = 80)
+    plt.plot(alphas, shortages, color = col, lw = 2.5)
+
+plt.xlabel("Reliability target for food security, %", fontsize = 24)
+plt.ylabel("Aggregated expected food shortage as share of\nexpected shortage in risk-neutral strategy, %", fontsize = 24)
+plt.legend(fontsize = 22, loc = "upper right")
+
+ax = plt.gca()
+ax.xaxis.set_tick_params(labelsize=16)
+ax.yaxis.set_tick_params(labelsize=16)
+    
+fig.savefig("Figures/PublicationPlots/SI/SI_AggFoodShortage_RelativeToRiskNeutralStrategy.jpg", 
+            bbox_inches = "tight", pad_inches = 0.2, format = "jpg")
+
+plt.close(fig)
     

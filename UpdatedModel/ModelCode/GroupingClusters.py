@@ -132,7 +132,7 @@ def GroupingClusters(k = 9, size = 5, aim = "Similar", adjacent = True,
     if title is not None:
         VisualizeClusterGroups(k, size, aim, adjacent, ShiftedGrouping, title, figsize, \
                           fontsizet = 20, fontsizea = 16)
-    
+            
     if adjacent:
         ad = "Adj"
     else:

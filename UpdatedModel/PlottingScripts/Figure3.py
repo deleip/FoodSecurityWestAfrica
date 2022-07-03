@@ -58,7 +58,7 @@ for (cl, panel) in [(4, "(b)"), (5, "(a)")]:
                           (0.95, publication_colors["yellow"]),
                          (0.99, publication_colors["green"])]:
         # get results
-        settings, args, yield_information, population_information, \
+        settings, args, yield_information, population_information, penalty_methods,  \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -156,7 +156,7 @@ for cl in range(1, 10):
                           (0.95, publication_colors["yellow"]),
                          (0.99, publication_colors["green"])]:
         # get results
-        settings, args, yield_information, population_information, \
+        settings, args, yield_information, population_information, penalty_methods,  \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \

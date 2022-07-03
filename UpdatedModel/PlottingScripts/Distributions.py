@@ -36,7 +36,7 @@ for cl in range(1, 10):
                    ("fixed", "fixed"),
                    ("trend", "fixed")]:
         
-        settings, args, yield_information, population_information, \
+        settings, args, yield_information, population_information, penalty_methods,  \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -75,7 +75,7 @@ for cl in range(1, 10):
                     ("fixed", "fixed", "stationary", "#C9AF8C"),
                     ("trend", "fixed", "best case", "#4B9A8D")]:
         
-        settings, args, yield_information, population_information, \
+        settings, args, yield_information, population_information, penalty_methods,  \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -118,7 +118,7 @@ for cl in range(1, 10):
                 ("fixed", "fixed", "stationary", publication_colors["yellow"]),
                 ("trend", "fixed", "best case", publication_colors["green"])]:
         
-        settings, args, yield_information, population_information, \
+        settings, args, yield_information, population_information, penalty_methods,  \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -188,7 +188,7 @@ for cl in range(1, 10):
                    ("fixed", "fixed"),
                    ("trend", "fixed")]:
         
-        settings, args, yield_information, population_information, \
+        settings, args, yield_information, population_information, penalty_methods,  \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
@@ -226,7 +226,7 @@ for cl in range(1, 10):
                    ("fixed", "fixed"),
                    ("trend", "fixed")]:
         
-        settings, args, yield_information, population_information, \
+        settings, args, yield_information, population_information, penalty_methods,  \
         status, all_durations, exp_incomes, crop_alloc, meta_sol, \
         crop_allocF, meta_solF, crop_allocS, meta_solS, \
         crop_alloc_vss, meta_sol_vss, VSS_value, validation_values, fn = \
