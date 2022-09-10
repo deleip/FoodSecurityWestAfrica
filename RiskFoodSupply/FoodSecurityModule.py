@@ -18,7 +18,6 @@ from ModelCode.CropAreaComparisons import NumberOfSamples
 
 from ModelCode.GetPenalties import GetPenalties
 from ModelCode.GetPenalties import LoadPenaltyStuff
-from ModelCode.GetPenalties import MakeMethodDicts
 
 from ModelCode.GroupingClusters import GroupingClusters
 from ModelCode.GroupingClusters import VisualizeClusterGroups

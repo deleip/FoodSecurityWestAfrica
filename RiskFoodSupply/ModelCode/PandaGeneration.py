@@ -155,11 +155,11 @@ def _WriteToPandas(settings, args, yield_information, population_information, \
     # 2 resulting penalties and probabilities
     panda["Penalty for food shortage"]               = args["rhoF"]
     panda["Penalty for insolvency"]                  = args["rhoS"]
-    panda["Resulting probability for food security"] = meta_sol["probF"]
-    panda["Resulting probability for solvency"]      = meta_sol["probS"]
+    panda["Resulting probability for food security"] = meta_sol["probF"] * 100
+    panda["Resulting probability for solvency"]      = meta_sol["probS"] * 100
     if meta_solF is not None:
         panda["Max. possible probability for food security (excluding solvency constraint)"] \
-            = meta_solF["probF"]
+            = meta_solF["probF"] 
     else:
         panda["Max. possible probability for food security (excluding solvency constraint)"] \
             = np.nan
@@ -482,8 +482,8 @@ def _SetUpPandaDicts():
         
         "Penalty for food shortage": "[$\$/10^3\,$kcal]",
         "Penalty for insolvency": "[$\$/\$$]",
-        "Resulting probability for food security": "",
-        "Resulting probability for solvency": "",
+        "Resulting probability for food security": "%",
+        "Resulting probability for solvency": "%",
         "Max. possible probability for food security (excluding solvency constraint)": "",
         "Max. possible probability for solvency (excluding food security constraint)": "",
         

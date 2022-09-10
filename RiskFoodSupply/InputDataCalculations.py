@@ -19,6 +19,7 @@ import pickle
 import matplotlib.pyplot as plt
 import seaborn as sns
 from termcolor import colored
+from scipy.stats import shapiro
 
 from matplotlib.patches import Patch
 from string import ascii_uppercase as letter
@@ -311,6 +312,61 @@ ax.legend(handles = legend_elements, fontsize = 18, bbox_to_anchor = (0.5, -0.1)
 
 fig.savefig("InputData/Visualization/k" + str(k) + \
         "AvgYieldTrends.png", bbox_inches = "tight")   
+plt.close()
+
+
+
+# shapiro normality test for residuals
+with open("InputData/YieldTrends/DetrYieldAvg_k" + str(k) + ".txt", "rb") as fp:  
+    yields_avg = pickle.load(fp)
+    avg_pred = pickle.load(fp)
+    residuals = pickle.load(fp)
+    residual_means = pickle.load(fp)
+    residual_stds = pickle.load(fp)
+    fstat = pickle.load(fp)
+    constants = pickle.load(fp)
+    slopes = pickle.load(fp)
+    crops = pickle.load(fp)
+    years = pickle.load(fp)
+
+shapiro_statistics = np.empty([2, 9])
+shapiro_pvalues = np.empty([2, 9])
+for cl in range(0, k):
+    for cr in [0, 1]:
+        shapiro_statistics[cr, cl] = shapiro(residuals[:, cr, cl])[0]
+        shapiro_pvalues[cr, cl] = shapiro(residuals[:, cr, cl])[1]
+
+
+cols = [publication_colors["green"], publication_colors["yellow"]]
+fig = plt.figure(figsize = (16, 11))
+fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9,
+                wspace=0.15, hspace=0.35)
+for cl in range(0, k):
+    pos = letter.index(cluster_letters[cl-1]) + 1
+    if k > 6:
+        ax = fig.add_subplot(3, int(np.ceil(k/3)), pos)
+    elif k > 2:
+        ax = fig.add_subplot(2, int(np.ceil(k/2)), pos)
+    else:
+        ax = fig.add_subplot(1, k, pos)
+    for cr in [0, 1]:
+        plt.hist(residuals[:, cr, cl], alpha = 0.7, color = cols[cr])
+    plt.title("Region "  + cluster_letters[cl-1] + ", p_rice: " + 
+              str(round(shapiro_pvalues[0, cl], 3)) + ", p_maize: " + str(round(shapiro_pvalues[1, cl], 3)), fontsize = 14)
+    ax.xaxis.set_tick_params(labelsize=14)
+    ax.yaxis.set_tick_params(labelsize=14)
+    ax.yaxis.offsetText.set_fontsize(14)
+    ax.xaxis.offsetText.set_fontsize(14)
+
+# add a big axis, hide frame, ticks and tick labels of overall axis
+ax = fig.add_subplot(111, frameon=False)
+plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+plt.xlabel("Yield residuals", fontsize = 22, labelpad = 18)
+plt.ylabel("Density (sample size: 36)", fontsize = 22, labelpad = 18)
+
+
+fig.savefig("InputData/Visualization/k" + str(k) + \
+        "DistributionResiduals.png", bbox_inches = "tight")   
 plt.close()
 
 # legend = plt.figure(figsize  = (5, 3))

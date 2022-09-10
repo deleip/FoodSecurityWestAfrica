@@ -504,7 +504,7 @@ output_vars = ["Resulting probability for food security",
                "Average yearly total cultivated area",
                "Total cultivation costs (sto. solution)"]
 
-ylabels = ["Food security probability, %",
+ylabels = ["Food supply reliability, %",
            r"Average food shortage per capita, $10^{3}\,$kcal",
            "Solvency probabilityy, %",
            r"Average debt after payout per capita, $10^9\,\$$",
